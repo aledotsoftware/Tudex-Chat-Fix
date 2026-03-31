@@ -27,6 +27,7 @@ services:
       CHROME_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
       LM_STUDIO_URL: http://host.docker.internal:1234
       MODEL_NAME: llama-3.1-8b-instruct
+      API_KEY: chatfix_secret_key_123 # Cambia esto por una clave segura
     volumes:
       - whatsapp_auth:/app/.wwebjs_auth
 

@@ -81,3 +81,35 @@ Endpoints útiles para monitoreo:
 docker compose logs -f backend
 docker compose logs -f mongo
 ```
+
+## 🛡️ Referencia de la API (Publicación Externa)
+
+ChatFix expone un endpoint para publicar en canales o chats desde servicios externos.
+
+**Endpoint:** `POST /api/send`
+
+**Autenticación:**
+Requiere el header `X-API-Key` o el parámetro `api_key` en la URL (si se definió `API_KEY` en el `docker-compose.yml`).
+
+**Cuerpo de la petición (JSON):**
+
+| Parámetro | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `chatId` | String | ID del chat o canal (ej: `123456789@newsletter`). **Requerido**. |
+| `text` | String | Texto del mensaje o pie de foto (soporta links). |
+| `mediaUrl` | String | URL pública de una imagen para enviar. |
+| `mediaBase64`| String | Imagen en formato Base64 (si no usas `mediaUrl`). |
+| `mediaName` | String | Nombre del archivo (opcional, por defecto `image.jpg`). |
+
+**Ejemplo con `curl`:**
+
+```bash
+curl -X POST http://localhost:3001/api/send \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: chatfix_secret_key_123" \
+  -d '{
+    "chatId": "1234567890@newsletter",
+    "text": "🚀 Mensaje automático con imagen: https://ejemplo.com",
+    "mediaUrl": "https://piks.eldesmarque.com/bin/2023/12/12/whatsapp_canales_001.jpg"
+  }'
+```

@@ -1,5 +1,5 @@
 const express = require('express');
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const http = require('http');
 const { Server } = require('socket.io');
 const axios = require('axios');
@@ -30,6 +30,22 @@ let aiErrorLogState = {
   signature: '',
   count: 0,
   lastAt: 0
+};
+
+// API Key authentication middleware
+const API_KEY = process.env.API_KEY || ''; // If empty, authentication is disabled
+
+const authenticateApiKey = (req, res, next) => {
+  if (!API_KEY) return next();
+  
+  const providedKey = req.headers['x-api-key'] || req.query.api_key;
+  if (providedKey !== API_KEY) {
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'A valid API Key is required in X-API-Key header or api_key query parameter.'
+    });
+  }
+  next();
 };
 
 io.on('connection', (socket) => {
@@ -867,39 +883,116 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
   }
 });
 
-// Send message
-app.post('/api/send', async (req, res) => {
+// Send message / API Publish
+// Accepts chatId via: route param, query string, or JSON body
+app.post('/api/send/:channelCode?', authenticateApiKey, async (req, res) => {
   try {
     if (!ensureWhatsappReady(res)) return;
-    const chatId = String(req.body?.chatId || '').trim();
+
+    // 1. Resolve chatId from: route param > query > body
+    let chatId = String(
+      req.params.channelCode || req.query.chatId || req.body?.chatId || ''
+    ).trim();
+
+    // 2. Auto-resolve WhatsApp Channel URLs or bare invite codes
+    const isChannelUrl = chatId.includes('whatsapp.com/channel/');
+    const looksLikeInviteCode = !chatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(chatId);
+
+    if (isChannelUrl || looksLikeInviteCode) {
+      const parts = chatId.split('/channel/');
+      const code = (parts.length > 1 ? parts[1] : chatId).split('?')[0].trim();
+
+      try {
+        console.log(`🔍 Resolving channel for invite code: ${code}...`);
+        const channel = await client.getChannelByInviteCode(code);
+        if (channel && channel.id && channel.id._serialized) {
+          chatId = channel.id._serialized;
+          console.log(`✅ Channel resolved: ${channel.name || 'Newsletter'} → ${chatId}`);
+        } else {
+          console.warn('⚠️ getChannelByInviteCode returned empty result for:', code);
+          return res.status(404).json({
+            error: 'Channel not found',
+            detail: `Could not resolve invite code: ${code}`
+          });
+        }
+      } catch (err) {
+        console.error('❌ Channel resolution failed:', err.message || err);
+        return res.status(404).json({
+          error: 'Channel resolution failed',
+          detail: err.message || 'Unknown error resolving invite code'
+        });
+      }
+    }
+
     const text = sanitizeTextInput(req.body?.text);
     const originalText = sanitizeTextInput(req.body?.originalText || text);
     const replyToMessageId = String(req.body?.replyToMessageId || '').trim();
-    if (!chatId || !text) return res.status(400).json({ error: 'Missing parameters' });
-    if (text.length > 4096) {
-      return res.status(400).json({ error: 'Message too long (max 4096 chars)' });
+
+    const mediaUrl = String(req.body?.mediaUrl || '').trim();
+    const mediaBase64 = String(req.body?.mediaBase64 || '').trim();
+    const mediaName = String(req.body?.mediaName || 'image.jpg').trim();
+    const mediaMimeType = String(req.body?.mediaMimeType || 'image/jpeg').trim();
+
+    if (!chatId || (!text && !mediaUrl && !mediaBase64)) {
+      return res.status(400).json({ error: 'Missing parameters (chatId + text/media)' });
     }
 
+    // 3. Build send options (strip incompatible ones for newsletters)
+    const isNewsletter = chatId.includes('@newsletter');
     const sendOptions = {};
-    if (replyToMessageId) {
+    if (replyToMessageId && !isNewsletter) {
       sendOptions.quotedMessageId = replyToMessageId;
     }
-    await client.sendMessage(chatId, text, sendOptions);
 
-    // Store in DB
+    // 4. Send
+    if (mediaUrl || mediaBase64) {
+      let media;
+      if (mediaUrl) {
+        media = await MessageMedia.fromUrl(mediaUrl).catch(e => {
+          console.error('❌ Failed to fetch media from URL:', e.message);
+          return null;
+        });
+      } else {
+        media = new MessageMedia(mediaMimeType, mediaBase64, mediaName);
+      }
+
+      if (!media) {
+        return res.status(422).json({ error: 'Failed to process media content' });
+      }
+
+      await client.sendMessage(chatId, media, {
+        ...sendOptions,
+        caption: text || undefined
+      });
+    } else {
+      await client.sendMessage(chatId, text, sendOptions);
+    }
+
+    // 5. Store in DB
     const msg = new Message({
       to: chatId,
       originalText: originalText || text,
       correctedText: text,
       sentText: text,
-      replyToMessageId: replyToMessageId || null
+      replyToMessageId: isNewsletter ? null : (replyToMessageId || null)
     });
     await msg.save();
 
-    res.json({ success: true });
+    res.json({
+      success: true,
+      chatId,
+      isNewsletter,
+      message: isNewsletter ? 'Published to channel' : 'Message sent'
+    });
   } catch (error) {
-    console.error('❌ Send error:', error);
-    res.status(500).json({ error: 'Failed to send message' });
+    const detail = typeof error === 'object'
+      ? (error.message || JSON.stringify(error))
+      : String(error);
+    console.error('❌ Send error:', detail);
+    res.status(500).json({
+      error: 'Failed to send message',
+      details: detail
+    });
   }
 });
 
