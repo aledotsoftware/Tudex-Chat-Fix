@@ -1,0 +1,48 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: chatfix-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: chatfix-backend
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      MONGODB_URI: mongodb://mongo:27017/chatfix
+      CHROME_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
+      LM_STUDIO_URL: http://host.docker.internal:1234
+      MODEL_NAME: llama-3.1-8b-instruct
+    volumes:
+      - whatsapp_auth:/app/.wwebjs_auth
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: chatfix-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: http://localhost:3001
+      VITE_SOCKET_URL: http://localhost:3001
+
+volumes:
+  mongo_data:
+  whatsapp_auth:
