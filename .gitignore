@@ -1,2 +1,43 @@
-/backend/node_modules
+# Dependencies
+**/node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Logs and runtime files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# Build outputs and coverage
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Tooling caches
+.cache/
+.eslintcache
+.parcel-cache/
+.vite/
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# App-specific volatile auth/session state
+backend/.wwebjs_auth/
+
+# Backups
 *.old
