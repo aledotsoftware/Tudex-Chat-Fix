@@ -6,7 +6,12 @@ const runtimeHost =
   typeof window !== "undefined" ? window.location.hostname : "localhost";
 const runtimeProtocol =
   typeof window !== "undefined" ? window.location.protocol : "http:";
-const defaultApiUrl = `${runtimeProtocol}//${runtimeHost}:3001`;
+
+// Dokploy Smart Resolution
+const isDokploy = runtimeHost.includes("tudexnetworks.com");
+const dokployBackend = isDokploy ? `https://api-${runtimeHost}` : null;
+
+const defaultApiUrl = dokployBackend || `${runtimeProtocol}//${runtimeHost}:3001`;
 
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
