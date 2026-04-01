@@ -9,9 +9,13 @@ const runtimeProtocol =
 
 // Dokploy Smart Resolution
 const isDokploy = runtimeHost.includes("tudexnetworks.com");
-const dokployBackend = isDokploy ? `https://api-${runtimeHost}` : null;
+// If hosted on Dokploy, force HTTPS and api- prefix
+const dokployBackend = isDokploy ? `https://api-${runtimeHost.replace(/^api-/, "")}` : null;
 
 const defaultApiUrl = dokployBackend || `${runtimeProtocol}//${runtimeHost}:3001`;
+
+console.log("[ChatFix] Detected runtimeHost:", runtimeHost);
+console.log("[ChatFix] Final API_URL target:", dokployBackend || defaultApiUrl);
 
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
