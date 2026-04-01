@@ -7,15 +7,13 @@ const runtimeHost =
 const runtimeProtocol =
   typeof window !== "undefined" ? window.location.protocol : "http:";
 
-// Dokploy Smart Resolution
-const isDokploy = runtimeHost.includes("tudexnetworks.com");
-// If hosted on Dokploy, force HTTPS and api- prefix
-const dokployBackend = isDokploy ? `https://api-${runtimeHost.replace(/^api-/, "")}` : null;
+// Smart API Resolution: localhost uses :3001, any other domain prepends api-
+const isLocal = runtimeHost === "localhost" || runtimeHost === "127.0.0.1" || runtimeHost.startsWith("192.168.");
+const defaultApiUrl = isLocal
+  ? `${runtimeProtocol}//${runtimeHost}:3001`
+  : `https://api-${runtimeHost.replace(/^api-/, "")}`;
 
-const defaultApiUrl = dokployBackend || `${runtimeProtocol}//${runtimeHost}:3001`;
-
-console.log("[ChatFix] Detected runtimeHost:", runtimeHost);
-console.log("[ChatFix] Final API_URL target:", dokployBackend || defaultApiUrl);
+console.log("[ChatFix] API target:", defaultApiUrl);
 
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
