@@ -15,17 +15,25 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   let [resource, config] = args;
   const key = localStorage.getItem("chatfix_api_key");
+  
   if (key) {
-    if (!config) config = {};
-    if (!config.headers) config.headers = {};
-    if (config.headers instanceof Headers) {
-      config.headers.set("X-API-Key", key);
+    config = config || {};
+    let headers = config.headers || {};
+    
+    if (headers instanceof Headers) {
+      headers.set("X-API-Key", key);
+    } else if (Array.isArray(headers)) {
+      headers.push(["X-API-Key", key]);
     } else {
-      config.headers["X-API-Key"] = key;
+      headers["X-API-Key"] = key;
     }
+    config.headers = headers;
+    args[1] = config;
   }
-  const response = await originalFetch(resource, config);
+  
+  const response = await originalFetch(...args);
   if (response.status === 401) {
+    console.warn("Auth failure for:", resource);
     window.dispatchEvent(new Event('chatfix_auth_error'));
   }
   return response;
@@ -391,7 +399,7 @@ function App() {
       socket.off("new_message", mergeLiveMessage);
       socket.close();
     };
-  }, []);
+  }, [apiAuthenticated]);
 
   useEffect(() => {
     selectedChatIdRef.current = selectedChatId;
@@ -435,6 +443,7 @@ function App() {
   }, [notice]);
 
   useEffect(() => {
+    if (!apiAuthenticated) return;
     const fetchStatus = async () => {
       try {
         const res = await fetch(`${API_URL}/api/status`);
@@ -451,9 +460,10 @@ function App() {
     fetchStatus();
     const timer = setInterval(fetchStatus, 10000);
     return () => clearInterval(timer);
-  }, []);
+  }, [apiAuthenticated]);
 
   async function fetchChats(selectFirst = false) {
+    if (!apiAuthenticated) return;
     setLoadingChats(true);
     try {
       const res = await fetch(`${API_URL}/api/chats`);

@@ -33,7 +33,7 @@ let aiErrorLogState = {
 };
 
 // API Key authentication middleware
-const API_KEY = process.env.API_KEY || ''; // If empty, authentication is disabled
+const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui'; 
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
@@ -43,6 +43,7 @@ const authenticateApiKey = (req, res, next) => {
   const providedKey = req.headers['x-api-key'] || req.query.api_key;
   if (providedKey !== API_KEY) {
     console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Expected: '${API_KEY}' vs Received: '${providedKey}'`);
+    console.error(`[HEADERS DUMP]`, JSON.stringify(req.headers));
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'A valid API Key is required in X-API-Key header or api_key query parameter.'
@@ -51,6 +52,7 @@ const authenticateApiKey = (req, res, next) => {
   next();
 };
 
+/*
 io.use((socket, next) => {
   if (!API_KEY) return next();
   const token = socket.handshake.auth.token;
@@ -61,6 +63,7 @@ io.use((socket, next) => {
   }
   next();
 });
+*/
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
@@ -71,7 +74,11 @@ io.on('connection', (socket) => {
   }
 });
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'Accept']
+}));
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -911,7 +918,7 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 
 // Send message / API Publish
 // Accepts chatId via: route param, query string, or JSON body
-app.post('/api/send/:channelCode?', async (req, res) => {
+app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
   try {
     if (!ensureWhatsappReady(res)) return;
 
