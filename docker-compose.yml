@@ -24,7 +24,6 @@ services:
     environment:
       PORT: 3001
       MONGODB_URI: mongodb://mongo:27017/chatfix
-      CHROME_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
       LM_STUDIO_URL: http://host.docker.internal:1234
       MODEL_NAME: ${MODEL_NAME}
       API_KEY: ${API_KEY}
