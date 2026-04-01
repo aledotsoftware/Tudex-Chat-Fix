@@ -605,7 +605,7 @@ async function getChatAvatar(chat, index) {
 const chromeExecutablePath = process.env.CHROME_EXECUTABLE_PATH ||
   (process.platform === 'win32'
     ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
-    : '/usr/bin/google-chrome-stable');
+    : '/usr/bin/chromium');
 
 // WhatsApp Client
 const client = new Client({
