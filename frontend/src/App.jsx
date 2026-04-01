@@ -11,6 +11,26 @@ const defaultApiUrl = `${runtimeProtocol}//${runtimeHost}:3001`;
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
 
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  let [resource, config] = args;
+  const key = localStorage.getItem("chatfix_api_key");
+  if (key) {
+    if (!config) config = {};
+    if (!config.headers) config.headers = {};
+    if (config.headers instanceof Headers) {
+      config.headers.set("X-API-Key", key);
+    } else {
+      config.headers["X-API-Key"] = key;
+    }
+  }
+  const response = await originalFetch(resource, config);
+  if (response.status === 401) {
+    window.dispatchEvent(new Event('chatfix_auth_error'));
+  }
+  return response;
+};
+
 function formatTime(unixTs) {
   const value = Number(unixTs) || Math.floor(Date.now() / 1000);
   return new Date(value * 1000).toLocaleTimeString([], {
@@ -45,6 +65,10 @@ function App() {
   const grammarCooldownUntilRef = useRef(0);
   const grammarCooldownNoticeRef = useRef(0);
   const draftInputRef = useRef(null);
+
+  const [apiAuthenticated, setApiAuthenticated] = useState(false);
+  const [inputApiKey, setInputApiKey] = useState(localStorage.getItem("chatfix_api_key") || "");
+  const [authChecking, setAuthChecking] = useState(true);
 
   const [sessionStatus, setSessionStatus] = useState("connecting");
   const [socketConnected, setSocketConnected] = useState(false);
@@ -292,8 +316,47 @@ function App() {
   }
 
   useEffect(() => {
+    const handleAuthError = () => {
+      setApiAuthenticated(false);
+      localStorage.removeItem("chatfix_api_key");
+    };
+    window.addEventListener('chatfix_auth_error', handleAuthError);
+    return () => window.removeEventListener('chatfix_auth_error', handleAuthError);
+  }, []);
+
+  const checkAuth = async (key) => {
+    setAuthChecking(true);
+    try {
+      const res = await originalFetch(`${API_URL}/api/check-auth`, {
+        headers: { 'X-API-Key': key }
+      });
+      if (res.ok) {
+        localStorage.setItem("chatfix_api_key", key);
+        setApiAuthenticated(true);
+      } else {
+        setApiAuthenticated(false);
+        localStorage.removeItem("chatfix_api_key");
+      }
+    } catch (e) {
+      setApiAuthenticated(false);
+    }
+    setAuthChecking(false);
+  };
+
+  useEffect(() => {
+    if (inputApiKey) checkAuth(inputApiKey);
+    else setAuthChecking(false);
+  }, []);
+
+  useEffect(() => {
+    if (!apiAuthenticated) {
+      if (socketRef.current) { socketRef.current.close(); socketRef.current = null; }
+      return;
+    }
+
     const socket = io(SOCKET_URL, {
       transports: ["websocket"],
+      auth: { token: localStorage.getItem("chatfix_api_key") || "" },
       reconnection: true,
       reconnectionAttempts: Infinity
     });
@@ -775,6 +838,32 @@ function App() {
     } finally {
       setCheckingAiHealth(false);
     }
+  }
+
+  if (!apiAuthenticated) {
+    return (
+      <main className="authScreen">
+        <section className="authCard">
+          <h1>ChatFix API</h1>
+          <p>Autenticación Requerida</p>
+          <input 
+            type="password" 
+            value={inputApiKey} 
+            onChange={(e) => setInputApiKey(e.target.value)}
+            placeholder="Introduce tu API Key" 
+            style={{ width: '100%', padding: '10px', marginBottom: '15px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+            onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
+          />
+          <button 
+            className="primary" 
+            onClick={() => checkAuth(inputApiKey)} 
+            disabled={authChecking || !inputApiKey}
+          >
+            {authChecking ? "Comprobando..." : "Ingresar al Panel"}
+          </button>
+        </section>
+      </main>
+    );
   }
 
   if (sessionStatus !== "authenticated") {

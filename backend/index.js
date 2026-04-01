@@ -38,8 +38,11 @@ const API_KEY = process.env.API_KEY || ''; // If empty, authentication is disabl
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
   
+  if (req.method === 'OPTIONS') return next();
+  
   const providedKey = req.headers['x-api-key'] || req.query.api_key;
   if (providedKey !== API_KEY) {
+    console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Expected: '${API_KEY}' vs Received: '${providedKey}'`);
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'A valid API Key is required in X-API-Key header or api_key query parameter.'
@@ -47,6 +50,17 @@ const authenticateApiKey = (req, res, next) => {
   }
   next();
 };
+
+io.use((socket, next) => {
+  if (!API_KEY) return next();
+  const token = socket.handshake.auth.token;
+  if (token !== API_KEY) {
+    const err = new Error("not authorized");
+    err.data = { content: "Please retry later" };
+    return next(err);
+  }
+  next();
+});
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
@@ -58,7 +72,19 @@ io.on('connection', (socket) => {
 });
 
 app.use(cors());
+
 app.use(express.json({ limit: '1mb' }));
+
+// Middleware global para proteger todas las rutas /api/ (excepto health)
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health') return next();
+  return authenticateApiKey(req, res, next);
+});
+
+// Healthcheck/Auth verify endpoint
+app.get('/api/check-auth', (req, res) => {
+  res.json({ success: true, message: 'Authenticated' });
+});
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatfix')
@@ -885,7 +911,7 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 
 // Send message / API Publish
 // Accepts chatId via: route param, query string, or JSON body
-app.post('/api/send{/:channelCode}', authenticateApiKey, async (req, res) => {
+app.post('/api/send/:channelCode?', async (req, res) => {
   try {
     if (!ensureWhatsappReady(res)) return;
 
