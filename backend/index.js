@@ -5,6 +5,8 @@ const { Server } = require('socket.io');
 const axios = require('axios');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -693,6 +695,33 @@ client.on('message_create', async (msg) => {
   io.emit('new_message', payload);
 });
 
+// Función para limpiar bloqueos de Chromium antes de iniciar
+function cleanChromiumLocks() {
+  const authPath = path.resolve(__dirname, './.wwebjs_auth');
+  if (fs.existsSync(authPath)) {
+    try {
+      // Buscamos archivos SingletonLock recursivamente y los borramos
+      const deleteLock = (dir) => {
+        if (!fs.existsSync(dir)) return;
+        const files = fs.readdirSync(dir);
+        for (const file of files) {
+          const fullPath = path.join(dir, file);
+          if (fs.lstatSync(fullPath).isDirectory()) {
+            deleteLock(fullPath);
+          } else if (file === 'SingletonLock') {
+            fs.unlinkSync(fullPath);
+            console.log('🧹 Archivo SingletonLock eliminado para permitir el inicio.');
+          }
+        }
+      };
+      deleteLock(authPath);
+    } catch (err) {
+      console.warn('⚠️ No se pudo limpiar SingletonLock (puede que no exista o no haya permisos):', err.message);
+    }
+  }
+}
+
+cleanChromiumLocks();
 client.initialize();
 
 function ensureWhatsappReady(res) {

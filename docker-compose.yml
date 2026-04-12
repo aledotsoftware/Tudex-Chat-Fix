@@ -29,6 +29,12 @@ services:
       API_KEY: ${API_KEY}
     volumes:
       - whatsapp_auth:/app/.wwebjs_auth
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   frontend:
     build:
