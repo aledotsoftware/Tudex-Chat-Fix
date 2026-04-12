@@ -74,11 +74,9 @@ io.on('connection', (socket) => {
   }
 });
 
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'Accept']
-}));
+// CORS configuration - Allow all origins and handle preflight
+app.use(cors());
+app.options('*', cors());
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -662,6 +660,18 @@ client.on('disconnected', (reason) => {
 
 // Message handling (incoming and outgoing)
 client.on('message_create', async (msg) => {
+  // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
+  if (msg.from === 'status@broadcast') {
+    try {
+      const chat = await msg.getChat();
+      await chat.sendSeen();
+      console.log(`👁️ Status auto-visto de: ${msg.author || 'desconocido'}`);
+    } catch (e) {
+      console.error('⚠️ Error al auto-ver status:', e.message);
+    }
+    return; // No procesamos los estados como mensajes normales en la UI
+  }
+
   let chatId = msg.from;
   if (msg.fromMe) {
     chatId = msg.to;
