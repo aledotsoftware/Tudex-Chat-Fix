@@ -1028,9 +1028,21 @@ function App() {
                 className={`bubble ${
                   !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "incomingGrammarError" : ""
                 }`}
+                tabIndex={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? 0 : undefined}
+                role={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "button" : undefined}
                 onClick={
                   !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
                     ? () => prepareGrammarReply(msg)
+                    : undefined
+                }
+                onKeyDown={
+                  !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          prepareGrammarReply(msg);
+                        }
+                      }
                     : undefined
                 }
               >
@@ -1041,7 +1053,7 @@ function App() {
                   </div>
                 ) : null}
                 {!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? (
-                  <span className="grammarErrorBadge">Posibles errores gramaticales · Tocar para responder</span>
+                  <span className="grammarErrorBadge">Posibles errores gramaticales · Presionar para responder</span>
                 ) : null}
                 {!msg.fromMe && Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0 ? (
                   <span className="pingBadge">Ping</span>
@@ -1127,6 +1139,7 @@ function App() {
             onKeyDown={handleDraftKeyDown}
             placeholder="Escribí un mensaje... (Enter envía, Shift+Enter salto de línea)"
             rows={3}
+            aria-label="Mensaje"
           />
 
           <div className="composerActions">
