@@ -74,9 +74,17 @@ io.on('connection', (socket) => {
   }
 });
 
-// CORS configuration - Allow all origins and handle preflight
-app.use(cors());
-app.options('*', cors());
+// Explicit CORS middleware
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, Accept');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json({ limit: '1mb' }));
 
@@ -84,6 +92,11 @@ app.use(express.json({ limit: '1mb' }));
 app.use('/api', (req, res, next) => {
   if (req.path === '/health') return next();
   return authenticateApiKey(req, res, next);
+});
+
+// Root endpoint for connectivity check
+app.get('/', (req, res) => {
+  res.send('🚀 ChatFix Backend is running on port 3005!');
 });
 
 // Healthcheck/Auth verify endpoint
