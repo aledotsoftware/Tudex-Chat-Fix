@@ -10,7 +10,7 @@ const runtimeProtocol =
 // Smart API Resolution: localhost uses :3001, any other domain prepends api-
 const isLocal = runtimeHost === "localhost" || runtimeHost === "127.0.0.1" || runtimeHost.startsWith("192.168.");
 const defaultApiUrl = isLocal
-  ? `${runtimeProtocol}//${runtimeHost}:3001`
+  ? `${runtimeProtocol}//${runtimeHost}:3005`
   : `https://api-${runtimeHost.replace(/^api-/, "")}`;
 
 console.log("[ChatFix] API target:", defaultApiUrl);

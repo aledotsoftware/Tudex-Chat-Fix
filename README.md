@@ -41,7 +41,7 @@ docker compose up --build
 
 Esto levanta:
 
-- `chatfix-backend` en `http://localhost:3001`
+- `chatfix-backend` en `http://localhost:3005`
 - `chatfix-mongo` en `mongodb://localhost:27017`
 
 ### 3. Sesión permanente de WhatsApp
@@ -60,7 +60,7 @@ El backend usa `LocalAuth`, guardando sesión en un volumen Docker (`whatsapp_au
 
 En Docker Compose ya se inyectan:
 
-- `PORT=3001`
+- `PORT=3005`
 - `MONGODB_URI=mongodb://mongo:27017/chatfix`
 - `LM_STUDIO_URL=http://host.docker.internal:1234`
 - `MODEL_NAME=llama-3.1-8b-instruct`
@@ -104,7 +104,7 @@ Requiere el header `X-API-Key` o el parámetro `api_key` en la URL (si se defini
 **Ejemplo con `curl`:**
 
 ```bash
-curl -X POST http://localhost:3001/api/send \
+curl -X POST http://localhost:3005/api/send \
   -H "Content-Type: application/json" \
   -H "X-API-Key: chatfix_secret_key_123" \
   -d '{

@@ -51,6 +51,6 @@ COPY . .
 # Set PUPPETEER_EXECUTABLE_PATH to use installed chromium
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
-EXPOSE 3001
+EXPOSE 3005
 
 CMD ["node", "index.js"]
