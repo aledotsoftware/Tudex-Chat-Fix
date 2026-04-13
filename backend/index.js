@@ -454,7 +454,14 @@ async function buildMediaPayload(message) {
   }
 
   try {
-    const media = await message.downloadMedia();
+    // Ponemos un timeout de 5 segundos a la descarga para no trabar el servidor
+    const mediaPromise = message.downloadMedia();
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Media download timeout')), 5000)
+    );
+
+    const media = await Promise.race([mediaPromise, timeoutPromise]);
+    
     if (!media || !media.mimetype) {
       return { mediaType: null, imageDataUrl: null };
     }
@@ -466,7 +473,7 @@ async function buildMediaPayload(message) {
       };
     }
   } catch (error) {
-    console.error('⚠️ Media parse error:', error.message);
+    console.warn(`⚠️ Media download skipped for message ${message.id?._serialized || 'unknown'}:`, error.message);
   }
 
   return { mediaType: null, imageDataUrl: null };
@@ -631,9 +638,14 @@ const client = new Client({
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-extensions'
     ],
     executablePath: chromeExecutablePath
+  },
+  webVersionCache: {
+    type: 'remote',
+    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018921608-alpha.html'
   }
 });
 
@@ -918,26 +930,39 @@ app.get('/api/chats', async (req, res) => {
 app.get('/api/chats/:chatId/messages', async (req, res) => {
   try {
     if (!ensureWhatsappReady(res)) return;
-    const { chatId } = req.params;
+    
+    const chatId = req.params.chatId;
     const limit = parsePositiveInt(req.query.limit, 80, 200);
+
     if (!chatId) {
       return res.status(400).json({ error: 'Missing chatId' });
     }
 
-    const chats = await client.getChats();
-    const chat = chats.find(c => c.id && c.id._serialized === chatId);
+    console.log(`📥 Fetching ${limit} messages for chat: ${chatId}`);
+
+    // Optimizamos: obtenemos el chat por ID directamente en lugar de listar todos
+    let chat;
+    try {
+      chat = await client.getChatById(chatId);
+    } catch (err) {
+      console.warn(`⚠️ Chat ${chatId} not found or error loading it:`, err.message);
+      return res.status(404).json({ error: 'Chat not found in WhatsApp' });
+    }
+
     if (!chat) {
       return res.status(404).json({ error: 'Chat not found' });
     }
 
     const messages = await chat.fetchMessages({ limit });
-
     const normalized = await Promise.all(messages.map((m) => serializeMessage(m, chatId)));
 
     res.json(normalized);
   } catch (error) {
-    console.error('❌ Fetch messages error:', error.message);
-    res.status(500).json({ error: 'Failed to fetch messages' });
+    console.error('❌ Fetch messages error details:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch messages', 
+      detail: error.message 
+    });
   }
 });
 
