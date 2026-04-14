@@ -688,11 +688,11 @@ client.on('disconnected', (reason) => {
 // Message handling (incoming and outgoing)
 client.on('message_create', async (msg) => {
   // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-  if (msg.from === 'status@broadcast') {
+  if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
     try {
-      const chat = await msg.getChat();
-      await chat.sendSeen();
-      console.log(`👁️ Status auto-visto de: ${msg.author || 'desconocido'}`);
+      // Marcamos el chat de estados como visto de forma directa y rápida
+      await client.sendSeen('status@broadcast');
+      console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
     } catch (e) {
       console.error('⚠️ Error al auto-ver status:', e.message);
     }
