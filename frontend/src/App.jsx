@@ -859,7 +859,12 @@ function App() {
 
   if (!apiAuthenticated) {
     return (
-      <main className="authScreen">
+      <>
+        <div className="bg-blob-container">
+          <div className="bg-blob blob-1"></div>
+          <div className="bg-blob blob-2"></div>
+        </div>
+        <main className="authScreen">
         <section className="authCard">
           <h1>ChatFix API</h1>
           <p>Autenticación Requerida</p>
@@ -880,12 +885,18 @@ function App() {
           </button>
         </section>
       </main>
+    </>
     );
   }
 
   if (sessionStatus !== "authenticated") {
     return (
-      <main className="authScreen">
+      <>
+        <div className="bg-blob-container">
+          <div className="bg-blob blob-1"></div>
+          <div className="bg-blob blob-2"></div>
+        </div>
+        <main className="authScreen">
         <section className="authCard">
           <h1>ChatFix</h1>
           <p>{connectionLabel}</p>
@@ -900,12 +911,18 @@ function App() {
           )}
         </section>
       </main>
+    </>
     );
   }
 
   return (
-    <main className="waApp">
-      <aside className="sidebar">
+    <>
+      <div className="bg-blob-container">
+        <div className="bg-blob blob-1"></div>
+        <div className="bg-blob blob-2"></div>
+      </div>
+      <main className="waApp">
+        <aside className="sidebar">
         <header className="sidebarHeader">
           <h2>Chats</h2>
           <div className="headerActions">
@@ -917,10 +934,10 @@ function App() {
                 fetchAiModels();
               }}
             >
-              IA
+              ✨ IA
             </button>
             <button className="secondary" onClick={() => fetchChats(false)} disabled={loadingChats}>
-              {loadingChats ? "Cargando..." : "Actualizar"}
+              {loadingChats ? "..." : "🔄 Actualizar"}
             </button>
           </div>
         </header>
@@ -938,7 +955,7 @@ function App() {
             type="text"
             value={chatSearch}
             onChange={(e) => setChatSearch(e.target.value)}
-            placeholder="Buscar chat..."
+            placeholder="🔍 Buscar chat..."
           />
         </div>
 
@@ -1144,24 +1161,24 @@ function App() {
 
           <div className="composerActions">
             <button className="secondary" onClick={correctDraft} disabled={correcting || !draft.trim()}>
-              {correcting ? "Corrigiendo..." : "Corregir IA"}
+              {correcting ? "..." : "✨ Corregir IA"}
             </button>
             <button
               className="primary"
               onClick={correctAndSend}
               disabled={sending || correcting || correctingAndSending || !draft.trim()}
             >
-              {correctingAndSending ? "Corrigiendo y enviando..." : "Corregir y enviar"}
+              {correctingAndSending ? "..." : "🚀 Corregir y enviar"}
             </button>
             <button className="primary" onClick={() => sendMessage(draft)} disabled={sending || !draft.trim()}>
-              {sending ? "Enviando..." : "Enviar original"}
+              {sending ? "..." : "📤 Enviar original"}
             </button>
             <button
               className="primary"
               onClick={() => sendMessage(correctedDraft)}
               disabled={sending || !correctedDraft.trim()}
             >
-              Enviar corregido
+              ✅ Enviar corregido
             </button>
           </div>
 
@@ -1327,7 +1344,8 @@ function App() {
           </div>
         </section>
       ) : null}
-    </main>
+      </main>
+    </>
   );
 }
 
