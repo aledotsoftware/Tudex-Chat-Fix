@@ -878,6 +878,7 @@ function App() {
           />
           <button 
             className="primary" 
+            aria-label="Ingresar al panel de control"
             onClick={() => checkAuth(inputApiKey)} 
             disabled={authChecking || !inputApiKey}
           >
@@ -928,6 +929,7 @@ function App() {
           <div className="headerActions">
             <button
               className="secondary"
+              aria-label="Configuración de IA"
               onClick={() => {
                 setShowAiSettings(true);
                 fetchAiConfig();
@@ -936,7 +938,12 @@ function App() {
             >
               ✨ IA
             </button>
-            <button className="secondary" onClick={() => fetchChats(false)} disabled={loadingChats}>
+            <button
+              className="secondary"
+              aria-label="Actualizar chats"
+              onClick={() => fetchChats(false)}
+              disabled={loadingChats}
+            >
               {loadingChats ? "..." : "🔄 Actualizar"}
             </button>
           </div>
@@ -1025,6 +1032,7 @@ function App() {
           </div>
           <button
             className="secondary"
+            aria-label="Recargar mensajes"
             onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
             disabled={!selectedChatId}
           >
@@ -1083,6 +1091,7 @@ function App() {
                 <div className="bubbleActions">
                   <button
                     className="replyBtn"
+                    aria-label="Responder a este mensaje"
                     onClick={(e) => {
                       e.stopPropagation();
                       startReply(msg);
@@ -1160,21 +1169,33 @@ function App() {
           />
 
           <div className="composerActions">
-            <button className="secondary" onClick={correctDraft} disabled={correcting || !draft.trim()}>
-              {correcting ? "..." : "✨ Corregir IA"}
+            <button
+              className="secondary"
+              aria-label="Corregir texto con IA"
+              onClick={correctDraft}
+              disabled={correcting || !draft.trim()}
+            >
+              {correcting ? "Corrigiendo..." : "✨ Corregir IA"}
             </button>
             <button
               className="primary"
+              aria-label="Corregir y enviar mensaje"
               onClick={correctAndSend}
               disabled={sending || correcting || correctingAndSending || !draft.trim()}
             >
-              {correctingAndSending ? "..." : "🚀 Corregir y enviar"}
-            </button>
-            <button className="primary" onClick={() => sendMessage(draft)} disabled={sending || !draft.trim()}>
-              {sending ? "..." : "📤 Enviar original"}
+              {correctingAndSending ? "Procesando..." : "🚀 Corregir y enviar"}
             </button>
             <button
               className="primary"
+              aria-label="Enviar texto original"
+              onClick={() => sendMessage(draft)}
+              disabled={sending || !draft.trim()}
+            >
+              {sending ? "Enviando..." : "📤 Enviar original"}
+            </button>
+            <button
+              className="primary"
+              aria-label="Enviar texto corregido por IA"
               onClick={() => sendMessage(correctedDraft)}
               disabled={sending || !correctedDraft.trim()}
             >
