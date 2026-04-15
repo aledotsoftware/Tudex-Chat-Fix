@@ -88,7 +88,10 @@ function AckIcon({ status }) {
 function App() {
   const socketRef = useRef(null);
   const selectedChatIdRef = useRef("");
-  const messagesEndRef = useRef(null);
+  const messagesAreaRef = useRef(null);
+  const shouldStickToBottomRef = useRef(true);
+  const previousMessageCountRef = useRef(0);
+  const previousSelectedChatIdRef = useRef("");
   const messageFetchReqIdRef = useRef(0);
   const grammarCheckInFlightRef = useRef(new Set());
   const grammarQueueRef = useRef([]);
@@ -134,6 +137,8 @@ function App() {
   const [messagesByChat, setMessagesByChat] = useState({});
   const [selectedChatId, setSelectedChatId] = useState("");
   const [messages, setMessages] = useState([]);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
   const [draftsByChat, setDraftsByChat] = useState(() => { try { return JSON.parse(localStorage.getItem("chatfix_drafts") || "{}"); } catch (e) { return {}; } }); const draft = draftsByChat[selectedChatId] || ""; const setDraft = (val) => setDraftsByChat(prev => ({ ...prev, [selectedChatId]: val }));
   const [correctedDraft, setCorrectedDraft] = useState("");
   const [replyTarget, setReplyTarget] = useState(null);
@@ -204,6 +209,36 @@ function App() {
   function showNotice(text, type = "info") {
     setNotice(text);
     setNoticeType(type);
+  }
+
+  function isNearBottom(container) {
+    if (!container) return true;
+    return container.scrollHeight - container.scrollTop - container.clientHeight <= 84;
+  }
+
+  function scrollMessagesToBottom(behavior = "auto") {
+    const container = messagesAreaRef.current;
+    if (!container) return;
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior
+    });
+    shouldStickToBottomRef.current = true;
+    setShowJumpToLatest(false);
+    setPendingIncomingCount(0);
+  }
+
+  function handleMessagesScroll() {
+    const container = messagesAreaRef.current;
+    if (!container) return;
+    const nearBottom = isNearBottom(container);
+    shouldStickToBottomRef.current = nearBottom;
+    if (nearBottom) {
+      setShowJumpToLatest(false);
+      setPendingIncomingCount(0);
+    } else if (messages.length > 0) {
+      setShowJumpToLatest(true);
+    }
   }
 
   function canonicalText(text) {
@@ -457,6 +492,10 @@ function App() {
     setReplyTarget(null);
     setReplyQueue([]);
     setSendingReplyQueueIds({});
+    setShowJumpToLatest(false);
+    setPendingIncomingCount(0);
+    shouldStickToBottomRef.current = true;
+    previousMessageCountRef.current = 0;
 
     if (selectedChatId) {
       setChats((prev) =>
@@ -526,8 +565,36 @@ function App() {
   }, [selectedChatId, sessionStatus]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const container = messagesAreaRef.current;
+    if (!container) return;
+
+    const chatChanged = previousSelectedChatIdRef.current !== selectedChatId;
+    const previousCount = previousMessageCountRef.current;
+    const currentCount = messages.length;
+    const hasNewMessages = currentCount > previousCount;
+    const latestMessage = currentCount > 0 ? messages[currentCount - 1] : null;
+
+    if (chatChanged) {
+      requestAnimationFrame(() => {
+        scrollMessagesToBottom("auto");
+      });
+    } else if (hasNewMessages) {
+      const canAutoScroll = shouldStickToBottomRef.current || Boolean(latestMessage?.fromMe);
+      if (canAutoScroll) {
+        requestAnimationFrame(() => {
+          scrollMessagesToBottom("smooth");
+        });
+      } else {
+        setShowJumpToLatest(true);
+        if (!latestMessage?.fromMe) {
+          setPendingIncomingCount((prev) => prev + (currentCount - previousCount));
+        }
+      }
+    }
+
+    previousSelectedChatIdRef.current = selectedChatId;
+    previousMessageCountRef.current = currentCount;
+  }, [messages, selectedChatId]);
 
   useEffect(() => {
     grammarInsightsRef.current = grammarInsights;
@@ -1158,7 +1225,11 @@ function App() {
           </button>
         </header>
 
-        <div className="messagesArea">
+        <div
+          className="messagesArea"
+          ref={messagesAreaRef}
+          onScroll={handleMessagesScroll}
+        >
           {loadingMessages[selectedChatId] ? <p className="helper">Cargando mensajes...</p> : null}
           {!loadingMessages[selectedChatId] && syncingChat ? <p className="helper">Sincronizando...</p> : null}
           {!loadingMessages[selectedChatId] && messages.length === 0 ? (
@@ -1227,7 +1298,18 @@ function App() {
               </article>
             </div>
           );})}
-          <div ref={messagesEndRef} />
+          {showJumpToLatest ? (
+            <button
+              className="jumpToLatest"
+              aria-label="Ir al último mensaje"
+              onClick={() => scrollMessagesToBottom("smooth")}
+            >
+              ↓ Ir al último
+              {pendingIncomingCount > 0 ? (
+                <span className="jumpToLatestCount">{pendingIncomingCount}</span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
 
         <footer className="composer">
