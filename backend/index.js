@@ -161,7 +161,7 @@ const DEFAULT_AI_CONFIG = {
   maxTokens: Number(process.env.AI_MAX_TOKENS || 180),
   systemPrompt: process.env.AI_SYSTEM_PROMPT || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.',
   userPromptTemplate: process.env.AI_USER_PROMPT_TEMPLATE || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}',
-  timeoutMs: Number(process.env.AI_TIMEOUT_MS || 90000)
+  timeoutMs: Number(process.env.AI_TIMEOUT_MS || 15000)
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };
@@ -421,7 +421,7 @@ async function requestCorrectionWithModel(text, options = {}) {
     }
   };
   const requestOptions = {
-    timeout: Number(options.timeoutMs ?? activeConfig.timeoutMs ?? 90000),
+    timeout: Number(options.timeoutMs ?? activeConfig.timeoutMs ?? 15000),
     headers: getAiRequestHeaders(activeConfig)
   };
   const systemPrompt = options.systemPrompt || activeConfig.systemPrompt;
@@ -978,7 +978,7 @@ app.get('/api/ai/health', async (_req, res) => {
           ],
           temperature: 0
         }, {
-          timeout: Math.min(Number(aiConfig.timeoutMs ?? 90000), 25000),
+          timeout: Math.min(Number(aiConfig.timeoutMs ?? 15000), 25000),
           headers: getAiRequestHeaders(aiConfig)
         });
         payload.probeOk = true;

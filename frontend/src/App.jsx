@@ -66,6 +66,25 @@ function initialsForChat(chat) {
   return parts.map((p) => p[0]?.toUpperCase() || "").join("") || "?";
 }
 
+function getAvatarGradient(id) {
+  const str = String(id || "default");
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const c1 = `hsl(${hash % 360}, 65%, 35%)`;
+  const c2 = `hsl(${(hash + 40) % 360}, 75%, 45%)`;
+  return `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`;
+}
+
+function AckIcon({ status }) {
+  if (status === 3) return <span className="ackDoubleBlue">✓✓</span>;
+  if (status === 2) return <span className="ackDouble">✓✓</span>;
+  if (status === 1) return <span className="ackSingle">✓</span>;
+  if (status === 'sending') return <span className="ackClock">⏲</span>;
+  return null;
+}
+
 function App() {
   const socketRef = useRef(null);
   const selectedChatIdRef = useRef("");
@@ -79,6 +98,8 @@ function App() {
   const grammarFailuresRef = useRef(0);
   const grammarCooldownUntilRef = useRef(0);
   const grammarCooldownNoticeRef = useRef(0);
+  const lastGrammarCheckAtRef = useRef(0);
+  const searchInputRef = useRef(null);
   const draftInputRef = useRef(null);
 
   const [apiAuthenticated, setApiAuthenticated] = useState(false);
@@ -97,7 +118,7 @@ function App() {
   const [noticeType, setNoticeType] = useState("info");
 
   const [loadingChats, setLoadingChats] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [loadingMessages, setLoadingMessages] = useState({});
   const [correcting, setCorrecting] = useState(false);
   const [sending, setSending] = useState(false);
   const [correctingAndSending, setCorrectingAndSending] = useState(false);
@@ -113,13 +134,14 @@ function App() {
   const [messagesByChat, setMessagesByChat] = useState({});
   const [selectedChatId, setSelectedChatId] = useState("");
   const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState("");
+  const [draftsByChat, setDraftsByChat] = useState(() => { try { return JSON.parse(localStorage.getItem("chatfix_drafts") || "{}"); } catch (e) { return {}; } }); const draft = draftsByChat[selectedChatId] || ""; const setDraft = (val) => setDraftsByChat(prev => ({ ...prev, [selectedChatId]: val }));
   const [correctedDraft, setCorrectedDraft] = useState("");
   const [replyTarget, setReplyTarget] = useState(null);
   const [grammarInsights, setGrammarInsights] = useState({});
   const [replyQueue, setReplyQueue] = useState([]);
   const [sendingReplyQueueIds, setSendingReplyQueueIds] = useState({});
   const [syncingChat, setSyncingChat] = useState(false);
+  const [chatStates, setChatStates] = useState({});
   const [aiConfig, setAiConfig] = useState({
     provider: "lmstudio",
     aiBaseUrl: "",
@@ -130,7 +152,7 @@ function App() {
     modelName: "",
     temperature: 0.7,
     maxTokens: 180,
-    timeoutMs: 90000,
+    timeoutMs: 15000,
     systemPrompt: "",
     userPromptTemplate: ""
   });
@@ -260,15 +282,33 @@ function App() {
     }
   }
 
+  const grammarTimerRef = useRef(null);
   function runGrammarQueue() {
     if (Date.now() < grammarCooldownUntilRef.current) return;
-    const maxWorkers = 2;
-    while (grammarWorkersRef.current < maxWorkers && grammarQueueRef.current.length > 0) {
+    if (grammarTimerRef.current) return;
+
+    const now = Date.now();
+    const timeSinceLast = now - lastGrammarCheckAtRef.current;
+    if (timeSinceLast < 2000) {
+      grammarTimerRef.current = setTimeout(() => {
+        grammarTimerRef.current = null;
+        runGrammarQueue();
+      }, 2000 - timeSinceLast);
+      return;
+    }
+
+    const maxWorkers = 1;
+    if (grammarWorkersRef.current < maxWorkers && grammarQueueRef.current.length > 0) {
       const nextMsg = grammarQueueRef.current.shift();
       grammarWorkersRef.current += 1;
+      lastGrammarCheckAtRef.current = Date.now();
+
       checkGrammarForMessage(nextMsg).finally(() => {
         grammarWorkersRef.current -= 1;
-        runGrammarQueue();
+        grammarTimerRef.current = setTimeout(() => {
+          grammarTimerRef.current = null;
+          runGrammarQueue();
+        }, 2000);
       });
     }
   }
@@ -401,9 +441,13 @@ function App() {
       showNotice("La sesión de WhatsApp se desconectó.", "error");
     });
     socket.on("new_message", mergeLiveMessage);
+    socket.on("chat_state", ({ chatId, state }) => {
+      setChatStates(prev => ({ ...prev, [chatId]: state }));
+    });
 
     return () => {
       socket.off("new_message", mergeLiveMessage);
+      socket.off("chat_state");
       socket.close();
     };
   }, [apiAuthenticated]);
@@ -413,7 +457,60 @@ function App() {
     setReplyTarget(null);
     setReplyQueue([]);
     setSendingReplyQueueIds({});
+
+    if (selectedChatId) {
+      setChats((prev) =>
+        prev.map((item) => (item.id === selectedChatId ? { ...item, unreadCount: 0 } : item))
+      );
+      markChatAsRead(selectedChatId);
+      const cached = messagesByChat[selectedChatId];
+      if (cached) {
+        setMessages(cached);
+        fetchMessages(selectedChatId, { withLoader: false, background: true });
+      } else {
+        setMessages([]);
+        fetchMessages(selectedChatId, { withLoader: true });
+      }
+    }
   }, [selectedChatId]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      // Ctrl+K to search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+
+      // Alt + Up/Down to navigate chats
+      if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        if (filteredChats.length === 0) return;
+
+        const currentIndex = filteredChats.findIndex(c => c.id === selectedChatId);
+        let nextIndex = 0;
+
+        if (e.key === 'ArrowUp') {
+          nextIndex = currentIndex <= 0 ? filteredChats.length - 1 : currentIndex - 1;
+        } else {
+          nextIndex = currentIndex >= filteredChats.length - 1 ? 0 : currentIndex + 1;
+        }
+
+        const nextChat = filteredChats[nextIndex];
+        if (nextChat) {
+          setSelectedChatId(nextChat.id);
+          // Auto-scroll to active chat item could be added here
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [filteredChats, selectedChatId]);
+
+  useEffect(() => {
+    localStorage.setItem("chatfix_drafts", JSON.stringify(draftsByChat));
+  }, [draftsByChat]);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
@@ -513,7 +610,7 @@ function App() {
     const { withLoader = true, background = false } = options;
     if (!chatId) return;
     const reqId = ++messageFetchReqIdRef.current;
-    if (withLoader) setLoadingMessages(true);
+    if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: true }));
     if (background) setSyncingChat(true);
     try {
       const res = await fetch(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/messages`);
@@ -523,14 +620,22 @@ function App() {
       const safeMessages = (Array.isArray(data) ? data : [])
         .map((msg) => ({ ...msg, _uiId: messageId(msg) }))
         .sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
       setMessagesByChat((prev) => ({ ...prev, [chatId]: safeMessages }));
       if (selectedChatIdRef.current === chatId) {
-        setMessages(safeMessages);
+        setMessages(prev => {
+          // Remove optimistic messages that were successfully sent (matched by body)
+          const optimisticIds = prev.filter(m => m.status === 'sending').map(m => m._uiId);
+          const filtered = prev.filter(m => !optimisticIds.includes(m._uiId));
+          return [...filtered, ...safeMessages.filter(sm => !filtered.some(f => messageId(f) === sm._uiId))].sort(
+            (a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0)
+          );
+        });
       }
     } catch (error) {
       showNotice(error.message, "error");
     } finally {
-      if (withLoader) setLoadingMessages(false);
+      if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: false }));
       if (background) setSyncingChat(false);
     }
   }
@@ -626,20 +731,33 @@ function App() {
 
   async function sendMessage(textToSend) {
     if (!String(textToSend || "").trim()) return;
+    const optimisticMsg = {
+      _uiId: `optimistic-${Date.now()}`,
+      chatId: selectedChatId,
+      body: textToSend,
+      fromMe: true,
+      timestamp: Math.floor(Date.now() / 1000),
+      status: 'sending'
+    };
+    setMessages(prev => [...prev, optimisticMsg]);
     setSending(true);
     try {
       const ok = await postSendMessage({
         text: textToSend,
-        originalText: draft || textToSend,
+        originalText: draftsByChat[selectedChatId] || textToSend,
         replyToMessageId: replyTarget?.id || ""
       });
-      if (!ok) return;
+      if (!ok) {
+        setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
+        return;
+      }
       setDraft("");
       setCorrectedDraft("");
       setReplyTarget(null);
       showNotice("Mensaje enviado.", "success");
       await fetchMessages(selectedChatId, { withLoader: false, background: true });
     } catch (error) {
+      setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
       showNotice(error.message, "error");
     } finally {
       setSending(false);
@@ -906,7 +1024,11 @@ function App() {
               <QRCode value={qr} size={230} />
             </div>
           ) : (
-            <button className="primary" onClick={() => fetchChats(true)}>
+            <button
+              className="primary"
+              aria-label="Reintentar conexión"
+              onClick={() => fetchChats(true)}
+            >
               Reintentar
             </button>
           )}
@@ -959,10 +1081,11 @@ function App() {
 
         <div className="searchWrap">
           <input
+            ref={searchInputRef}
             type="text"
             value={chatSearch}
             onChange={(e) => setChatSearch(e.target.value)}
-            placeholder="🔍 Buscar chat..."
+            placeholder="🔍 Buscar chat... (Ctrl+K)"
           />
         </div>
 
@@ -970,26 +1093,14 @@ function App() {
           {filteredChats.map((chat) => (
             <button
               key={chat.id}
+              aria-label={`Chat con ${chat.name || chat.id}`}
               className={`chatItem ${chat.id === selectedChatId ? "active" : ""}`}
-              onClick={() => {
-                setSelectedChatId(chat.id);
-                setChats((prev) =>
-                  prev.map((item) =>
-                    item.id === chat.id ? { ...item, unreadCount: 0 } : item
-                  )
-                );
-                markChatAsRead(chat.id);
-                const cached = messagesByChat[chat.id];
-                if (cached) {
-                  setMessages(cached);
-                  fetchMessages(chat.id, { withLoader: false, background: true });
-                } else {
-                  setMessages([]);
-                  fetchMessages(chat.id, { withLoader: true });
-                }
-              }}
+              onClick={() => setSelectedChatId(chat.id)}
             >
-              <div className="chatAvatar">
+              <div
+                className="chatAvatar"
+                style={!chat.avatarUrl ? { background: getAvatarGradient(chat.id) } : {}}
+              >
                 {chat.avatarUrl ? (
                   <img
                     className="chatAvatarImg"
@@ -1023,13 +1134,20 @@ function App() {
 
       <section className="chatPanel">
         <header className="chatHeader">
-          <div>
+          <div className="chatHeaderInfo">
             <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
             <p>
-              {selectedChat?.id || "Sin chat seleccionado"}
-              {selectedChat?.isGroup ? " · Grupo" : ""}
+              {chatStates[selectedChatId] === 'typing' ? (
+                <span className="typingIndicator">Escribiendo...</span>
+              ) : (
+                <>
+                  {selectedChat?.id || "Sin chat seleccionado"}
+                  {selectedChat?.isGroup ? " · Grupo" : ""}
+                </>
+              )}
             </p>
           </div>
+          {syncingChat && <div className="syncProgressBar" />}
           <button
             className="secondary"
             aria-label="Recargar mensajes"
@@ -1041,14 +1159,17 @@ function App() {
         </header>
 
         <div className="messagesArea">
-          {loadingMessages ? <p className="helper">Cargando mensajes...</p> : null}
-          {!loadingMessages && syncingChat ? <p className="helper">Sincronizando...</p> : null}
-          {!loadingMessages && messages.length === 0 ? (
+          {loadingMessages[selectedChatId] ? <p className="helper">Cargando mensajes...</p> : null}
+          {!loadingMessages[selectedChatId] && syncingChat ? <p className="helper">Sincronizando...</p> : null}
+          {!loadingMessages[selectedChatId] && messages.length === 0 ? (
             <p className="helper">Este chat todavía no tiene mensajes visibles.</p>
           ) : null}
 
-          {messages.map((msg) => (
-            <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"}`}>
+          {messages.map((msg, idx) => {
+            const prevMsg = messages[idx - 1];
+            const isConsecutive = prevMsg && prevMsg.fromMe === msg.fromMe;
+            return (
+            <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"} ${isConsecutive ? "consecutive" : ""}`}>
               <article
                 className={`bubble ${
                   !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "incomingGrammarError" : ""
@@ -1087,7 +1208,10 @@ function App() {
                   <img className="msgImage" src={msg.imageDataUrl} alt="Imagen del chat" />
                 ) : null}
                 <p>{msg.body || "[mensaje vacío]"}</p>
-                <time>{formatTime(msg.timestamp)}</time>
+                <div className="bubbleMeta">
+                  <time>{formatTime(msg.timestamp)}</time>
+                  {msg.fromMe && <AckIcon status={msg.status || msg.ack} />}
+                </div>
                 <div className="bubbleActions">
                   <button
                     className="replyBtn"
@@ -1102,7 +1226,7 @@ function App() {
                 </div>
               </article>
             </div>
-          ))}
+          );})}
           <div ref={messagesEndRef} />
         </div>
 
@@ -1111,7 +1235,11 @@ function App() {
             <section className="multiReplyPanel">
               <div className="multiReplyHeader">
                 <p>{replyQueue.length} respuestas en paralelo listas</p>
-                <button className="primary" onClick={sendAllQueuedReplies}>
+                <button
+                  className="primary"
+                  aria-label="Enviar todas las respuestas en cola"
+                  onClick={sendAllQueuedReplies}
+                >
                   Enviar todas
                 </button>
               </div>
@@ -1127,15 +1255,24 @@ function App() {
                   <div className="composerActions">
                     <button
                       className="primary"
+                      aria-label="Enviar respuesta sugerida"
                       disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim()}
                       onClick={() => sendQueuedReply(item)}
                     >
                       {sendingReplyQueueIds[item.localId] ? "Enviando..." : "Enviar"}
                     </button>
-                    <button className="secondary" onClick={() => loadQueuedReplyToComposer(item)}>
+                    <button
+                      className="secondary"
+                      aria-label="Editar respuesta en el editor principal"
+                      onClick={() => loadQueuedReplyToComposer(item)}
+                    >
                       Editar en editor
                     </button>
-                    <button className="secondary" onClick={() => removeQueuedReply(item.localId)}>
+                    <button
+                      className="secondary"
+                      aria-label="Quitar respuesta de la cola"
+                      onClick={() => removeQueuedReply(item.localId)}
+                    >
                       Quitar
                     </button>
                   </div>
@@ -1152,7 +1289,11 @@ function App() {
                 </p>
                 <p className="replyTargetText">{replyTarget.text}</p>
               </div>
-              <button className="secondary" onClick={() => setReplyTarget(null)}>
+              <button
+                className="secondary"
+                aria-label="Cancelar respuesta"
+                onClick={() => setReplyTarget(null)}
+              >
                 Cancelar
               </button>
             </div>
@@ -1348,13 +1489,27 @@ function App() {
             />
 
             <div className="composerActions">
-              <button className="secondary" onClick={checkAiHealth} disabled={checkingAiHealth}>
+              <button
+                className="secondary"
+                aria-label="Probar conexión con IA"
+                onClick={checkAiHealth}
+                disabled={checkingAiHealth}
+              >
                 {checkingAiHealth ? "Probando..." : "Probar conexión"}
               </button>
-              <button className="primary" onClick={saveAiConfig} disabled={savingAiConfig}>
+              <button
+                className="primary"
+                aria-label="Guardar configuración de IA"
+                onClick={saveAiConfig}
+                disabled={savingAiConfig}
+              >
                 {savingAiConfig ? "Guardando..." : "Guardar"}
               </button>
-              <button className="secondary" onClick={() => setShowAiSettings(false)}>
+              <button
+                className="secondary"
+                aria-label="Cerrar configuración"
+                onClick={() => setShowAiSettings(false)}
+              >
                 Cerrar
               </button>
             </div>
