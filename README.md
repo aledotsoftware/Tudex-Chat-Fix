@@ -22,6 +22,20 @@ A diferencia del flujo estándar donde un script edita un mensaje ya enviado, es
 - **Librerías auxiliares:** `axios`, `socket.io`, `mongoose`, `cors`, `dotenv`.
 - **Infraestructura:** Docker + Docker Compose + MongoDB.
 
+## 🧠 Arquitectura Centralizada
+
+El sistema ya opera con arquitectura de cache multinivel y fuente de verdad central en backend:
+
+- **Frontend ↔ Backend:** lectura rápida vía cache local (IndexedDB) + backend cacheado.
+- **Backend ↔ Proveedor:** sync asíncrono (cola) para evitar bloquear el read-path.
+- **Modelo canónico multi-proveedor:** `provider`, `accountId`, `conversationId`.
+- **Base para extensibilidad:** registry de adapters (WhatsApp implementado; Telegram listo para integrar).
+
+Documentación técnica:
+
+- [Arquitectura centralizada](./docs/CENTRALIZED_MESSAGING_ARCHITECTURE.md)
+- [Runbook operativo](./docs/OPERATIONS_RUNBOOK.md)
+
 ## 🚀 Instalación y Configuración
 
 ### 1. Configurar IA local (LM Studio)

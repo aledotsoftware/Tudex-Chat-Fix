@@ -7,6 +7,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const { ProviderRegistry } = require('./providers/provider-registry');
+const { WhatsAppAdapter } = require('./providers/whatsapp-adapter');
 require('dotenv').config();
 
 const app = express();
@@ -25,14 +27,26 @@ let lastWhatsappReadyAt = null;
 let lastWhatsappDisconnectReason = null;
 let modelsCache = { provider: '', expiresAt: 0, data: [] };
 const avatarCache = new Map();
+const l1ChatsCache = new Map();
+const l1MessagesCache = new Map();
+const syncQueue = [];
+const syncPendingKeys = new Set();
+const syncInFlightKeys = new Set();
+const syncStateMemory = new Map();
+let syncWorkerRunning = false;
 const AVATAR_TTL_MS = Number(process.env.AVATAR_TTL_MS || 10 * 60 * 1000);
 const AVATAR_FETCH_LIMIT = Number(process.env.AVATAR_FETCH_LIMIT || 40);
 const AVATAR_FETCH_TIMEOUT_MS = Number(process.env.AVATAR_FETCH_TIMEOUT_MS || 7000);
+const CHATS_CACHE_TTL_MS = Number(process.env.CHATS_CACHE_TTL_MS || 5000);
+const MESSAGES_CACHE_TTL_MS = Number(process.env.MESSAGES_CACHE_TTL_MS || 5000);
+const DEFAULT_PROVIDER = 'whatsapp';
+const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 let aiErrorLogState = {
   signature: '',
   count: 0,
   lastAt: 0
 };
+let providerRegistry = null;
 
 // API Key authentication middleware
 const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui'; 
@@ -108,11 +122,19 @@ app.get('/api/check-auth', (req, res) => {
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatfix')
-  .then(() => console.log('✅ MongoDB connected'))
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    await ensureCanonicalProviderFields();
+  })
   .catch(err => console.error('❌ MongoDB error:', err));
 
 const MessageSchema = new mongoose.Schema({
   id: { type: String, unique: true, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
+  conversationId: { type: String, index: true },
+  providerMessageId: { type: String, index: true },
+  conversationKey: { type: String, index: true },
   chatId: { type: String, index: true },
   from: String,
   to: String,
@@ -128,19 +150,46 @@ const MessageSchema = new mongoose.Schema({
   sentText: String,
   timestamp: Number
 }, { timestamps: true });
+MessageSchema.index({ provider: 1, accountId: 1, conversationId: 1, timestamp: -1 });
+MessageSchema.index(
+  { provider: 1, accountId: 1, providerMessageId: 1 },
+  { unique: true, sparse: true }
+);
 
 const Message = mongoose.model('Message', MessageSchema);
 
 const ChatSchema = new mongoose.Schema({
   id: { type: String, unique: true, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
+  conversationId: { type: String, index: true },
+  conversationKey: { type: String, index: true },
   name: String,
   unreadCount: { type: Number, default: 0 },
   timestamp: Number,
   isGroup: Boolean,
-  avatarUrl: String
+  avatarUrl: String,
+  lastSyncedAt: Date
 }, { timestamps: true });
+ChatSchema.index({ provider: 1, accountId: 1, timestamp: -1 });
+ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: true, sparse: true });
 
 const Chat = mongoose.model('Chat', ChatSchema);
+
+const SyncStateSchema = new mongoose.Schema({
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
+  conversationId: { type: String, index: true },
+  kind: { type: String, enum: ['chats', 'messages'], index: true },
+  status: { type: String, enum: ['idle', 'queued', 'syncing', 'ok', 'error'], default: 'idle' },
+  requestedLimit: Number,
+  lastRequestedAt: Date,
+  lastStartedAt: Date,
+  lastFinishedAt: Date,
+  lastError: String
+}, { timestamps: true });
+SyncStateSchema.index({ provider: 1, accountId: 1, conversationId: 1, kind: 1 }, { unique: true });
+const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
 const AiSettingsSchema = new mongoose.Schema({
   key: { type: String, unique: true },
@@ -195,6 +244,209 @@ async function saveAiConfig(nextConfig) {
   );
 
   return aiConfig;
+}
+
+function normalizeProvider(value) {
+  const normalized = String(value || DEFAULT_PROVIDER).trim().toLowerCase();
+  return normalized || DEFAULT_PROVIDER;
+}
+
+function normalizeAccountId(value) {
+  const normalized = String(value || DEFAULT_ACCOUNT_ID).trim().toLowerCase();
+  return normalized || DEFAULT_ACCOUNT_ID;
+}
+
+function buildConversationKey(provider, accountId, conversationId) {
+  return `${provider}:${accountId}:${conversationId}`;
+}
+
+function parseProviderContext(req = {}) {
+  const provider = normalizeProvider(req.query?.provider || req.body?.provider || DEFAULT_PROVIDER);
+  const accountId = normalizeAccountId(req.query?.accountId || req.body?.accountId || DEFAULT_ACCOUNT_ID);
+  return { provider, accountId };
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+function getL1CachedValue(cacheMap, key) {
+  const entry = cacheMap.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    cacheMap.delete(key);
+    return null;
+  }
+  return entry.value;
+}
+
+function setL1CachedValue(cacheMap, key, value, ttlMs) {
+  cacheMap.set(key, {
+    value,
+    expiresAt: Date.now() + ttlMs
+  });
+}
+
+function chatsCacheKey(provider, accountId) {
+  return `${provider}:${accountId}:chats`;
+}
+
+function messagesCacheKey(provider, accountId, conversationId, limit) {
+  return `${provider}:${accountId}:${conversationId}:limit:${limit}`;
+}
+
+function invalidateChatsCache(provider, accountId) {
+  l1ChatsCache.delete(chatsCacheKey(provider, accountId));
+}
+
+function invalidateMessagesCache(provider, accountId, conversationId) {
+  const prefix = `${provider}:${accountId}:${conversationId}:limit:`;
+  for (const key of l1MessagesCache.keys()) {
+    if (key.startsWith(prefix)) {
+      l1MessagesCache.delete(key);
+    }
+  }
+}
+
+function getSyncTaskKey(task) {
+  return `${task.kind}:${task.provider}:${task.accountId}:${task.conversationId || '__all__'}`;
+}
+
+function setSyncState(task, patch) {
+  const syncKey = getSyncTaskKey(task);
+  const current = syncStateMemory.get(syncKey) || {
+    provider: task.provider,
+    accountId: task.accountId,
+    conversationId: task.conversationId || '__all__',
+    kind: task.kind,
+    status: 'idle',
+    lastRequestedAt: null,
+    lastStartedAt: null,
+    lastFinishedAt: null,
+    requestedLimit: task.limit || null,
+    lastError: null
+  };
+  const next = { ...current, ...patch };
+  syncStateMemory.set(syncKey, next);
+  SyncState.findOneAndUpdate(
+    {
+      provider: next.provider,
+      accountId: next.accountId,
+      conversationId: next.conversationId,
+      kind: next.kind
+    },
+    {
+      provider: next.provider,
+      accountId: next.accountId,
+      conversationId: next.conversationId,
+      kind: next.kind,
+      status: next.status,
+      requestedLimit: next.requestedLimit,
+      lastRequestedAt: next.lastRequestedAt,
+      lastStartedAt: next.lastStartedAt,
+      lastFinishedAt: next.lastFinishedAt,
+      lastError: next.lastError
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  ).catch((error) => {
+    console.error('⚠️ SyncState persistence error:', error.message);
+  });
+  return next;
+}
+
+function getSyncStateSnapshot(provider, accountId, conversationId, kind) {
+  const taskKey = `${kind}:${provider}:${accountId}:${conversationId || '__all__'}`;
+  const local = syncStateMemory.get(taskKey);
+  if (!local) {
+    return {
+      provider,
+      accountId,
+      conversationId: conversationId || '__all__',
+      kind,
+      status: 'idle',
+      lastRequestedAt: null,
+      lastStartedAt: null,
+      lastFinishedAt: null,
+      requestedLimit: null,
+      lastError: null
+    };
+  }
+  return { ...local };
+}
+
+function resolveProviderAdapter(provider) {
+  if (!providerRegistry) {
+    throw new Error('Provider registry not initialized');
+  }
+  return providerRegistry.resolve(provider);
+}
+
+async function ensureCanonicalProviderFields() {
+  const chatResult = await Chat.updateMany(
+    {
+      $or: [
+        { provider: { $exists: false } },
+        { accountId: { $exists: false } },
+        { conversationId: { $exists: false } },
+        { conversationKey: { $exists: false } }
+      ]
+    },
+    [
+      {
+        $set: {
+          provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
+          conversationId: { $ifNull: ['$conversationId', '$id'] },
+          conversationKey: {
+            $concat: [
+              { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+              ':',
+              { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
+              ':',
+              { $ifNull: ['$conversationId', '$id'] }
+            ]
+          }
+        }
+      }
+    ]
+  );
+
+  const messageResult = await Message.updateMany(
+    {
+      $or: [
+        { provider: { $exists: false } },
+        { accountId: { $exists: false } },
+        { conversationId: { $exists: false } },
+        { providerMessageId: { $exists: false } },
+        { conversationKey: { $exists: false } }
+      ]
+    },
+    [
+      {
+        $set: {
+          provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
+          conversationId: { $ifNull: ['$conversationId', '$chatId'] },
+          providerMessageId: { $ifNull: ['$providerMessageId', '$id'] },
+          conversationKey: {
+            $concat: [
+              { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+              ':',
+              { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
+              ':',
+              { $ifNull: ['$conversationId', '$chatId'] }
+            ]
+          }
+        }
+      }
+    ]
+  );
+
+  if (chatResult.modifiedCount > 0 || messageResult.modifiedCount > 0) {
+    console.log(
+      `🧩 Canonical field migration complete chats=${chatResult.modifiedCount} messages=${messageResult.modifiedCount}`
+    );
+  }
 }
 
 function buildUserPrompt(text, template) {
@@ -521,11 +773,24 @@ async function buildReplyPayload(message) {
   }
 }
 
-async function serializeMessage(message, chatId) {
+async function serializeMessage(message, chatId, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const providerMessageId = message?.id?._serialized || `${message?.timestamp}-${Math.random()}`;
+  const canonicalMessageId =
+    provider === DEFAULT_PROVIDER
+      ? providerMessageId
+      : `${provider}:${accountId}:${providerMessageId}`;
   const mediaPayload = await buildMediaPayload(message);
   const replyPayload = await buildReplyPayload(message);
+  const conversationId = chatId;
   return {
-    id: message?.id?._serialized || `${message?.timestamp}-${Math.random()}`,
+    id: canonicalMessageId,
+    provider,
+    accountId,
+    conversationId,
+    providerMessageId,
+    conversationKey: buildConversationKey(provider, accountId, conversationId),
     chatId,
     body: message?.body || '',
     timestamp: message?.timestamp || Math.floor(Date.now() / 1000),
@@ -540,31 +805,41 @@ async function serializeMessage(message, chatId) {
   };
 }
 
-async function upsertChat(waChat, index) {
+async function upsertChat(waChat, index, context = {}) {
   try {
+    const provider = normalizeProvider(context.provider);
+    const accountId = normalizeAccountId(context.accountId);
     const chatId = waChat.id._serialized;
+    const conversationId = chatId;
     const avatarUrl = await getChatAvatar(waChat, index || 0);
+    const now = new Date();
 
     await Chat.findOneAndUpdate(
-      { id: chatId },
+      { provider, accountId, conversationId },
       {
         id: chatId,
+        provider,
+        accountId,
+        conversationId,
+        conversationKey: buildConversationKey(provider, accountId, conversationId),
         name: waChat.name,
         unreadCount: waChat.unreadCount,
         timestamp: waChat.timestamp,
         isGroup: Boolean(waChat.isGroup),
-        avatarUrl
+        avatarUrl,
+        lastSyncedAt: now
       },
       { upsert: true, new: true }
     );
+    invalidateChatsCache(provider, accountId);
   } catch (err) {
     console.error(`❌ Error upserting chat ${waChat.id?._serialized}:`, err.message);
   }
 }
 
-async function upsertMessage(waMsg, chatId, extraData = {}) {
+async function upsertMessage(waMsg, chatId, extraData = {}, context = {}) {
   try {
-    const payload = await serializeMessage(waMsg, chatId);
+    const payload = await serializeMessage(waMsg, chatId, context);
     const updateData = {
       ...payload,
       ...extraData
@@ -574,10 +849,16 @@ async function upsertMessage(waMsg, chatId, extraData = {}) {
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     await Message.findOneAndUpdate(
-      { id: payload.id },
+      {
+        provider: payload.provider,
+        accountId: payload.accountId,
+        providerMessageId: payload.providerMessageId
+      },
       { $set: updateData },
       { upsert: true, new: true }
     );
+    invalidateMessagesCache(payload.provider, payload.accountId, payload.conversationId);
+    invalidateChatsCache(payload.provider, payload.accountId);
     return payload;
   } catch (err) {
     console.error(`❌ Error upserting message ${waMsg.id?._serialized}:`, err.message);
@@ -585,13 +866,16 @@ async function upsertMessage(waMsg, chatId, extraData = {}) {
   }
 }
 
-async function syncAllChats() {
-  if (!whatsappReady) return;
-  console.log('🔄 Starting full chat sync...');
+async function syncAllChats(context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const adapter = resolveProviderAdapter(provider);
+  if (!adapter.isReady()) return;
+  console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
-    const chats = await client.getChats();
+    const chats = await adapter.listChats({ accountId });
     for (let i = 0; i < chats.length; i++) {
-      await upsertChat(chats[i], i);
+      await upsertChat(chats[i], i, { provider, accountId });
     }
     console.log(`✅ Synced ${chats.length} chats.`);
   } catch (err) {
@@ -599,17 +883,114 @@ async function syncAllChats() {
   }
 }
 
-async function syncChatMessages(chatId, limit = 50) {
-  if (!whatsappReady) return;
+async function syncChatMessages(chatId, limit = 50, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const adapter = resolveProviderAdapter(provider);
+  if (!adapter.isReady()) return;
   try {
-    const chat = await client.getChatById(chatId);
-    const messages = await chat.fetchMessages({ limit });
+    const messages = await adapter.fetchMessages({
+      accountId,
+      conversationId: chatId,
+      limit
+    });
     for (const m of messages) {
-      await upsertMessage(m, chatId);
+      await upsertMessage(m, chatId, {}, { provider, accountId });
     }
   } catch (err) {
     console.error(`❌ Error syncing messages for chat ${chatId}:`, err.message);
   }
+}
+
+async function executeSyncTask(task) {
+  const adapter = resolveProviderAdapter(task.provider);
+  if (!adapter.isReady()) {
+    setSyncState(task, {
+      status: 'idle',
+      lastFinishedAt: nowIso(),
+      lastError: null
+    });
+    return;
+  }
+  setSyncState(task, {
+    status: 'syncing',
+    lastStartedAt: nowIso(),
+    lastError: null
+  });
+  try {
+    if (task.kind === 'chats') {
+      await syncAllChats({ provider: task.provider, accountId: task.accountId });
+    } else {
+      await syncChatMessages(task.conversationId, task.limit || 80, {
+        provider: task.provider,
+        accountId: task.accountId
+      });
+    }
+    setSyncState(task, {
+      status: 'ok',
+      lastFinishedAt: nowIso(),
+      lastError: null
+    });
+  } catch (error) {
+    setSyncState(task, {
+      status: 'error',
+      lastFinishedAt: nowIso(),
+      lastError: String(error?.message || error)
+    });
+  }
+}
+
+async function startSyncWorker() {
+  if (syncWorkerRunning) return;
+  syncWorkerRunning = true;
+  try {
+    while (syncQueue.length > 0) {
+      const task = syncQueue.shift();
+      const key = getSyncTaskKey(task);
+      syncPendingKeys.delete(key);
+      if (syncInFlightKeys.has(key)) {
+        continue;
+      }
+      syncInFlightKeys.add(key);
+      try {
+        await executeSyncTask(task);
+      } finally {
+        syncInFlightKeys.delete(key);
+      }
+    }
+  } finally {
+    syncWorkerRunning = false;
+  }
+}
+
+function enqueueSyncTask(taskInput) {
+  const task = {
+    provider: normalizeProvider(taskInput.provider),
+    accountId: normalizeAccountId(taskInput.accountId),
+    kind: taskInput.kind === 'messages' ? 'messages' : 'chats',
+    conversationId: taskInput.kind === 'messages' ? String(taskInput.conversationId || '') : '__all__',
+    limit: Number(taskInput.limit || 80),
+    reason: String(taskInput.reason || '')
+  };
+
+  if (task.kind === 'messages' && !task.conversationId) {
+    return;
+  }
+
+  const key = getSyncTaskKey(task);
+  setSyncState(task, {
+    status: 'queued',
+    lastRequestedAt: nowIso(),
+    requestedLimit: task.limit
+  });
+
+  if (syncPendingKeys.has(key) || syncInFlightKeys.has(key)) {
+    return;
+  }
+
+  syncPendingKeys.add(key);
+  syncQueue.push(task);
+  setImmediate(startSyncWorker);
 }
 
 function parsePositiveInt(value, fallback, max) {
@@ -741,6 +1122,21 @@ const client = new Client({
   }
 });
 
+providerRegistry = new ProviderRegistry();
+providerRegistry.register(
+  new WhatsAppAdapter({
+    client,
+    getStatus: () => currentStatus,
+    isReady: () => whatsappReady && currentStatus === 'authenticated',
+    markRead: async ({ conversationId }) => {
+      const chat = await client.getChatById(conversationId);
+      if (chat) {
+        await chat.sendSeen();
+      }
+    }
+  })
+);
+
 client.on('qr', (qr) => {
   console.log('📡 QR Received - Emitting to frontend...');
   lastQR = qr;
@@ -759,8 +1155,13 @@ client.on('ready', () => {
   lastWhatsappDisconnectReason = null;
   io.emit('ready', { status: 'authenticated' });
 
-  // Start background sync
-  syncAllChats();
+  // Start background sync (async queue, read-path safe)
+  enqueueSyncTask({
+    kind: 'chats',
+    provider: DEFAULT_PROVIDER,
+    accountId: DEFAULT_ACCOUNT_ID,
+    reason: 'provider_ready'
+  });
 });
 
 client.on('authenticated', () => {
@@ -800,7 +1201,12 @@ client.on('message_create', async (msg) => {
   }
 
   // Cache and Emit
-  const payload = await upsertMessage(msg, chatId);
+  const payload = await upsertMessage(
+    msg,
+    chatId,
+    {},
+    { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }
+  );
   if (payload) {
     io.emit('new_message', payload);
   }
@@ -808,7 +1214,7 @@ client.on('message_create', async (msg) => {
   // Also update chat timestamp/unread in cache
   try {
     const chat = await msg.getChat();
-    await upsertChat(chat);
+    await upsertChat(chat, 0, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
   } catch (err) {
     console.error('⚠️ Failed to update chat on message_create:', err.message);
   }
@@ -1018,15 +1424,43 @@ app.get('/api/ai/models', async (_req, res) => {
 // Get chats - helps the frontend list who we can talk to
 app.get('/api/chats', async (req, res) => {
   try {
-    // Serve from cache first
-    const cachedChats = await Chat.find().sort({ timestamp: -1 }).lean();
+    const { provider, accountId } = parseProviderContext(req);
+    const cacheKey = chatsCacheKey(provider, accountId);
+    const l1Cached = getL1CachedValue(l1ChatsCache, cacheKey);
 
-    // If WhatsApp is ready, trigger background sync to update cache
-    if (whatsappReady) {
-      syncAllChats();
+    if (l1Cached) {
+      enqueueSyncTask({
+        kind: 'chats',
+        provider,
+        accountId,
+        reason: 'api_chats_l1_hit'
+      });
+      return res.json({
+        items: l1Cached,
+        provider,
+        accountId,
+        cache: { level: 'l1', staleWhileRevalidate: true },
+        syncState: getSyncStateSnapshot(provider, accountId, '__all__', 'chats')
+      });
     }
 
-    res.json(cachedChats);
+    const cachedChats = await Chat.find({ provider, accountId }).sort({ timestamp: -1 }).lean();
+    setL1CachedValue(l1ChatsCache, cacheKey, cachedChats, CHATS_CACHE_TTL_MS);
+
+    enqueueSyncTask({
+      kind: 'chats',
+      provider,
+      accountId,
+      reason: 'api_chats'
+    });
+
+    res.json({
+      items: cachedChats,
+      provider,
+      accountId,
+      cache: { level: 'mongo', staleWhileRevalidate: true },
+      syncState: getSyncStateSnapshot(provider, accountId, '__all__', 'chats')
+    });
   } catch (error) {
     console.error('❌ Fetch chats error:', error.message);
     res.status(500).json({ error: 'Failed to fetch chats' });
@@ -1037,13 +1471,38 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
   try {
     const chatId = req.params.chatId;
     const limit = parsePositiveInt(req.query.limit, 80, 200);
+    const { provider, accountId } = parseProviderContext(req);
 
     if (!chatId) {
       return res.status(400).json({ error: 'Missing chatId' });
     }
 
-    // Serve from cache
-    const cachedMessages = await Message.find({ chatId })
+    const l1Key = messagesCacheKey(provider, accountId, chatId, limit);
+    const l1Cached = getL1CachedValue(l1MessagesCache, l1Key);
+    if (l1Cached) {
+      enqueueSyncTask({
+        kind: 'messages',
+        provider,
+        accountId,
+        conversationId: chatId,
+        limit,
+        reason: 'api_messages_l1_hit'
+      });
+      return res.json({
+        items: l1Cached,
+        provider,
+        accountId,
+        conversationId: chatId,
+        cache: { level: 'l1', staleWhileRevalidate: true },
+        syncState: getSyncStateSnapshot(provider, accountId, chatId, 'messages')
+      });
+    }
+
+    const cachedMessages = await Message.find({
+      provider,
+      accountId,
+      conversationId: chatId
+    })
       .sort({ timestamp: -1 })
       .limit(limit)
       .lean();
@@ -1051,15 +1510,24 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
     // Reverse to chronological order for frontend
     const results = cachedMessages.reverse();
 
-    // If WhatsApp is ready, sync recent messages in background
-    if (whatsappReady) {
-      syncChatMessages(chatId, limit).then(async () => {
-        // Optionally emit an update if we found new messages during sync
-        // But message_create should handle most live updates.
-      });
-    }
+    setL1CachedValue(l1MessagesCache, l1Key, results, MESSAGES_CACHE_TTL_MS);
+    enqueueSyncTask({
+      kind: 'messages',
+      provider,
+      accountId,
+      conversationId: chatId,
+      limit,
+      reason: 'api_messages'
+    });
 
-    res.json(results);
+    res.json({
+      items: results,
+      provider,
+      accountId,
+      conversationId: chatId,
+      cache: { level: 'mongo', staleWhileRevalidate: true },
+      syncState: getSyncStateSnapshot(provider, accountId, chatId, 'messages')
+    });
   } catch (error) {
     console.error('❌ Fetch messages error details:', error);
     res.status(500).json({ 
@@ -1072,25 +1540,29 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
 app.post('/api/chats/:chatId/read', async (req, res) => {
   try {
     const { chatId } = req.params;
+    const { provider, accountId } = parseProviderContext(req);
     if (!chatId) {
       return res.status(400).json({ error: 'Missing chatId' });
     }
 
     // Update local cache first
-    await Chat.findOneAndUpdate({ id: chatId }, { unreadCount: 0 });
+    await Chat.findOneAndUpdate(
+      { provider, accountId, conversationId: chatId },
+      { unreadCount: 0 },
+      { new: true }
+    );
+    invalidateChatsCache(provider, accountId);
 
-    if (whatsappReady) {
+    const adapter = resolveProviderAdapter(provider);
+    if (adapter.isReady()) {
       try {
-        const chat = await client.getChatById(chatId);
-        if (chat) {
-          await chat.sendSeen();
-        }
+        await adapter.markRead({ accountId, conversationId: chatId });
       } catch (waErr) {
-        console.warn(`⚠️ Failed to sendSeen to WhatsApp for ${chatId}:`, waErr.message);
+        console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, waErr.message);
       }
     }
 
-    res.json({ success: true });
+    res.json({ success: true, provider, accountId, conversationId: chatId });
   } catch (error) {
     console.error('❌ Mark read error:', error.message);
     res.status(500).json({ error: 'Failed to mark chat as read' });
@@ -1101,6 +1573,13 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 // Accepts chatId via: route param, query string, or JSON body
 app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
   try {
+    const { provider, accountId } = parseProviderContext(req);
+    if (provider !== DEFAULT_PROVIDER) {
+      return res.status(501).json({
+        error: 'Provider not implemented yet',
+        provider
+      });
+    }
     if (!ensureWhatsappReady(res)) return;
 
     // 1. Resolve chatId from: route param > query > body
@@ -1304,8 +1783,18 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
     res.json({
       success: true,
       chatId,
+      provider,
+      accountId,
       isNewsletter,
       message: isNewsletter ? 'Published to channel' : 'Message sent'
+    });
+    enqueueSyncTask({
+      kind: 'messages',
+      provider,
+      accountId,
+      conversationId: chatId,
+      limit: 120,
+      reason: 'send_message'
     });
   } catch (error) {
     const detail = typeof error === 'object'
@@ -1322,9 +1811,15 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 app.get('/api/status', async (_req, res) => {
   res.json({
     whatsappStatus: currentStatus,
+    providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
     hasQr: Boolean(lastQR),
     lastWhatsappReadyAt,
     lastWhatsappDisconnectReason,
+    syncQueue: {
+      queued: syncQueue.length,
+      pendingKeys: syncPendingKeys.size,
+      inFlightKeys: syncInFlightKeys.size
+    },
     uptimeSec: Math.floor(process.uptime())
   });
 });
@@ -1343,6 +1838,32 @@ app.get('/api/health', async (_req, res) => {
     uptimeSec: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });
+});
+
+app.get('/api/sync/state', async (req, res) => {
+  try {
+    const { provider, accountId } = parseProviderContext(req);
+    const kind = req.query.kind === 'messages' ? 'messages' : 'chats';
+    const conversationId = String(req.query.conversationId || (kind === 'messages' ? '' : '__all__')).trim();
+    const safeConversationId = conversationId || '__all__';
+    const local = getSyncStateSnapshot(provider, accountId, safeConversationId, kind);
+    const persisted = await SyncState.findOne({
+      provider,
+      accountId,
+      conversationId: safeConversationId,
+      kind
+    }).lean();
+    res.json({
+      provider,
+      accountId,
+      conversationId: safeConversationId,
+      kind,
+      local,
+      persisted: persisted || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch sync state', detail: error.message });
+  }
 });
 
 const PORT = process.env.PORT || 3002;

@@ -1,0 +1,89 @@
+const DB_NAME = "chatfix-cache";
+const DB_VERSION = 1;
+const STORE_NAME = "kv";
+
+const CHATS_PREFIX = "chats";
+const MESSAGES_PREFIX = "messages";
+
+function getStorageKey(prefix, provider, accountId, conversationId = "") {
+  return `${prefix}:${provider}:${accountId}:${conversationId}`;
+}
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      resolve(null);
+      return;
+    }
+    const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME, { keyPath: "key" });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function readEntry(key) {
+  const db = await openDb();
+  if (!db) return null;
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readonly");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.get(key);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function writeEntry(key, value) {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.put({
+      key,
+      value,
+      savedAt: Date.now()
+    });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function getCachedChats(provider, accountId) {
+  try {
+    const key = getStorageKey(CHATS_PREFIX, provider, accountId);
+    const entry = await readEntry(key);
+    return Array.isArray(entry?.value) ? entry.value : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+export async function setCachedChats(provider, accountId, chats) {
+  if (!Array.isArray(chats)) return;
+  const key = getStorageKey(CHATS_PREFIX, provider, accountId);
+  await writeEntry(key, chats);
+}
+
+export async function getCachedMessages(provider, accountId, conversationId) {
+  if (!conversationId) return [];
+  try {
+    const key = getStorageKey(MESSAGES_PREFIX, provider, accountId, conversationId);
+    const entry = await readEntry(key);
+    return Array.isArray(entry?.value) ? entry.value : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+export async function setCachedMessages(provider, accountId, conversationId, messages) {
+  if (!conversationId || !Array.isArray(messages)) return;
+  const key = getStorageKey(MESSAGES_PREFIX, provider, accountId, conversationId);
+  await writeEntry(key, messages);
+}

@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { io } from "socket.io-client";
 import QRCode from "react-qr-code";
+import {
+  getCachedChats,
+  getCachedMessages,
+  setCachedChats,
+  setCachedMessages
+} from "./cacheStore";
 
 const runtimeHost =
   typeof window !== "undefined" ? window.location.hostname : "localhost";
@@ -18,6 +24,21 @@ console.log("[ChatFix] API target:", defaultApiUrl);
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
 const MOBILE_BREAKPOINT_PX = 920;
+const DEFAULT_PROVIDER = "whatsapp";
+const DEFAULT_ACCOUNT_ID = "default";
+
+function parseApiItemsPayload(payload) {
+  if (Array.isArray(payload)) {
+    return {
+      items: payload,
+      syncState: null
+    };
+  }
+  return {
+    items: Array.isArray(payload?.items) ? payload.items : [],
+    syncState: payload?.syncState || null
+  };
+}
 
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
@@ -597,6 +618,16 @@ function App() {
   }, [draftsByChat]);
 
   useEffect(() => {
+    if (!Array.isArray(chats) || chats.length === 0) return;
+    setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chats).catch(() => {});
+  }, [chats]);
+
+  useEffect(() => {
+    if (!selectedChatId || !Array.isArray(messages) || messages.length === 0) return;
+    setCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, selectedChatId, messages).catch(() => {});
+  }, [messages, selectedChatId]);
+
+  useEffect(() => {
     autoResizeDraftInput();
     if (shouldStickToBottomRef.current) {
       scrollMessagesToBottom("auto");
@@ -689,15 +720,28 @@ function App() {
     if (!apiAuthenticated) return;
     setLoadingChats(true);
     try {
-      const res = await fetch(`${API_URL}/api/chats`);
+      const cachedChats = await getCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID);
+      if (cachedChats.length > 0) {
+        const sortedCached = [...cachedChats].sort(
+          (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
+        );
+        setChats(sortedCached);
+      }
+
+      const url = new URL(`${API_URL}/api/chats`);
+      url.searchParams.set("provider", DEFAULT_PROVIDER);
+      url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error("No se pudieron cargar los chats.");
 
-      const data = await res.json();
-      const safeChats = (Array.isArray(data) ? data : []).sort(
+      const payload = await res.json();
+      const { items } = parseApiItemsPayload(payload);
+      const safeChats = items.sort(
         (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
       );
 
       setChats(safeChats);
+      await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, safeChats);
 
       if (safeChats.length === 0) {
         setSelectedChatId("");
@@ -736,15 +780,26 @@ function App() {
     if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: true }));
     if (background) setSyncingChat(true);
     try {
-      const res = await fetch(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/messages`);
+      const cachedMessages = await getCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chatId);
+      if (cachedMessages.length > 0 && selectedChatIdRef.current === chatId) {
+        setMessages(cachedMessages);
+        setMessagesByChat((prev) => ({ ...prev, [chatId]: cachedMessages }));
+      }
+
+      const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/messages`);
+      url.searchParams.set("provider", DEFAULT_PROVIDER);
+      url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error("No se pudieron cargar los mensajes.");
-      const data = await res.json();
+      const payload = await res.json();
       if (reqId !== messageFetchReqIdRef.current) return;
-      const safeMessages = (Array.isArray(data) ? data : [])
+      const { items } = parseApiItemsPayload(payload);
+      const safeMessages = items
         .map((msg) => ({ ...msg, _uiId: messageId(msg) }))
         .sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
 
       setMessagesByChat((prev) => ({ ...prev, [chatId]: safeMessages }));
+      await setCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chatId, safeMessages);
       if (selectedChatIdRef.current === chatId) {
         setMessages(prev => {
           // Remove optimistic messages that were successfully sent (matched by body)
@@ -766,7 +821,10 @@ function App() {
   async function markChatAsRead(chatId) {
     if (!chatId) return;
     try {
-      await fetch(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/read`, {
+      const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/read`);
+      url.searchParams.set("provider", DEFAULT_PROVIDER);
+      url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+      await fetch(url.toString(), {
         method: "POST"
       });
       setChats((prev) =>
@@ -838,6 +896,8 @@ function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          provider: DEFAULT_PROVIDER,
+          accountId: DEFAULT_ACCOUNT_ID,
           chatId: selectedChatId,
           text,
           originalText: payload?.originalText || text,
