@@ -54,6 +54,19 @@ function formatTime(unixTs) {
   });
 }
 
+function formatChatTime(unixTs) {
+  const value = Number(unixTs);
+  if (!value) return "";
+  const date = new Date(value * 1000);
+  const now = new Date();
+  const sameDay =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+  if (sameDay) return formatTime(value);
+  return date.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
+}
+
 function messageId(msg) {
   return msg.id || `${msg.chatId}-${msg.timestamp}-${msg.body}-${msg.fromMe}`;
 }
@@ -1111,7 +1124,7 @@ function App() {
         <div className="bg-blob blob-1"></div>
         <div className="bg-blob blob-2"></div>
       </div>
-      <main className="waApp">
+      <main className={`waApp ${selectedChatId ? "chatOpen" : ""}`}>
         <aside className="sidebar">
         <header className="sidebarHeader">
           <h2>Chats</h2>
@@ -1182,10 +1195,13 @@ function App() {
               <div className="chatText">
                 <div className="chatNameRow">
                   <div className="chatName">{chat.name || chat.id}</div>
-                  {chat.isGroup ? <span className="chatKindBadge">Grupo</span> : null}
-                  {chat.unreadCount > 0 ? (
-                    <span className="unreadBadge">{chat.unreadCount}</span>
-                  ) : null}
+                  <div className="chatTopMeta">
+                    {chat.timestamp ? <time className="chatTime">{formatChatTime(chat.timestamp)}</time> : null}
+                    {chat.isGroup ? <span className="chatKindBadge">Grupo</span> : null}
+                    {chat.unreadCount > 0 ? (
+                      <span className="unreadBadge">{chat.unreadCount}</span>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="chatMeta">
                   {chat.unreadCount
@@ -1197,32 +1213,62 @@ function App() {
           ))}
           {filteredChats.length === 0 ? <p className="helper">No hay chats.</p> : null}
         </div>
+        <footer className="sidebarFooter">
+          <span>Ctrl+K buscar</span>
+          <span>Alt+↑↓ navegar</span>
+        </footer>
       </aside>
 
       <section className="chatPanel">
         <header className="chatHeader">
-          <div className="chatHeaderInfo">
-            <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
-            <p>
-              {chatStates[selectedChatId] === 'typing' ? (
-                <span className="typingIndicator">Escribiendo...</span>
+          <div className="chatHeaderLeft">
+            <button
+              className="secondary mobileBackBtn"
+              aria-label="Volver a lista de chats"
+              onClick={() => setSelectedChatId("")}
+            >
+              ←
+            </button>
+            <div
+              className="chatHeaderAvatar"
+              style={!selectedChat?.avatarUrl ? { background: getAvatarGradient(selectedChat?.id) } : {}}
+            >
+              {selectedChat?.avatarUrl ? (
+                <img
+                  className="chatAvatarImg"
+                  src={selectedChat.avatarUrl}
+                  alt={`Foto de ${selectedChat.name || selectedChat.id}`}
+                  loading="lazy"
+                />
               ) : (
-                <>
-                  {selectedChat?.id || "Sin chat seleccionado"}
-                  {selectedChat?.isGroup ? " · Grupo" : ""}
-                </>
+                initialsForChat(selectedChat)
               )}
-            </p>
+            </div>
+            <div className="chatHeaderInfo">
+              <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
+              <p>
+                {chatStates[selectedChatId] === 'typing' ? (
+                  <span className="typingIndicator">Escribiendo...</span>
+                ) : (
+                  <>
+                    {selectedChat?.id || "Sin chat seleccionado"}
+                    {selectedChat?.isGroup ? " · Grupo" : ""}
+                  </>
+                )}
+              </p>
+            </div>
           </div>
-          {syncingChat && <div className="syncProgressBar" />}
-          <button
-            className="secondary"
-            aria-label="Recargar mensajes"
-            onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
-            disabled={!selectedChatId}
-          >
-            Recargar
-          </button>
+          <div className="chatHeaderActions">
+            {syncingChat && <div className="syncProgressBar" />}
+            <button
+              className="secondary"
+              aria-label="Recargar mensajes"
+              onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
+              disabled={!selectedChatId}
+            >
+              Recargar
+            </button>
+          </div>
         </header>
 
         <div
