@@ -17,6 +17,7 @@ console.log("[ChatFix] API target:", defaultApiUrl);
 
 const API_URL = import.meta.env.VITE_API_URL || defaultApiUrl;
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || defaultApiUrl;
+const MOBILE_BREAKPOINT_PX = 920;
 
 const originalFetch = window.fetch;
 window.fetch = async (...args) => {
@@ -144,6 +145,11 @@ function App() {
   const [checkingAiHealth, setCheckingAiHealth] = useState(false);
   const [aiHealth, setAiHealth] = useState(null);
   const [aiModels, setAiModels] = useState([]);
+  const [isMobileLayout, setIsMobileLayout] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches
+      : false
+  );
 
   const [chatSearch, setChatSearch] = useState("");
   const [chats, setChats] = useState([]);
@@ -252,6 +258,16 @@ function App() {
     } else if (messages.length > 0) {
       setShowJumpToLatest(true);
     }
+  }
+
+  function autoResizeDraftInput() {
+    const input = draftInputRef.current;
+    if (!input) return;
+    const maxHeight = 180;
+    input.style.height = "auto";
+    const nextHeight = Math.min(input.scrollHeight, maxHeight);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > maxHeight ? "auto" : "hidden";
   }
 
   function canonicalText(text) {
@@ -452,6 +468,19 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
+    const handleChange = (event) => setIsMobileLayout(event.matches);
+    setIsMobileLayout(mediaQuery.matches);
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", handleChange);
+      return () => mediaQuery.removeEventListener("change", handleChange);
+    }
+    mediaQuery.addListener(handleChange);
+    return () => mediaQuery.removeListener(handleChange);
+  }, []);
+
+  useEffect(() => {
     if (!apiAuthenticated) {
       if (socketRef.current) { socketRef.current.close(); socketRef.current = null; }
       return;
@@ -510,19 +539,22 @@ function App() {
     shouldStickToBottomRef.current = true;
     previousMessageCountRef.current = 0;
 
-    if (selectedChatId) {
-      setChats((prev) =>
-        prev.map((item) => (item.id === selectedChatId ? { ...item, unreadCount: 0 } : item))
-      );
-      markChatAsRead(selectedChatId);
-      const cached = messagesByChat[selectedChatId];
-      if (cached) {
-        setMessages(cached);
-        fetchMessages(selectedChatId, { withLoader: false, background: true });
-      } else {
-        setMessages([]);
-        fetchMessages(selectedChatId, { withLoader: true });
-      }
+    if (!selectedChatId) {
+      setMessages([]);
+      return;
+    }
+
+    setChats((prev) =>
+      prev.map((item) => (item.id === selectedChatId ? { ...item, unreadCount: 0 } : item))
+    );
+    markChatAsRead(selectedChatId);
+    const cached = messagesByChat[selectedChatId];
+    if (cached) {
+      setMessages(cached);
+      fetchMessages(selectedChatId, { withLoader: false, background: true });
+    } else {
+      setMessages([]);
+      fetchMessages(selectedChatId, { withLoader: true });
     }
   }, [selectedChatId]);
 
@@ -563,6 +595,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem("chatfix_drafts", JSON.stringify(draftsByChat));
   }, [draftsByChat]);
+
+  useEffect(() => {
+    autoResizeDraftInput();
+    if (shouldStickToBottomRef.current) {
+      scrollMessagesToBottom("auto");
+    }
+  }, [draft, selectedChatId]);
 
   useEffect(() => {
     if (sessionStatus !== "authenticated") return;
@@ -668,8 +707,9 @@ function App() {
 
       const exists = safeChats.some((chat) => chat.id === selectedChatIdRef.current);
       const nextChatId = exists ? selectedChatIdRef.current : safeChats[0].id;
+      const shouldAutoSelect = !isMobileLayout && (selectFirst || !selectedChatIdRef.current || !exists);
 
-      if (selectFirst || !selectedChatIdRef.current || !exists) {
+      if (shouldAutoSelect) {
         setSelectedChatId(nextChatId);
         const cached = messagesByChat[nextChatId];
         if (cached) {
@@ -678,6 +718,9 @@ function App() {
         } else {
           await fetchMessages(nextChatId, { withLoader: true });
         }
+      } else if (!exists) {
+        setSelectedChatId("");
+        setMessages([]);
       }
     } catch (error) {
       showNotice(error.message, "error");
