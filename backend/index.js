@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { ProviderRegistry } = require('./providers/provider-registry');
 const { WhatsAppAdapter } = require('./providers/whatsapp-adapter');
 require('dotenv').config();
@@ -41,12 +42,24 @@ const CHATS_CACHE_TTL_MS = Number(process.env.CHATS_CACHE_TTL_MS || 5000);
 const MESSAGES_CACHE_TTL_MS = Number(process.env.MESSAGES_CACHE_TTL_MS || 5000);
 const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
+const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
+const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
+const STATUS_POLL_INTERVAL_MS = Number(process.env.STATUS_POLL_INTERVAL_MS || 60 * 1000);
 let aiErrorLogState = {
   signature: '',
   count: 0,
   lastAt: 0
 };
 let providerRegistry = null;
+let statusArchivePollInFlight = false;
+let lastStatusArchiveRunAt = null;
+let lastStatusArchiveStats = {
+  checked: 0,
+  archived: 0,
+  skipped: 0,
+  errors: 0,
+  source: 'idle'
+};
 
 // API Key authentication middleware
 const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui'; 
@@ -103,6 +116,7 @@ app.use((req, res, next) => {
 });
 
 app.use(express.json({ limit: '1mb' }));
+app.use(STATUS_ARCHIVE_PUBLIC_BASE, express.static(STATUS_ARCHIVE_DIR));
 
 // Middleware global para proteger todas las rutas /api/ (excepto health)
 app.use('/api', (req, res, next) => {
@@ -191,6 +205,34 @@ const SyncStateSchema = new mongoose.Schema({
 SyncStateSchema.index({ provider: 1, accountId: 1, conversationId: 1, kind: 1 }, { unique: true });
 const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
+const StatusArchiveSchema = new mongoose.Schema({
+  id: { type: String, unique: true, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
+  providerStatusMessageId: { type: String, required: true, index: true },
+  statusOwnerId: { type: String, index: true },
+  statusOwnerName: String,
+  chatId: String,
+  description: String,
+  caption: String,
+  mediaType: String,
+  mimeType: String,
+  mediaSha256: String,
+  archivedFrom: { type: String, enum: ['event', 'poll'], default: 'poll' },
+  fileName: String,
+  filePath: String,
+  imageUrl: String,
+  timestamp: Number,
+  viewedAt: Date
+}, { timestamps: true });
+StatusArchiveSchema.index(
+  { provider: 1, accountId: 1, providerStatusMessageId: 1 },
+  { unique: true }
+);
+StatusArchiveSchema.index({ provider: 1, accountId: 1, timestamp: -1 });
+
+const StatusArchive = mongoose.model('StatusArchive', StatusArchiveSchema);
+
 const AiSettingsSchema = new mongoose.Schema({
   key: { type: String, unique: true },
   value: mongoose.Schema.Types.Mixed
@@ -268,6 +310,45 @@ function parseProviderContext(req = {}) {
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function ensureDirectory(dirPath) {
+  fs.mkdirSync(dirPath, { recursive: true });
+}
+
+ensureDirectory(STATUS_ARCHIVE_DIR);
+
+function toPublicStatusArchiveUrl(fileName) {
+  return `${STATUS_ARCHIVE_PUBLIC_BASE}/${encodeURIComponent(fileName)}`;
+}
+
+function safeStatusSegment(value, fallback = 'status') {
+  return String(value || fallback)
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || fallback;
+}
+
+function extensionFromMime(mimetype = '') {
+  const normalized = String(mimetype || '').toLowerCase();
+  if (normalized === 'image/jpeg') return '.jpg';
+  if (normalized === 'image/png') return '.png';
+  if (normalized === 'image/webp') return '.webp';
+  if (normalized === 'image/gif') return '.gif';
+  if (normalized === 'image/heic') return '.heic';
+  if (normalized === 'image/heif') return '.heif';
+  const subtype = normalized.split('/')[1];
+  if (!subtype) return '.bin';
+  return `.${subtype.replace(/[^a-z0-9]/g, '') || 'bin'}`;
+}
+
+function hashBase64(base64Data = '') {
+  return crypto.createHash('sha256').update(String(base64Data), 'base64').digest('hex');
+}
+
+function trimStatusText(value, max = 500) {
+  return String(value || '').trim().slice(0, max);
 }
 
 function getL1CachedValue(cacheMap, key) {
@@ -866,6 +947,199 @@ async function upsertMessage(waMsg, chatId, extraData = {}, context = {}) {
   }
 }
 
+function normalizeStatusDescriptor(entry = {}) {
+  const providerStatusMessageId =
+    entry.providerStatusMessageId ||
+    entry.messageId ||
+    entry.id?._serialized ||
+    entry.id;
+  const statusOwnerId =
+    entry.statusOwnerId ||
+    entry.contactId ||
+    entry.author ||
+    entry.from ||
+    '';
+  return {
+    providerStatusMessageId: String(providerStatusMessageId || '').trim(),
+    statusOwnerId: String(statusOwnerId || '').trim(),
+    statusOwnerName: trimStatusText(
+      entry.statusOwnerName ||
+      entry.contactName ||
+      entry.notifyName ||
+      entry.pushname ||
+      entry.shortName ||
+      ''
+    ),
+    chatId: String(entry.chatId || 'status@broadcast').trim() || 'status@broadcast',
+    description: trimStatusText(entry.description || entry.caption || entry.body || ''),
+    caption: trimStatusText(entry.caption || entry.body || ''),
+    mediaType: String(entry.mediaType || entry.type || '').trim().toLowerCase(),
+    timestamp: Number(entry.timestamp || 0) || Math.floor(Date.now() / 1000)
+  };
+}
+
+async function fetchCurrentStatusDescriptors() {
+  if (!client?.pupPage) return [];
+  return client.pupPage.evaluate(async () => {
+    const statuses = window.Store.Status?.getModelsArray?.() || [];
+    const results = [];
+
+    for (const status of statuses) {
+      const ownerId =
+        status?.id?._serialized ||
+        status?.contact?.id?._serialized ||
+        status?.contact?.userid ||
+        '';
+      const ownerName =
+        status?.contact?.formattedName ||
+        status?.contact?.pushname ||
+        status?.contact?.name ||
+        status?.name ||
+        '';
+      const collection = status?.msgs || status?._msgs;
+      const messages =
+        typeof collection?.getModelsArray === 'function'
+          ? collection.getModelsArray()
+          : Array.isArray(collection)
+            ? collection
+            : [];
+
+      for (const msg of messages) {
+        const serialized = window.WWebJS.getMessageModel(msg);
+        results.push({
+          providerStatusMessageId: serialized?.id?._serialized || serialized?.id,
+          statusOwnerId: ownerId || serialized?.author || serialized?.from || '',
+          statusOwnerName: ownerName,
+          chatId: serialized?.from || 'status@broadcast',
+          description: serialized?.caption || serialized?.body || '',
+          caption: serialized?.caption || '',
+          mediaType: serialized?.type || '',
+          timestamp: serialized?.timestamp || serialized?.t || 0
+        });
+      }
+    }
+
+    return results;
+  });
+}
+
+async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
+  const normalized = normalizeStatusDescriptor(entry);
+  if (!normalized.providerStatusMessageId) {
+    return { archived: false, reason: 'missing_message_id' };
+  }
+
+  if (normalized.mediaType && normalized.mediaType !== 'image') {
+    return { archived: false, reason: 'unsupported_media_type' };
+  }
+
+  const existing = await StatusArchive.findOne({
+    provider: DEFAULT_PROVIDER,
+    accountId: DEFAULT_ACCOUNT_ID,
+    providerStatusMessageId: normalized.providerStatusMessageId
+  }).lean();
+  if (existing) {
+    return { archived: false, reason: 'duplicate' };
+  }
+
+  await client.sendSeen('status@broadcast').catch(() => {});
+
+  const statusMessage = await client.getMessageById(normalized.providerStatusMessageId).catch(() => null);
+  if (!statusMessage || !statusMessage.hasMedia) {
+    return { archived: false, reason: 'no_media' };
+  }
+
+  const media = await statusMessage.downloadMedia().catch(() => null);
+  if (!media?.mimetype || !media?.data || !media.mimetype.startsWith('image/')) {
+    return { archived: false, reason: 'non_image_media' };
+  }
+
+  const mediaSha256 = hashBase64(media.data);
+  const extension = extensionFromMime(media.mimetype);
+  const statusOwnerSegment = safeStatusSegment(normalized.statusOwnerId || normalized.statusOwnerName || 'unknown');
+  const fileName = `${statusOwnerSegment}-${normalized.timestamp}-${mediaSha256.slice(0, 16)}${extension}`;
+  const filePath = path.join(STATUS_ARCHIVE_DIR, fileName);
+
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, Buffer.from(media.data, 'base64'));
+  }
+
+  const payload = {
+    id: `${DEFAULT_PROVIDER}:${DEFAULT_ACCOUNT_ID}:${normalized.providerStatusMessageId}`,
+    provider: DEFAULT_PROVIDER,
+    accountId: DEFAULT_ACCOUNT_ID,
+    providerStatusMessageId: normalized.providerStatusMessageId,
+    statusOwnerId: normalized.statusOwnerId,
+    statusOwnerName: normalized.statusOwnerName || normalized.statusOwnerId,
+    chatId: normalized.chatId,
+    description: normalized.description || normalized.caption,
+    caption: normalized.caption,
+    mediaType: 'image',
+    mimeType: media.mimetype,
+    mediaSha256,
+    archivedFrom: source === 'event' ? 'event' : 'poll',
+    fileName,
+    filePath,
+    imageUrl: toPublicStatusArchiveUrl(fileName),
+    timestamp: normalized.timestamp,
+    viewedAt: new Date()
+  };
+
+  await StatusArchive.findOneAndUpdate(
+    {
+      provider: payload.provider,
+      accountId: payload.accountId,
+      providerStatusMessageId: payload.providerStatusMessageId
+    },
+    { $setOnInsert: payload },
+    { upsert: true, new: true }
+  );
+
+  return { archived: true, reason: 'stored', payload };
+}
+
+async function runStatusArchiveSweep(source = 'poll') {
+  if (!whatsappReady || currentStatus !== 'authenticated') {
+    return { checked: 0, archived: 0, skipped: 0, errors: 0, source };
+  }
+  if (statusArchivePollInFlight) {
+    return { checked: 0, archived: 0, skipped: 1, errors: 0, source: 'busy' };
+  }
+
+  statusArchivePollInFlight = true;
+  const stats = {
+    checked: 0,
+    archived: 0,
+    skipped: 0,
+    errors: 0,
+    source
+  };
+
+  try {
+    const descriptors = await fetchCurrentStatusDescriptors();
+    for (const descriptor of descriptors) {
+      stats.checked += 1;
+      try {
+        const result = await archiveStatusFromDescriptor(descriptor, source);
+        if (result.archived) stats.archived += 1;
+        else stats.skipped += 1;
+      } catch (error) {
+        stats.errors += 1;
+        console.error('⚠️ Status archive item error:', error.message);
+      }
+    }
+  } catch (error) {
+    stats.errors += 1;
+    console.error('⚠️ Status archive sweep error:', error.message);
+  } finally {
+    statusArchivePollInFlight = false;
+    lastStatusArchiveRunAt = nowIso();
+    lastStatusArchiveStats = stats;
+  }
+
+  return stats;
+}
+
 async function syncAllChats(context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
@@ -1162,6 +1436,9 @@ client.on('ready', () => {
     accountId: DEFAULT_ACCOUNT_ID,
     reason: 'provider_ready'
   });
+  runStatusArchiveSweep('poll').catch((error) => {
+    console.error('⚠️ Initial status archive sweep failed:', error.message);
+  });
 });
 
 client.on('authenticated', () => {
@@ -1188,6 +1465,14 @@ client.on('message_create', async (msg) => {
     try {
       // Marcamos el chat de estados como visto de forma directa y rápida
       await client.sendSeen('status@broadcast');
+      await archiveStatusFromDescriptor({
+        providerStatusMessageId: msg.id?._serialized,
+        statusOwnerId: msg.author || msg.from,
+        description: msg.caption || msg.body || '',
+        caption: msg.caption || '',
+        mediaType: msg.type,
+        timestamp: msg.timestamp || Math.floor(Date.now() / 1000)
+      }, 'event');
       console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
     } catch (e) {
       console.error('⚠️ Error al auto-ver status:', e.message);
@@ -1248,6 +1533,12 @@ function cleanChromiumLocks() {
 
 cleanChromiumLocks();
 client.initialize();
+
+setInterval(() => {
+  runStatusArchiveSweep('poll').catch((error) => {
+    console.error('⚠️ Scheduled status archive sweep failed:', error.message);
+  });
+}, STATUS_POLL_INTERVAL_MS);
 
 function ensureWhatsappReady(res) {
   if (!whatsappReady || currentStatus !== 'authenticated') {
@@ -1815,6 +2106,11 @@ app.get('/api/status', async (_req, res) => {
     hasQr: Boolean(lastQR),
     lastWhatsappReadyAt,
     lastWhatsappDisconnectReason,
+    statusArchive: {
+      lastRunAt: lastStatusArchiveRunAt,
+      inFlight: statusArchivePollInFlight,
+      stats: lastStatusArchiveStats
+    },
     syncQueue: {
       queued: syncQueue.length,
       pendingKeys: syncPendingKeys.size,
@@ -1822,6 +2118,48 @@ app.get('/api/status', async (_req, res) => {
     },
     uptimeSec: Math.floor(process.uptime())
   });
+});
+
+app.get('/api/status-archive', async (req, res) => {
+  try {
+    const limit = parsePositiveInt(req.query.limit, 100, 500);
+    const ownerId = String(req.query.ownerId || '').trim();
+    const query = {
+      provider: DEFAULT_PROVIDER,
+      accountId: DEFAULT_ACCOUNT_ID
+    };
+    if (ownerId) {
+      query.statusOwnerId = ownerId;
+    }
+
+    const items = await StatusArchive.find(query)
+      .sort({ timestamp: -1, createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    res.json({
+      items,
+      meta: {
+        limit,
+        ownerId: ownerId || null,
+        lastRunAt: lastStatusArchiveRunAt,
+        inFlight: statusArchivePollInFlight,
+        stats: lastStatusArchiveStats
+      }
+    });
+  } catch (error) {
+    console.error('❌ Fetch status archive error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch status archive', detail: error.message });
+  }
+});
+
+app.post('/api/status-archive/sweep', async (_req, res) => {
+  try {
+    const stats = await runStatusArchiveSweep('poll');
+    res.json({ success: true, stats });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to sweep status archive', detail: error.message });
+  }
 });
 
 app.get('/api/health', async (_req, res) => {

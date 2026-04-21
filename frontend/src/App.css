@@ -182,6 +182,13 @@ button, textarea, input, select {
 .headerActions {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.activeToggle {
+  border-color: rgba(0, 210, 255, 0.45) !important;
+  background: rgba(0, 210, 255, 0.12) !important;
 }
 
 .statusBar {
@@ -564,6 +571,14 @@ button, textarea, input, select {
   margin-bottom: 10px;
 }
 
+.statusArchiveSidebarItem {
+  align-items: flex-start;
+}
+
+.statusArchiveThumb {
+  border-radius: 12px;
+}
+
 .replyPreview {
   background: rgba(0, 0, 0, 0.2);
   border-left: 3px solid var(--accent-primary);
@@ -865,6 +880,70 @@ button:disabled {
   0% { opacity: 0.35; transform: scaleX(0.92); }
   50% { opacity: 1; transform: scaleX(1); }
   100% { opacity: 0.35; transform: scaleX(0.92); }
+}
+
+.statusArchiveArea {
+  align-items: stretch;
+}
+
+.statusArchivePanelIcon {
+  background: linear-gradient(135deg, rgba(0, 210, 255, 0.28), rgba(58, 123, 213, 0.9));
+}
+
+.statusArchiveGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.statusArchiveCard {
+  background: rgba(17, 25, 31, 0.82);
+  border: 1px solid var(--border-light);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
+}
+
+.statusArchiveImage {
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  display: block;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.statusArchiveImageFallback {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.statusArchiveBody {
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.statusArchiveCardHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.statusArchiveCardHeader h4 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.statusArchiveCardHeader time {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.statusArchiveDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
 }
 
 @keyframes bubbleIn {

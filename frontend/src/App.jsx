@@ -89,6 +89,18 @@ function formatChatTime(unixTs) {
   return date.toLocaleDateString([], { day: "2-digit", month: "2-digit" });
 }
 
+function formatStatusDate(unixTs) {
+  const value = Number(unixTs);
+  if (!value) return "";
+  return new Date(value * 1000).toLocaleString([], {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
 function messageId(msg) {
   return msg.id || `${msg.chatId}-${msg.timestamp}-${msg.body}-${msg.fromMe}`;
 }
@@ -149,7 +161,8 @@ function App() {
   const [qr, setQr] = useState("");
   const [backendStatus, setBackendStatus] = useState({
     whatsappStatus: "unknown",
-    uptimeSec: 0
+    uptimeSec: 0,
+    statusArchive: null
   });
 
   const [notice, setNotice] = useState("");
@@ -174,9 +187,12 @@ function App() {
 
   const [chatSearch, setChatSearch] = useState("");
   const [chats, setChats] = useState([]);
+  const [viewMode, setViewMode] = useState("chats");
   const [messagesByChat, setMessagesByChat] = useState({});
   const [selectedChatId, setSelectedChatId] = useState("");
   const [messages, setMessages] = useState([]);
+  const [statusArchiveItems, setStatusArchiveItems] = useState([]);
+  const [loadingStatusArchive, setLoadingStatusArchive] = useState(false);
   const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
   const [draftsByChat, setDraftsByChat] = useState(() => { try { return JSON.parse(localStorage.getItem("chatfix_drafts") || "{}"); } catch (e) { return {}; } }); const draft = draftsByChat[selectedChatId] || ""; const setDraft = (val) => setDraftsByChat(prev => ({ ...prev, [selectedChatId]: val }));
@@ -220,6 +236,15 @@ function App() {
     () => chats.reduce((acc, chat) => acc + Number(chat.unreadCount || 0), 0),
     [chats]
   );
+
+  const filteredStatusArchive = useMemo(() => {
+    const needle = chatSearch.trim().toLowerCase();
+    if (!needle) return statusArchiveItems;
+    return statusArchiveItems.filter((item) => {
+      const haystack = `${item.statusOwnerName || ""} ${item.statusOwnerId || ""} ${item.description || ""}`.toLowerCase();
+      return haystack.includes(needle);
+    });
+  }, [chatSearch, statusArchiveItems]);
 
   const connectionLabel = useMemo(() => {
     if (!socketConnected) return "Socket desconectado";
@@ -705,7 +730,8 @@ function App() {
         const data = await res.json();
         setBackendStatus({
           whatsappStatus: data.whatsappStatus || "unknown",
-          uptimeSec: Number(data.uptimeSec || 0)
+          uptimeSec: Number(data.uptimeSec || 0),
+          statusArchive: data.statusArchive || null
         });
       } catch (_error) {
         // silent on status poll
@@ -713,6 +739,28 @@ function App() {
     };
     fetchStatus();
     const timer = setInterval(fetchStatus, 10000);
+    return () => clearInterval(timer);
+  }, [apiAuthenticated]);
+
+  async function fetchStatusArchive(background = false) {
+    if (!apiAuthenticated) return;
+    if (!background) setLoadingStatusArchive(true);
+    try {
+      const res = await fetch(`${API_URL}/api/status-archive?limit=120`);
+      if (!res.ok) throw new Error("No se pudieron cargar los estados archivados.");
+      const data = await res.json();
+      setStatusArchiveItems(Array.isArray(data.items) ? data.items : []);
+    } catch (error) {
+      if (!background) showNotice(error.message, "error");
+    } finally {
+      if (!background) setLoadingStatusArchive(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!apiAuthenticated) return;
+    fetchStatusArchive(true);
+    const timer = setInterval(() => fetchStatusArchive(true), 60000);
     return () => clearInterval(timer);
   }, [apiAuthenticated]);
 
@@ -1227,11 +1275,29 @@ function App() {
         <div className="bg-blob blob-1"></div>
         <div className="bg-blob blob-2"></div>
       </div>
-      <main className={`waApp ${selectedChatId ? "chatOpen" : ""}`}>
+      <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
         <aside className="sidebar">
         <header className="sidebarHeader">
-          <h2>Chats</h2>
+          <h2>{viewMode === "statuses" ? "Estados" : "Chats"}</h2>
           <div className="headerActions">
+            <button
+              className={`secondary ${viewMode === "statuses" ? "activeToggle" : ""}`}
+              aria-label="Ver estados archivados"
+              onClick={() => {
+                setViewMode("statuses");
+                setSelectedChatId("");
+                fetchStatusArchive(false);
+              }}
+            >
+              Estados
+            </button>
+            <button
+              className={`secondary ${viewMode === "chats" ? "activeToggle" : ""}`}
+              aria-label="Ver chats"
+              onClick={() => setViewMode("chats")}
+            >
+              Chats
+            </button>
             <button
               className="secondary"
               aria-label="Configuración de IA"
@@ -1268,12 +1334,38 @@ function App() {
             type="text"
             value={chatSearch}
             onChange={(e) => setChatSearch(e.target.value)}
-            placeholder="🔍 Buscar chat... (Ctrl+K)"
+            placeholder={viewMode === "statuses" ? "🔍 Buscar estado..." : "🔍 Buscar chat... (Ctrl+K)"}
           />
         </div>
 
         <div className="chatList">
-          {filteredChats.map((chat) => (
+          {viewMode === "statuses" ? filteredStatusArchive.map((item) => (
+            <button
+              key={item.id}
+              className="chatItem statusArchiveSidebarItem"
+              onClick={() => setSelectedChatId("")}
+            >
+              <div className="chatAvatar statusArchiveThumb">
+                {item.imageUrl ? (
+                  <img
+                    className="chatAvatarImg"
+                    src={`${API_URL}${item.imageUrl}`}
+                    alt={`Estado de ${item.statusOwnerName || item.statusOwnerId}`}
+                    loading="lazy"
+                  />
+                ) : "ST"}
+              </div>
+              <div className="chatText">
+                <div className="chatNameRow">
+                  <div className="chatName">{item.statusOwnerName || item.statusOwnerId || "Estado"}</div>
+                  <div className="chatTopMeta">
+                    {item.timestamp ? <time className="chatTime">{formatChatTime(item.timestamp)}</time> : null}
+                  </div>
+                </div>
+                <div className="chatMeta">{item.description || "Estado sin descripción"}</div>
+              </div>
+            </button>
+          )) : filteredChats.map((chat) => (
             <button
               key={chat.id}
               aria-label={`Chat con ${chat.name || chat.id}`}
@@ -1314,7 +1406,10 @@ function App() {
               </div>
             </button>
           ))}
-          {filteredChats.length === 0 ? <p className="helper">No hay chats.</p> : null}
+          {viewMode === "statuses" && filteredStatusArchive.length === 0 ? (
+            <p className="helper">{loadingStatusArchive ? "Cargando estados..." : "No hay estados archivados."}</p>
+          ) : null}
+          {viewMode === "chats" && filteredChats.length === 0 ? <p className="helper">No hay chats.</p> : null}
         </div>
         <footer className="sidebarFooter">
           <span>Ctrl+K buscar</span>
@@ -1323,274 +1418,341 @@ function App() {
       </aside>
 
       <section className="chatPanel">
-        <header className="chatHeader">
-          <div className="chatHeaderLeft">
-            <button
-              className="secondary mobileBackBtn"
-              aria-label="Volver a lista de chats"
-              onClick={() => setSelectedChatId("")}
-            >
-              ←
-            </button>
-            <div
-              className="chatHeaderAvatar"
-              style={!selectedChat?.avatarUrl ? { background: getAvatarGradient(selectedChat?.id) } : {}}
-            >
-              {selectedChat?.avatarUrl ? (
-                <img
-                  className="chatAvatarImg"
-                  src={selectedChat.avatarUrl}
-                  alt={`Foto de ${selectedChat.name || selectedChat.id}`}
-                  loading="lazy"
-                />
-              ) : (
-                initialsForChat(selectedChat)
-              )}
-            </div>
-            <div className="chatHeaderInfo">
-              <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
-              <p>
-                {chatStates[selectedChatId] === 'typing' ? (
-                  <span className="typingIndicator">Escribiendo...</span>
-                ) : (
-                  <>
-                    {selectedChat?.id || "Sin chat seleccionado"}
-                    {selectedChat?.isGroup ? " · Grupo" : ""}
-                  </>
-                )}
-              </p>
-            </div>
-          </div>
-          <div className="chatHeaderActions">
-            {syncingChat && <div className="syncProgressBar" />}
-            <button
-              className="secondary"
-              aria-label="Recargar mensajes"
-              onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
-              disabled={!selectedChatId}
-            >
-              Recargar
-            </button>
-          </div>
-        </header>
-
-        <div
-          className="messagesArea"
-          ref={messagesAreaRef}
-          onScroll={handleMessagesScroll}
-        >
-          {loadingMessages[selectedChatId] ? <p className="helper">Cargando mensajes...</p> : null}
-          {!loadingMessages[selectedChatId] && syncingChat ? <p className="helper">Sincronizando...</p> : null}
-          {!loadingMessages[selectedChatId] && messages.length === 0 ? (
-            <p className="helper">Este chat todavía no tiene mensajes visibles.</p>
-          ) : null}
-
-          {messages.map((msg, idx) => {
-            const prevMsg = messages[idx - 1];
-            const isConsecutive = prevMsg && prevMsg.fromMe === msg.fromMe;
-            return (
-            <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"} ${isConsecutive ? "consecutive" : ""}`}>
-              <article
-                className={`bubble ${
-                  !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "incomingGrammarError" : ""
-                }`}
-                tabIndex={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? 0 : undefined}
-                role={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "button" : undefined}
-                onClick={
-                  !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
-                    ? () => prepareGrammarReply(msg)
-                    : undefined
-                }
-                onKeyDown={
-                  !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
-                    ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          prepareGrammarReply(msg);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                {msg.replyToText ? (
-                  <div className="replyPreview">
-                    <span className="replyLabel">Respuesta a</span>
-                    <p>{msg.replyToText}</p>
-                  </div>
-                ) : null}
-                {!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? (
-                  <span className="grammarErrorBadge">Posibles errores gramaticales · Presionar para responder</span>
-                ) : null}
-                {!msg.fromMe && Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0 ? (
-                  <span className="pingBadge">Ping</span>
-                ) : null}
-                {msg.mediaType === "image" && msg.imageDataUrl ? (
-                  <img className="msgImage" src={msg.imageDataUrl} alt="Imagen del chat" />
-                ) : null}
-                <p>{msg.body || "[mensaje vacío]"}</p>
-                <div className="bubbleMeta">
-                  <time>{formatTime(msg.timestamp)}</time>
-                  {msg.fromMe && <AckIcon status={msg.status || msg.ack} />}
-                </div>
-                <div className="bubbleActions">
-                  <button
-                    className="replyBtn"
-                    aria-label="Responder a este mensaje"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      startReply(msg);
-                    }}
-                  >
-                    Responder
-                  </button>
-                </div>
-              </article>
-            </div>
-          );})}
-          {showJumpToLatest ? (
-            <button
-              className="jumpToLatest"
-              aria-label="Ir al último mensaje"
-              onClick={() => scrollMessagesToBottom("smooth")}
-            >
-              ↓ Ir al último
-              {pendingIncomingCount > 0 ? (
-                <span className="jumpToLatestCount">{pendingIncomingCount}</span>
-              ) : null}
-            </button>
-          ) : null}
-        </div>
-
-        <footer className="composer">
-          {replyQueue.length > 0 ? (
-            <section className="multiReplyPanel">
-              <div className="multiReplyHeader">
-                <p>{replyQueue.length} respuestas en paralelo listas</p>
+        {viewMode === "statuses" ? (
+          <>
+            <header className="chatHeader">
+              <div className="chatHeaderLeft">
                 <button
-                  className="primary"
-                  aria-label="Enviar todas las respuestas en cola"
-                  onClick={sendAllQueuedReplies}
+                  className="secondary mobileBackBtn"
+                  aria-label="Volver a la lista"
+                  onClick={() => setViewMode("chats")}
                 >
-                  Enviar todas
+                  ←
+                </button>
+                <div className="chatHeaderAvatar statusArchivePanelIcon">ST</div>
+                <div className="chatHeaderInfo">
+                  <h3>Estados archivados</h3>
+                  <p>
+                    {backendStatus.statusArchive?.lastRunAt
+                      ? `Última revisión ${new Date(backendStatus.statusArchive.lastRunAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+                      : "Escaneo automático cada minuto"}
+                  </p>
+                </div>
+              </div>
+              <div className="chatHeaderActions">
+                <button
+                  className="secondary"
+                  aria-label="Actualizar estados archivados"
+                  onClick={() => fetchStatusArchive(false)}
+                  disabled={loadingStatusArchive}
+                >
+                  {loadingStatusArchive ? "Actualizando..." : "Actualizar"}
                 </button>
               </div>
-              {replyQueue.map((item) => (
-                <article key={item.localId} className="queuedReplyCard">
-                  <p className="queuedReplyLabel">Respuesta sugerida</p>
-                  <p className="queuedReplyOriginal">{item.original}</p>
-                  <textarea
-                    value={item.text}
-                    onChange={(e) => updateQueuedReplyText(item.localId, e.target.value)}
-                    rows={2}
-                  />
-                  <div className="composerActions">
+            </header>
+
+            <div className="messagesArea statusArchiveArea">
+              {loadingStatusArchive ? <p className="helper">Cargando estados archivados...</p> : null}
+              {!loadingStatusArchive && filteredStatusArchive.length === 0 ? (
+                <p className="helper">Todavía no hay estados con imagen archivados.</p>
+              ) : null}
+              <div className="statusArchiveGrid">
+                {filteredStatusArchive.map((item) => (
+                  <article key={item.id} className="statusArchiveCard">
+                    {item.imageUrl ? (
+                      <img
+                        className="statusArchiveImage"
+                        src={`${API_URL}${item.imageUrl}`}
+                        alt={`Estado de ${item.statusOwnerName || item.statusOwnerId}`}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="statusArchiveImage statusArchiveImageFallback">Sin imagen</div>
+                    )}
+                    <div className="statusArchiveBody">
+                      <div className="statusArchiveCardHeader">
+                        <h4>{item.statusOwnerName || item.statusOwnerId || "Estado"}</h4>
+                        <time>{formatStatusDate(item.timestamp)}</time>
+                      </div>
+                      <p className="statusArchiveDescription">{item.description || "Sin descripción"}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <header className="chatHeader">
+              <div className="chatHeaderLeft">
+                <button
+                  className="secondary mobileBackBtn"
+                  aria-label="Volver a lista de chats"
+                  onClick={() => setSelectedChatId("")}
+                >
+                  ←
+                </button>
+                <div
+                  className="chatHeaderAvatar"
+                  style={!selectedChat?.avatarUrl ? { background: getAvatarGradient(selectedChat?.id) } : {}}
+                >
+                  {selectedChat?.avatarUrl ? (
+                    <img
+                      className="chatAvatarImg"
+                      src={selectedChat.avatarUrl}
+                      alt={`Foto de ${selectedChat.name || selectedChat.id}`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    initialsForChat(selectedChat)
+                  )}
+                </div>
+                <div className="chatHeaderInfo">
+                  <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
+                  <p>
+                    {chatStates[selectedChatId] === 'typing' ? (
+                      <span className="typingIndicator">Escribiendo...</span>
+                    ) : (
+                      <>
+                        {selectedChat?.id || "Sin chat seleccionado"}
+                        {selectedChat?.isGroup ? " · Grupo" : ""}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="chatHeaderActions">
+                {syncingChat && <div className="syncProgressBar" />}
+                <button
+                  className="secondary"
+                  aria-label="Recargar mensajes"
+                  onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
+                  disabled={!selectedChatId}
+                >
+                  Recargar
+                </button>
+              </div>
+            </header>
+
+            <div
+              className="messagesArea"
+              ref={messagesAreaRef}
+              onScroll={handleMessagesScroll}
+            >
+              {loadingMessages[selectedChatId] ? <p className="helper">Cargando mensajes...</p> : null}
+              {!loadingMessages[selectedChatId] && syncingChat ? <p className="helper">Sincronizando...</p> : null}
+              {!loadingMessages[selectedChatId] && messages.length === 0 ? (
+                <p className="helper">Este chat todavía no tiene mensajes visibles.</p>
+              ) : null}
+
+              {messages.map((msg, idx) => {
+                const prevMsg = messages[idx - 1];
+                const isConsecutive = prevMsg && prevMsg.fromMe === msg.fromMe;
+                return (
+                <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"} ${isConsecutive ? "consecutive" : ""}`}>
+                  <article
+                    className={`bubble ${
+                      !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "incomingGrammarError" : ""
+                    }`}
+                    tabIndex={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? 0 : undefined}
+                    role={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "button" : undefined}
+                    onClick={
+                      !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
+                        ? () => prepareGrammarReply(msg)
+                        : undefined
+                    }
+                    onKeyDown={
+                      !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              prepareGrammarReply(msg);
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    {msg.replyToText ? (
+                      <div className="replyPreview">
+                        <span className="replyLabel">Respuesta a</span>
+                        <p>{msg.replyToText}</p>
+                      </div>
+                    ) : null}
+                    {!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? (
+                      <span className="grammarErrorBadge">Posibles errores gramaticales · Presionar para responder</span>
+                    ) : null}
+                    {!msg.fromMe && Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0 ? (
+                      <span className="pingBadge">Ping</span>
+                    ) : null}
+                    {msg.mediaType === "image" && msg.imageDataUrl ? (
+                      <img className="msgImage" src={msg.imageDataUrl} alt="Imagen del chat" />
+                    ) : null}
+                    <p>{msg.body || "[mensaje vacío]"}</p>
+                    <div className="bubbleMeta">
+                      <time>{formatTime(msg.timestamp)}</time>
+                      {msg.fromMe && <AckIcon status={msg.status || msg.ack} />}
+                    </div>
+                    <div className="bubbleActions">
+                      <button
+                        className="replyBtn"
+                        aria-label="Responder a este mensaje"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          startReply(msg);
+                        }}
+                      >
+                        Responder
+                      </button>
+                    </div>
+                  </article>
+                </div>
+              );})}
+              {showJumpToLatest ? (
+                <button
+                  className="jumpToLatest"
+                  aria-label="Ir al último mensaje"
+                  onClick={() => scrollMessagesToBottom("smooth")}
+                >
+                  ↓ Ir al último
+                  {pendingIncomingCount > 0 ? (
+                    <span className="jumpToLatestCount">{pendingIncomingCount}</span>
+                  ) : null}
+                </button>
+              ) : null}
+            </div>
+
+            <footer className="composer">
+              {replyQueue.length > 0 ? (
+                <section className="multiReplyPanel">
+                  <div className="multiReplyHeader">
+                    <p>{replyQueue.length} respuestas en paralelo listas</p>
                     <button
                       className="primary"
-                      aria-label="Enviar respuesta sugerida"
-                      disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim()}
-                      onClick={() => sendQueuedReply(item)}
+                      aria-label="Enviar todas las respuestas en cola"
+                      onClick={sendAllQueuedReplies}
                     >
-                      {sendingReplyQueueIds[item.localId] ? "Enviando..." : "Enviar"}
-                    </button>
-                    <button
-                      className="secondary"
-                      aria-label="Editar respuesta en el editor principal"
-                      onClick={() => loadQueuedReplyToComposer(item)}
-                    >
-                      Editar en editor
-                    </button>
-                    <button
-                      className="secondary"
-                      aria-label="Quitar respuesta de la cola"
-                      onClick={() => removeQueuedReply(item.localId)}
-                    >
-                      Quitar
+                      Enviar todas
                     </button>
                   </div>
-                </article>
-              ))}
-            </section>
-          ) : null}
+                  {replyQueue.map((item) => (
+                    <article key={item.localId} className="queuedReplyCard">
+                      <p className="queuedReplyLabel">Respuesta sugerida</p>
+                      <p className="queuedReplyOriginal">{item.original}</p>
+                      <textarea
+                        value={item.text}
+                        onChange={(e) => updateQueuedReplyText(item.localId, e.target.value)}
+                        rows={2}
+                      />
+                      <div className="composerActions">
+                        <button
+                          className="primary"
+                          aria-label="Enviar respuesta sugerida"
+                          disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim()}
+                          onClick={() => sendQueuedReply(item)}
+                        >
+                          {sendingReplyQueueIds[item.localId] ? "Enviando..." : "Enviar"}
+                        </button>
+                        <button
+                          className="secondary"
+                          aria-label="Editar respuesta en el editor principal"
+                          onClick={() => loadQueuedReplyToComposer(item)}
+                        >
+                          Editar en editor
+                        </button>
+                        <button
+                          className="secondary"
+                          aria-label="Quitar respuesta de la cola"
+                          onClick={() => removeQueuedReply(item.localId)}
+                        >
+                          Quitar
+                        </button>
+                      </div>
+                    </article>
+                  ))}
+                </section>
+              ) : null}
 
-          {replyTarget ? (
-            <div className="replyTarget">
-              <div>
-                <p className="replyTargetLabel">
-                  Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
-                </p>
-                <p className="replyTargetText">{replyTarget.text}</p>
+              {replyTarget ? (
+                <div className="replyTarget">
+                  <div>
+                    <p className="replyTargetLabel">
+                      Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
+                    </p>
+                    <p className="replyTargetText">{replyTarget.text}</p>
+                  </div>
+                  <button
+                    className="secondary"
+                    aria-label="Cancelar respuesta"
+                    onClick={() => setReplyTarget(null)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : null}
+
+              <textarea
+                ref={draftInputRef}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={handleDraftKeyDown}
+                placeholder="Escribí un mensaje... (Enter envía, Shift+Enter salto de línea)"
+                rows={3}
+                aria-label="Mensaje"
+              />
+
+              <div className="composerActions">
+                <button
+                  className="secondary"
+                  aria-label="Corregir texto con IA"
+                  onClick={correctDraft}
+                  disabled={correcting || !draft.trim()}
+                >
+                  {correcting ? "Corrigiendo..." : "✨ Corregir IA"}
+                </button>
+                <button
+                  className="primary"
+                  aria-label="Corregir y enviar mensaje"
+                  onClick={correctAndSend}
+                  disabled={sending || correcting || correctingAndSending || !draft.trim()}
+                >
+                  {correctingAndSending ? "Procesando..." : "🚀 Corregir y enviar"}
+                </button>
+                <button
+                  className="primary"
+                  aria-label="Enviar texto original"
+                  onClick={() => sendMessage(draft)}
+                  disabled={sending || !draft.trim()}
+                >
+                  {sending ? "Enviando..." : "📤 Enviar original"}
+                </button>
+                <button
+                  className="primary"
+                  aria-label="Enviar texto corregido por IA"
+                  onClick={() => sendMessage(correctedDraft)}
+                  disabled={sending || !correctedDraft.trim()}
+                >
+                  ✅ Enviar corregido
+                </button>
               </div>
-              <button
-                className="secondary"
-                aria-label="Cancelar respuesta"
-                onClick={() => setReplyTarget(null)}
-              >
-                Cancelar
-              </button>
-            </div>
-          ) : null}
 
-          <textarea
-            ref={draftInputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={handleDraftKeyDown}
-            placeholder="Escribí un mensaje... (Enter envía, Shift+Enter salto de línea)"
-            rows={3}
-            aria-label="Mensaje"
-          />
+              {correctedDraft ? (
+                <div className="correctedPreview">
+                  <p className="correctedLabel">Texto corregido</p>
+                  <p className="correctedText">{correctedDraft}</p>
+                </div>
+              ) : null}
 
-          <div className="composerActions">
-            <button
-              className="secondary"
-              aria-label="Corregir texto con IA"
-              onClick={correctDraft}
-              disabled={correcting || !draft.trim()}
-            >
-              {correcting ? "Corrigiendo..." : "✨ Corregir IA"}
-            </button>
-            <button
-              className="primary"
-              aria-label="Corregir y enviar mensaje"
-              onClick={correctAndSend}
-              disabled={sending || correcting || correctingAndSending || !draft.trim()}
-            >
-              {correctingAndSending ? "Procesando..." : "🚀 Corregir y enviar"}
-            </button>
-            <button
-              className="primary"
-              aria-label="Enviar texto original"
-              onClick={() => sendMessage(draft)}
-              disabled={sending || !draft.trim()}
-            >
-              {sending ? "Enviando..." : "📤 Enviar original"}
-            </button>
-            <button
-              className="primary"
-              aria-label="Enviar texto corregido por IA"
-              onClick={() => sendMessage(correctedDraft)}
-              disabled={sending || !correctedDraft.trim()}
-            >
-              ✅ Enviar corregido
-            </button>
-          </div>
+              {activityState ? (
+                <p className={`notice ${activityState.type}`}>
+                  {activityState.type === "loading" ? "Procesando. " : ""}
+                  {activityState.text}
+                </p>
+              ) : null}
 
-          {correctedDraft ? (
-            <div className="correctedPreview">
-              <p className="correctedLabel">Texto corregido</p>
-              <p className="correctedText">{correctedDraft}</p>
-            </div>
-          ) : null}
-
-          {activityState ? (
-            <p className={`notice ${activityState.type}`}>
-              {activityState.type === "loading" ? "Procesando. " : ""}
-              {activityState.text}
-            </p>
-          ) : null}
-
-          {notice ? <p className={`notice ${noticeType}`}>{notice}</p> : null}
-        </footer>
+              {notice ? <p className={`notice ${noticeType}`}>{notice}</p> : null}
+            </footer>
+          </>
+        )}
       </section>
 
       {showAiSettings ? (
