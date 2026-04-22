@@ -174,6 +174,9 @@ function App() {
   const [sending, setSending] = useState(false);
   const [correctingAndSending, setCorrectingAndSending] = useState(false);
   const [showAiSettings, setShowAiSettings] = useState(false);
+  const [showResources, setShowResources] = useState(false);
+  const [resources, setResources] = useState({ media: [], links: [], statuses: [] });
+  const [loadingResources, setLoadingResources] = useState(false);
   const [loadingAiConfig, setLoadingAiConfig] = useState(false);
   const [savingAiConfig, setSavingAiConfig] = useState(false);
   const [checkingAiHealth, setCheckingAiHealth] = useState(false);
@@ -564,6 +567,17 @@ function App() {
       showNotice("La sesión de WhatsApp se desconectó.", "error");
     });
     socket.on("new_message", mergeLiveMessage);
+    socket.on("message_updated", (updated) => {
+      const normalized = { ...updated, _uiId: messageId(updated) };
+      setMessagesByChat((prev) => {
+        const current = prev[updated.chatId] || [];
+        const next = current.map((m) => (m.id === updated.id || m._uiId === updated._uiId) ? { ...m, ...normalized } : m);
+        if (selectedChatIdRef.current === updated.chatId) {
+          setMessages(next);
+        }
+        return { ...prev, [updated.chatId]: next };
+      });
+    });
     socket.on("chat_state", ({ chatId, state }) => {
       setChatStates(prev => ({ ...prev, [chatId]: state }));
     });
@@ -754,6 +768,22 @@ function App() {
       if (!background) showNotice(error.message, "error");
     } finally {
       if (!background) setLoadingStatusArchive(false);
+    }
+  }
+
+  async function fetchResources() {
+    if (!selectedChatId) return;
+    setLoadingResources(true);
+    setShowResources(true);
+    try {
+      const res = await fetch(`${API_URL}/api/chats/${encodeURIComponent(selectedChatId)}/resources`);
+      if (!res.ok) throw new Error("No se pudieron cargar los recursos.");
+      const data = await res.json();
+      setResources(data);
+    } catch (error) {
+      showNotice(error.message, "error");
+    } finally {
+      setLoadingResources(false);
     }
   }
 
@@ -1341,15 +1371,15 @@ function App() {
         <div className="chatList">
           {viewMode === "statuses" ? filteredStatusArchive.map((item) => (
             <button
-              key={item.id}
+              key={item._id || item.id || item.providerStatusMessageId}
               className="chatItem statusArchiveSidebarItem"
               onClick={() => setSelectedChatId("")}
             >
               <div className="chatAvatar statusArchiveThumb">
-                {item.imageUrl ? (
+                {(item.imageUrl || item.mediaUrl) ? (
                   <img
                     className="chatAvatarImg"
-                    src={`${API_URL}${item.imageUrl}`}
+                    src={item.mediaUrl ? `${API_URL}${item.mediaUrl}` : `${API_URL}${item.imageUrl}`}
                     alt={`Estado de ${item.statusOwnerName || item.statusOwnerId}`}
                     loading="lazy"
                   />
@@ -1458,11 +1488,13 @@ function App() {
               ) : null}
               <div className="statusArchiveGrid">
                 {filteredStatusArchive.map((item) => (
-                  <article key={item.id} className="statusArchiveCard">
-                    {item.imageUrl ? (
+                  <article key={item._id || item.id || item.providerStatusMessageId} className="statusArchiveCard">
+                    {item.mediaType === "video" && item.mediaUrl ? (
+                      <video className="statusArchiveImage" src={`${API_URL}${item.mediaUrl}`} controls />
+                    ) : (item.imageUrl || item.mediaUrl) ? (
                       <img
                         className="statusArchiveImage"
-                        src={`${API_URL}${item.imageUrl}`}
+                        src={item.mediaUrl ? `${API_URL}${item.mediaUrl}` : `${API_URL}${item.imageUrl}`}
                         alt={`Estado de ${item.statusOwnerName || item.statusOwnerId}`}
                         loading="lazy"
                       />
@@ -1525,6 +1557,14 @@ function App() {
                 {syncingChat && <div className="syncProgressBar" />}
                 <button
                   className="secondary"
+                  aria-label="Ver recursos del contacto"
+                  onClick={fetchResources}
+                  disabled={!selectedChatId}
+                >
+                  📂 Recursos
+                </button>
+                <button
+                  className="secondary"
                   aria-label="Recargar mensajes"
                   onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
                   disabled={!selectedChatId}
@@ -1549,11 +1589,11 @@ function App() {
                 const prevMsg = messages[idx - 1];
                 const isConsecutive = prevMsg && prevMsg.fromMe === msg.fromMe;
                 return (
-                <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"} ${isConsecutive ? "consecutive" : ""}`}>
+                <div key={msg._uiId} className={`bubbleRow ${msg.fromMe ? "mine" : "theirs"} ${isConsecutive ? "consecutive" : ""} ${msg.isRevoked ? "revokedRow" : ""}`}>
                   <article
                     className={`bubble ${
                       !msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "incomingGrammarError" : ""
-                    }`}
+                    } ${msg.isRevoked ? "isRevoked" : ""}`}
                     tabIndex={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? 0 : undefined}
                     role={!msg.fromMe && grammarInsights[msg._uiId]?.hasErrors ? "button" : undefined}
                     onClick={
@@ -1584,10 +1624,19 @@ function App() {
                     {!msg.fromMe && Array.isArray(msg.mentionedIds) && msg.mentionedIds.length > 0 ? (
                       <span className="pingBadge">Ping</span>
                     ) : null}
-                    {msg.mediaType === "image" && msg.imageDataUrl ? (
-                      <img className="msgImage" src={msg.imageDataUrl} alt="Imagen del chat" />
+                    {msg.isRevoked ? (
+                      <div className="revokedNotice">🗑️ Mensaje eliminado</div>
                     ) : null}
-                    <p>{msg.body || "[mensaje vacío]"}</p>
+                    {msg.mediaType === "image" && (msg.imageDataUrl || msg.mediaUrl) ? (
+                      <img className="msgImage" src={msg.mediaUrl ? `${API_URL}${msg.mediaUrl}` : msg.imageDataUrl} alt="Imagen del chat" />
+                    ) : null}
+                    {msg.mediaType === "video" && msg.mediaUrl ? (
+                      <video className="msgVideo" src={`${API_URL}${msg.mediaUrl}`} controls />
+                    ) : null}
+                    {msg.mediaType === "audio" && msg.mediaUrl ? (
+                      <audio className="msgAudio" src={`${API_URL}${msg.mediaUrl}`} controls />
+                    ) : null}
+                    <p className={msg.isRevoked ? "revokedText" : ""}>{msg.body || "[mensaje vacío]"}</p>
                     <div className="bubbleMeta">
                       <time>{formatTime(msg.timestamp)}</time>
                       {msg.fromMe && <AckIcon status={msg.status || msg.ack} />}
@@ -1754,6 +1803,72 @@ function App() {
           </>
         )}
       </section>
+
+      {showResources ? (
+        <section className="modalOverlay" onClick={() => setShowResources(false)}>
+          <div className="modalCard resourcesModal" onClick={(e) => e.stopPropagation()}>
+            <div className="modalHeader">
+              <h3>Recursos de {selectedChat?.name || selectedChatId}</h3>
+              <button className="secondary" onClick={() => setShowResources(false)}>Cerrar</button>
+            </div>
+
+            {loadingResources ? <p className="helper">Cargando recursos...</p> : (
+              <div className="resourcesContent">
+                <section className="resourceSection">
+                  <h4>📁 Media ({resources.media.length})</h4>
+                  <div className="resourceGrid">
+                    {resources.media.map(m => (
+                      <div key={m._id || m.id || m.providerMessageId} className="resourceItem">
+                        {m.mediaType === 'image' ? (
+                          <img src={`${API_URL}${m.mediaUrl}`} alt="media" />
+                        ) : m.mediaType === 'video' ? (
+                          <video src={`${API_URL}${m.mediaUrl}`} controls />
+                        ) : (
+                          <div className="mediaFallback">{m.mediaType}</div>
+                        )}
+                        <time>{formatTime(m.timestamp)}</time>
+                      </div>
+                    ))}
+                    {resources.media.length === 0 && <p className="helper">No hay media.</p>}
+                  </div>
+                </section>
+
+                <section className="resourceSection">
+                  <h4>🔗 Enlaces ({resources.links.length})</h4>
+                  <ul className="resourceList">
+                    {resources.links.map((link, i) => (
+                      <li key={i}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer">{link.url}</a>
+                        <time>{formatTime(link.timestamp)}</time>
+                      </li>
+                    ))}
+                    {resources.links.length === 0 && <p className="helper">No hay enlaces.</p>}
+                  </ul>
+                </section>
+
+                <section className="resourceSection">
+                  <h4>📱 Estados Archivados ({resources.statuses.length})</h4>
+                  <div className="resourceGrid">
+                    {resources.statuses.map(s => (
+                      <div key={s._id || s.id || s.providerStatusMessageId} className="resourceItem">
+                         {s.mediaType === 'video' ? (
+                          <video src={`${API_URL}${s.mediaUrl}`} controls />
+                        ) : s.mediaUrl ? (
+                          <img src={`${API_URL}${s.mediaUrl}`} alt="status" />
+                        ) : (
+                          <div className="mediaFallback">Texto</div>
+                        )}
+                        <time>{formatTime(s.timestamp)}</time>
+                      </div>
+                    ))}
+                    {resources.statuses.length === 0 && <p className="helper">No hay estados.</p>}
+                  </div>
+                </section>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
 
       {showAiSettings ? (
         <section className="modalOverlay" onClick={() => setShowAiSettings(false)}>

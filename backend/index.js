@@ -44,6 +44,8 @@ const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
+const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
+const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
 const STATUS_POLL_INTERVAL_MS = Number(process.env.STATUS_POLL_INTERVAL_MS || 60 * 1000);
 let aiErrorLogState = {
   signature: '',
@@ -117,6 +119,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '1mb' }));
 app.use(STATUS_ARCHIVE_PUBLIC_BASE, express.static(STATUS_ARCHIVE_DIR));
+app.use(MEDIA_ARCHIVE_PUBLIC_BASE, express.static(MEDIA_ARCHIVE_DIR));
 
 // Middleware global para proteger todas las rutas /api/ (excepto health)
 app.use('/api', (req, res, next) => {
@@ -156,6 +159,10 @@ const MessageSchema = new mongoose.Schema({
   fromMe: Boolean,
   mediaType: String,
   imageDataUrl: String,
+  mediaUrl: String,
+  mediaPath: String,
+  mimeType: String,
+  isRevoked: { type: Boolean, default: false },
   replyToMessageId: String,
   replyToText: String,
   mentionedIds: [String],
@@ -222,6 +229,7 @@ const StatusArchiveSchema = new mongoose.Schema({
   fileName: String,
   filePath: String,
   imageUrl: String,
+  mediaUrl: String,
   timestamp: Number,
   viewedAt: Date
 }, { timestamps: true });
@@ -317,9 +325,14 @@ function ensureDirectory(dirPath) {
 }
 
 ensureDirectory(STATUS_ARCHIVE_DIR);
+ensureDirectory(MEDIA_ARCHIVE_DIR);
 
 function toPublicStatusArchiveUrl(fileName) {
   return `${STATUS_ARCHIVE_PUBLIC_BASE}/${encodeURIComponent(fileName)}`;
+}
+
+function toPublicMediaArchiveUrl(fileName) {
+  return `${MEDIA_ARCHIVE_PUBLIC_BASE}/${encodeURIComponent(fileName)}`;
 }
 
 function safeStatusSegment(value, fallback = 'status') {
@@ -801,35 +814,62 @@ async function requestCorrectionWithModel(text, options = {}) {
   }
 }
 
+async function archiveMedia(media, prefix = 'media') {
+  if (!media || !media.data || !media.mimetype) return null;
+
+  const mediaSha256 = hashBase64(media.data);
+  const extension = extensionFromMime(media.mimetype);
+  const fileName = `${prefix}-${Date.now()}-${mediaSha256.slice(0, 16)}${extension}`;
+  const filePath = path.join(MEDIA_ARCHIVE_DIR, fileName);
+
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, Buffer.from(media.data, 'base64'));
+  }
+
+  return {
+    fileName,
+    filePath,
+    publicUrl: toPublicMediaArchiveUrl(fileName),
+    mimeType: media.mimetype
+  };
+}
+
 async function buildMediaPayload(message) {
   if (!message.hasMedia) {
-    return { mediaType: null, imageDataUrl: null };
+    return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
   }
 
   try {
-    // Ponemos un timeout de 5 segundos a la descarga para no trabar el servidor
     const mediaPromise = message.downloadMedia();
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Media download timeout')), 5000)
+      setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
 
     const media = await Promise.race([mediaPromise, timeoutPromise]);
     
     if (!media || !media.mimetype) {
-      return { mediaType: null, imageDataUrl: null };
+      return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
     }
 
-    if (media.mimetype.startsWith('image/')) {
-      return {
-        mediaType: 'image',
-        imageDataUrl: `data:${media.mimetype};base64,${media.data}`
-      };
+    const archived = await archiveMedia(media, 'chat');
+    const mediaType = media.mimetype.split('/')[0] || 'document';
+
+    let payload = {
+      mediaType,
+      mediaUrl: archived?.publicUrl || null,
+      mimeType: media.mimetype
+    };
+
+    if (mediaType === 'image') {
+      payload.imageDataUrl = `data:${media.mimetype};base64,${media.data}`;
     }
+
+    return payload;
   } catch (error) {
     console.warn(`⚠️ Media download skipped for message ${message.id?._serialized || 'unknown'}:`, error.message);
   }
 
-  return { mediaType: null, imageDataUrl: null };
+  return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
 }
 
 async function buildReplyPayload(message) {
@@ -880,6 +920,8 @@ async function serializeMessage(message, chatId, context = {}) {
     to: message?.to,
     mediaType: mediaPayload.mediaType,
     imageDataUrl: mediaPayload.imageDataUrl,
+    mediaUrl: mediaPayload.mediaUrl,
+    mimeType: mediaPayload.mimeType,
     replyToMessageId: replyPayload.replyToMessageId,
     replyToText: replyPayload.replyToText,
     mentionedIds: Array.isArray(message?.mentionedIds) ? message.mentionedIds : []
@@ -1029,10 +1071,6 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
     return { archived: false, reason: 'missing_message_id' };
   }
 
-  if (normalized.mediaType && normalized.mediaType !== 'image') {
-    return { archived: false, reason: 'unsupported_media_type' };
-  }
-
   const existing = await StatusArchive.findOne({
     provider: DEFAULT_PROVIDER,
     accountId: DEFAULT_ACCOUNT_ID,
@@ -1045,23 +1083,23 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
   await client.sendSeen('status@broadcast').catch(() => {});
 
   const statusMessage = await client.getMessageById(normalized.providerStatusMessageId).catch(() => null);
-  if (!statusMessage || !statusMessage.hasMedia) {
-    return { archived: false, reason: 'no_media' };
+  if (!statusMessage) {
+    return { archived: false, reason: 'status_not_found' };
   }
 
-  const media = await statusMessage.downloadMedia().catch(() => null);
-  if (!media?.mimetype || !media?.data || !media.mimetype.startsWith('image/')) {
-    return { archived: false, reason: 'non_image_media' };
-  }
+  let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
-  const mediaSha256 = hashBase64(media.data);
-  const extension = extensionFromMime(media.mimetype);
-  const statusOwnerSegment = safeStatusSegment(normalized.statusOwnerId || normalized.statusOwnerName || 'unknown');
-  const fileName = `${statusOwnerSegment}-${normalized.timestamp}-${mediaSha256.slice(0, 16)}${extension}`;
-  const filePath = path.join(STATUS_ARCHIVE_DIR, fileName);
-
-  if (!fs.existsSync(filePath)) {
-    fs.writeFileSync(filePath, Buffer.from(media.data, 'base64'));
+  if (statusMessage.hasMedia) {
+    const media = await statusMessage.downloadMedia().catch(() => null);
+    if (media && media.data) {
+      const archived = await archiveMedia(media, 'status');
+      if (archived) {
+        mediaPayload = {
+          ...archived,
+          mediaSha256: hashBase64(media.data)
+        };
+      }
+    }
   }
 
   const payload = {
@@ -1074,13 +1112,14 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
     chatId: normalized.chatId,
     description: normalized.description || normalized.caption,
     caption: normalized.caption,
-    mediaType: 'image',
-    mimeType: media.mimetype,
-    mediaSha256,
+    mediaType: mediaPayload.mimeType ? mediaPayload.mimeType.split('/')[0] : 'text',
+    mimeType: mediaPayload.mimeType,
+    mediaSha256: mediaPayload.mediaSha256,
     archivedFrom: source === 'event' ? 'event' : 'poll',
-    fileName,
-    filePath,
-    imageUrl: toPublicStatusArchiveUrl(fileName),
+    fileName: mediaPayload.fileName,
+    filePath: mediaPayload.filePath,
+    imageUrl: mediaPayload.publicUrl,
+    mediaUrl: mediaPayload.publicUrl,
     timestamp: normalized.timestamp,
     viewedAt: new Date()
   };
@@ -1458,6 +1497,30 @@ client.on('disconnected', (reason) => {
   io.emit('disconnected', reason);
 });
 
+async function handleMessageRevoke(after, before) {
+  const msgId = (before || after)?.id?._serialized;
+  if (!msgId) return;
+
+  console.log(`🗑️ Message revoked: ${msgId}`);
+
+  try {
+    const updated = await Message.findOneAndUpdate(
+      { providerMessageId: msgId },
+      { $set: { isRevoked: true } },
+      { new: true }
+    );
+
+    if (updated) {
+      io.emit('message_updated', updated);
+    }
+  } catch (err) {
+    console.error(`❌ Error handling revoke for ${msgId}:`, err.message);
+  }
+}
+
+client.on('message_revoke_everyone', handleMessageRevoke);
+client.on('message_revoke_me', handleMessageRevoke);
+
 // Message handling (incoming and outgoing)
 client.on('message_create', async (msg) => {
   // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
@@ -1825,6 +1888,59 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
       error: 'Failed to fetch messages', 
       detail: error.message 
     });
+  }
+});
+
+app.get('/api/chats/:chatId/resources', async (req, res) => {
+  try {
+    const { chatId } = req.params;
+    const { provider, accountId } = parseProviderContext(req);
+
+    if (!chatId) return res.status(400).json({ error: 'Missing chatId' });
+
+    const mediaMessages = await Message.find({
+      provider,
+      accountId,
+      conversationId: chatId,
+      mediaUrl: { $exists: true, $ne: null }
+    }).sort({ timestamp: -1 }).limit(100).lean();
+
+    const allMessages = await Message.find({
+      provider,
+      accountId,
+      conversationId: chatId,
+      body: { $regex: /https?:\/\/[^\s]+/ }
+    }).sort({ timestamp: -1 }).limit(100).lean();
+
+    const links = [];
+    allMessages.forEach(m => {
+      const found = m.body.match(/https?:\/\/[^\s]+/g);
+      if (found) {
+        found.forEach(url => {
+          links.push({
+            url,
+            timestamp: m.timestamp,
+            fromMe: m.fromMe
+          });
+        });
+      }
+    });
+
+    const statuses = await StatusArchive.find({
+      provider,
+      accountId,
+      statusOwnerId: chatId
+    }).sort({ timestamp: -1 }).limit(50).lean();
+
+    res.json({
+      chatId,
+      media: mediaMessages,
+      links,
+      statuses
+    });
+  } catch (error) {
+    console.error('❌ Fetch resources error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch resources', detail: error.message });
   }
 });
 
