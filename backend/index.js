@@ -1156,15 +1156,21 @@ async function runStatusArchiveSweep(source = 'poll') {
 
   try {
     const descriptors = await fetchCurrentStatusDescriptors();
-    for (const descriptor of descriptors) {
-      stats.checked += 1;
-      try {
-        const result = await archiveStatusFromDescriptor(descriptor, source);
+    const results = await Promise.allSettled(
+      descriptors.map(async (descriptor) => {
+        stats.checked += 1;
+        return await archiveStatusFromDescriptor(descriptor, source);
+      })
+    );
+
+    for (const res of results) {
+      if (res.status === 'fulfilled') {
+        const result = res.value;
         if (result.archived) stats.archived += 1;
         else stats.skipped += 1;
-      } catch (error) {
+      } else {
         stats.errors += 1;
-        console.error('⚠️ Status archive item error:', error.message);
+        console.error('⚠️ Status archive item error:', res.reason?.message || res.reason);
       }
     }
   } catch (error) {
