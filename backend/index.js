@@ -928,33 +928,37 @@ async function serializeMessage(message, chatId, context = {}) {
   };
 }
 
+async function prepareChatUpsert(waChat, index, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const chatId = waChat.id._serialized;
+  const conversationId = chatId;
+  const avatarUrl = await getChatAvatar(waChat, index || 0);
+  const now = new Date();
+
+  return {
+    filter: { provider, accountId, conversationId },
+    update: {
+      id: chatId,
+      provider,
+      accountId,
+      conversationId,
+      conversationKey: buildConversationKey(provider, accountId, conversationId),
+      name: waChat.name,
+      unreadCount: waChat.unreadCount,
+      timestamp: waChat.timestamp,
+      isGroup: Boolean(waChat.isGroup),
+      avatarUrl,
+      lastSyncedAt: now
+    }
+  };
+}
+
 async function upsertChat(waChat, index, context = {}) {
   try {
-    const provider = normalizeProvider(context.provider);
-    const accountId = normalizeAccountId(context.accountId);
-    const chatId = waChat.id._serialized;
-    const conversationId = chatId;
-    const avatarUrl = await getChatAvatar(waChat, index || 0);
-    const now = new Date();
-
-    await Chat.findOneAndUpdate(
-      { provider, accountId, conversationId },
-      {
-        id: chatId,
-        provider,
-        accountId,
-        conversationId,
-        conversationKey: buildConversationKey(provider, accountId, conversationId),
-        name: waChat.name,
-        unreadCount: waChat.unreadCount,
-        timestamp: waChat.timestamp,
-        isGroup: Boolean(waChat.isGroup),
-        avatarUrl,
-        lastSyncedAt: now
-      },
-      { upsert: true, new: true }
-    );
-    invalidateChatsCache(provider, accountId);
+    const { filter, update } = await prepareChatUpsert(waChat, index, context);
+    await Chat.findOneAndUpdate(filter, update, { upsert: true, new: true });
+    invalidateChatsCache(context.provider, context.accountId);
   } catch (err) {
     console.error(`❌ Error upserting chat ${waChat.id?._serialized}:`, err.message);
   }
@@ -1193,10 +1197,29 @@ async function syncAllChats(context = {}) {
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
     const chats = await adapter.listChats({ accountId });
-    for (let i = 0; i < chats.length; i++) {
-      await upsertChat(chats[i], i, { provider, accountId });
+    const results = await Promise.allSettled(chats.map((waChat, i) => prepareChatUpsert(waChat, i, { provider, accountId })));
+
+    const ops = [];
+    for (let i = 0; i < results.length; i++) {
+      if (results[i].status === 'fulfilled') {
+        const { filter, update } = results[i].value;
+        ops.push({
+          updateOne: {
+            filter,
+            update,
+            upsert: true
+          }
+        });
+      } else {
+        console.error(`⚠️ Failed to prepare chat ${chats[i]?.id?._serialized}:`, results[i].reason?.message || results[i].reason);
+      }
     }
-    console.log(`✅ Synced ${chats.length} chats.`);
+
+    if (ops.length > 0) {
+      await Chat.bulkWrite(ops);
+    }
+    invalidateChatsCache(provider, accountId);
+    console.log(`✅ Synced ${chats.length} chats (success: ${ops.length}, fail: ${chats.length - ops.length}).`);
   } catch (err) {
     console.error('❌ Error in syncAllChats:', err.message);
   }
