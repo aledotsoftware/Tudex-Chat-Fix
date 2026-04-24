@@ -46,7 +46,11 @@ const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
-const STATUS_POLL_INTERVAL_MS = Number(process.env.STATUS_POLL_INTERVAL_MS || 60 * 1000);
+let rawPollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
+if (!Number.isFinite(rawPollInterval) || rawPollInterval < 1000) {
+  rawPollInterval = 60 * 1000;
+}
+const STATUS_POLL_INTERVAL_MS = rawPollInterval;
 let aiErrorLogState = {
   signature: '',
   count: 0,
@@ -64,7 +68,11 @@ let lastStatusArchiveStats = {
 };
 
 // API Key authentication middleware
-const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui'; 
+const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui';
+
+if (API_KEY === 'tu_contraseña_super_segura_aqui' || API_KEY.length < 8) {
+  console.warn('⚠️ WARNING: API_KEY is missing, default, or too short. This is insecure for production environments.');
+}
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
@@ -247,20 +255,40 @@ const AiSettingsSchema = new mongoose.Schema({
 }, { timestamps: true });
 const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
+
+function safeUrl(urlStr, defaultUrl = '') {
+  if (!urlStr) return defaultUrl;
+  try {
+    new URL(urlStr);
+    return urlStr;
+  } catch (e) {
+    return defaultUrl;
+  }
+}
+
+function safeNumber(val, defaultVal, min, max) {
+  const num = Number(val);
+  if (!Number.isFinite(num)) return defaultVal;
+  if (min !== undefined && num < min) return defaultVal;
+  if (max !== undefined && num > max) return defaultVal;
+  return num;
+}
+
 const DEFAULT_AI_CONFIG = {
   provider: (process.env.AI_PROVIDER || 'lmstudio').toLowerCase(),
-  lmStudioBaseUrl: (process.env.LM_STUDIO_URL || 'http://localhost:1234')
+  lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234')
     .replace(/\/+$/, '')
     .replace(/\/v1\/chat\/completions$/, ''),
-  cloudflareAccountId: process.env.CLOUDFLARE_ACCOUNT_ID || '',
-  cloudflareApiToken: process.env.CLOUDFLARE_API_TOKEN || '',
-  cloudflareBaseUrl: (process.env.CLOUDFLARE_AI_BASE_URL || '').replace(/\/+$/, ''),
-  modelName: process.env.MODEL_NAME || 'llama-3.1-8b-instruct',
-  temperature: Number(process.env.AI_TEMPERATURE || 0.7),
-  maxTokens: Number(process.env.AI_MAX_TOKENS || 180),
-  systemPrompt: process.env.AI_SYSTEM_PROMPT || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.',
-  userPromptTemplate: process.env.AI_USER_PROMPT_TEMPLATE || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}',
-  timeoutMs: Number(process.env.AI_TIMEOUT_MS || 15000)
+  cloudflareAccountId: (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim(),
+  cloudflareApiToken: (process.env.CLOUDFLARE_API_TOKEN || '').trim(),
+  cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '')
+    .replace(/\/+$/, ''),
+  modelName: (process.env.MODEL_NAME || 'llama-3.1-8b-instruct').trim(),
+  temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2),
+  maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192),
+  systemPrompt: (process.env.AI_SYSTEM_PROMPT || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.').trim(),
+  userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}').trim(),
+  timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000)
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };
@@ -1727,7 +1755,10 @@ app.put('/api/ai/config', async (req, res) => {
       nextConfig.provider = String(req.body.provider).toLowerCase() === 'cloudflare' ? 'cloudflare' : 'lmstudio';
     }
     if (typeof req.body.lmStudioBaseUrl === 'string') {
-      nextConfig.lmStudioBaseUrl = req.body.lmStudioBaseUrl.trim() || DEFAULT_AI_CONFIG.lmStudioBaseUrl;
+      const trimmed = req.body.lmStudioBaseUrl.trim();
+      nextConfig.lmStudioBaseUrl = safeUrl(trimmed, DEFAULT_AI_CONFIG.lmStudioBaseUrl)
+        .replace(/\/+$/, '')
+        .replace(/\/v1\/chat\/completions$/, '');
     }
     if (typeof req.body.cloudflareAccountId === 'string') {
       nextConfig.cloudflareAccountId = req.body.cloudflareAccountId.trim();
@@ -1736,19 +1767,18 @@ app.put('/api/ai/config', async (req, res) => {
       nextConfig.cloudflareApiToken = req.body.cloudflareApiToken.trim();
     }
     if (typeof req.body.cloudflareBaseUrl === 'string') {
-      nextConfig.cloudflareBaseUrl = req.body.cloudflareBaseUrl.trim();
+      const trimmed = req.body.cloudflareBaseUrl.trim();
+      nextConfig.cloudflareBaseUrl = safeUrl(trimmed, '')
+        .replace(/\/+$/, '');
     }
     if (req.body.temperature !== undefined) {
-      const parsed = Number(req.body.temperature);
-      nextConfig.temperature = Number.isFinite(parsed) ? parsed : aiConfig.temperature;
+      nextConfig.temperature = safeNumber(req.body.temperature, aiConfig.temperature, 0, 2);
     }
     if (req.body.maxTokens !== undefined) {
-      const parsed = Number(req.body.maxTokens);
-      nextConfig.maxTokens = Number.isFinite(parsed) && parsed > 0 ? parsed : aiConfig.maxTokens;
+      nextConfig.maxTokens = safeNumber(req.body.maxTokens, aiConfig.maxTokens, 1, 8192);
     }
     if (req.body.timeoutMs !== undefined) {
-      const parsed = Number(req.body.timeoutMs);
-      nextConfig.timeoutMs = Number.isFinite(parsed) && parsed > 0 ? parsed : aiConfig.timeoutMs;
+      nextConfig.timeoutMs = safeNumber(req.body.timeoutMs, aiConfig.timeoutMs, 1000, 60000);
     }
 
     const saved = await saveAiConfig(nextConfig);

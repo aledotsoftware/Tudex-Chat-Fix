@@ -80,7 +80,10 @@ En Docker Compose ya se inyectan:
 - `LM_STUDIO_URL=http://host.docker.internal:1234`
 - `MODEL_NAME=llama-3.1-8b-instruct`
 - `CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`
-- `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas.
+- `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas (Mínimo de 1000ms).
+- `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción.
+- `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas.
+
 
 ## 🩺 Diagnóstico y Estado
 
