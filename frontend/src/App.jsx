@@ -1252,6 +1252,7 @@ function App() {
             value={inputApiKey} 
             onChange={(e) => setInputApiKey(e.target.value)}
             placeholder="Introduce tu API Key" 
+            aria-label="API Key"
             style={{ width: '100%', padding: '10px', marginBottom: '15px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
             onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
           />
@@ -1365,6 +1366,7 @@ function App() {
             value={chatSearch}
             onChange={(e) => setChatSearch(e.target.value)}
             placeholder={viewMode === "statuses" ? "🔍 Buscar estado..." : "🔍 Buscar chat... (Ctrl+K)"}
+            aria-label="Buscar chats"
           />
         </div>
 
@@ -1876,8 +1878,9 @@ function App() {
             <h3>Configuración IA</h3>
             {loadingAiConfig ? <p className="helper">Cargando configuración...</p> : null}
 
-            <label>Proveedor</label>
+            <label htmlFor="ai-provider">Proveedor</label>
             <select
+              id="ai-provider"
               value={aiConfig.provider}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, provider: e.target.value }))}
             >
@@ -1885,13 +1888,14 @@ function App() {
               <option value="cloudflare">Cloudflare AI</option>
             </select>
 
-            <label>Endpoint activo</label>
-            <input value={aiConfig.aiBaseUrl} readOnly />
+            <label htmlFor="ai-endpoint">Endpoint activo</label>
+            <input id="ai-endpoint" value={aiConfig.aiBaseUrl} readOnly />
 
             {aiConfig.provider === "lmstudio" ? (
               <>
-                <label>URL LM Studio</label>
+                <label htmlFor="lmstudio-url">URL LM Studio</label>
                 <input
+                  id="lmstudio-url"
                   value={aiConfig.lmStudioBaseUrl}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, lmStudioBaseUrl: e.target.value }))
@@ -1900,16 +1904,18 @@ function App() {
               </>
             ) : (
               <>
-                <label>Cloudflare Account ID</label>
+                <label htmlFor="cf-account-id">Cloudflare Account ID</label>
                 <input
+                  id="cf-account-id"
                   value={aiConfig.cloudflareAccountId}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))
                   }
                 />
 
-                <label>Cloudflare API Token</label>
+                <label htmlFor="cf-api-token">Cloudflare API Token</label>
                 <input
+                  id="cf-api-token"
                   type="password"
                   value={aiConfig.cloudflareApiToken}
                   onChange={(e) =>
@@ -1917,8 +1923,9 @@ function App() {
                   }
                 />
 
-                <label>Cloudflare Base URL (opcional)</label>
+                <label htmlFor="cf-base-url">Cloudflare Base URL (opcional)</label>
                 <input
+                  id="cf-base-url"
                   value={aiConfig.cloudflareBaseUrl}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareBaseUrl: e.target.value }))
@@ -1928,8 +1935,9 @@ function App() {
               </>
             )}
 
-            <label>Modelo</label>
+            <label htmlFor="ai-model-select">Modelo</label>
             <select
+              id="ai-model-select"
               value={aiConfig.modelName}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             >
@@ -1941,12 +1949,14 @@ function App() {
               ))}
             </select>
             <input
+              aria-label="Nombre del modelo IA"
               value={aiConfig.modelName}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             />
 
-            <label>Temperatura</label>
+            <label htmlFor="ai-temperature">Temperatura</label>
             <input
+              id="ai-temperature"
               type="number"
               step="0.1"
               min="0"
@@ -1957,8 +1967,9 @@ function App() {
               }
             />
 
-            <label>Timeout IA (ms)</label>
+            <label htmlFor="ai-timeout">Timeout IA (ms)</label>
             <input
+              id="ai-timeout"
               type="number"
               min="5000"
               step="1000"
@@ -1968,8 +1979,9 @@ function App() {
               }
             />
 
-            <label>Max tokens</label>
+            <label htmlFor="ai-max-tokens">Max tokens</label>
             <input
+              id="ai-max-tokens"
               type="number"
               min="32"
               max="2048"
@@ -1980,15 +1992,17 @@ function App() {
               }
             />
 
-            <label>Prompt de sistema</label>
+            <label htmlFor="ai-system-prompt">Prompt de sistema</label>
             <textarea
+              id="ai-system-prompt"
               rows={4}
               value={aiConfig.systemPrompt}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, systemPrompt: e.target.value }))}
             />
 
-            <label>Prompt de usuario (usar {`{{text}}`})</label>
+            <label htmlFor="ai-user-prompt">Prompt de usuario (usar {`{{text}}`})</label>
             <textarea
+              id="ai-user-prompt"
               rows={5}
               value={aiConfig.userPromptTemplate}
               onChange={(e) =>

@@ -478,8 +478,8 @@ button, textarea, input, select {
   padding: 10px 14px 8px;
   border-radius: 18px 18px 18px 8px;
   position: relative;
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 16px;
+  line-height: 1.6;
   word-break: break-word;
   white-space: pre-wrap;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
