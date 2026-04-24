@@ -1193,9 +1193,9 @@ async function syncAllChats(context = {}) {
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
     const chats = await adapter.listChats({ accountId });
-    for (let i = 0; i < chats.length; i++) {
-      await upsertChat(chats[i], i, { provider, accountId });
-    }
+    await Promise.all(
+      chats.map((chat, i) => upsertChat(chat, i, { provider, accountId }))
+    );
     console.log(`✅ Synced ${chats.length} chats.`);
   } catch (err) {
     console.error('❌ Error in syncAllChats:', err.message);
@@ -1213,9 +1213,9 @@ async function syncChatMessages(chatId, limit = 50, context = {}) {
       conversationId: chatId,
       limit
     });
-    for (const m of messages) {
-      await upsertMessage(m, chatId, {}, { provider, accountId });
-    }
+    await Promise.all(
+      messages.map(m => upsertMessage(m, chatId, {}, { provider, accountId }))
+    );
   } catch (err) {
     console.error(`❌ Error syncing messages for chat ${chatId}:`, err.message);
   }
