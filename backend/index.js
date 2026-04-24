@@ -902,8 +902,12 @@ async function serializeMessage(message, chatId, context = {}) {
     provider === DEFAULT_PROVIDER
       ? providerMessageId
       : `${provider}:${accountId}:${providerMessageId}`;
-  const mediaPayload = await buildMediaPayload(message);
-  const replyPayload = await buildReplyPayload(message);
+
+  const [mediaPayload, replyPayload] = await Promise.all([
+    buildMediaPayload(message),
+    buildReplyPayload(message)
+  ]);
+
   const conversationId = chatId;
   return {
     id: canonicalMessageId,
@@ -1193,9 +1197,14 @@ async function syncAllChats(context = {}) {
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
     const chats = await adapter.listChats({ accountId });
-    for (let i = 0; i < chats.length; i++) {
-      await upsertChat(chats[i], i, { provider, accountId });
-    }
+    if (!chats || chats.length === 0) return;
+
+    // Concurrently upsert chats to parallelize avatar fetching and DB writes
+    await Promise.allSettled(
+      chats.map((chat, i) => upsertChat(chat, i, { provider, accountId }))
+    );
+
+    invalidateChatsCache(provider, accountId);
     console.log(`✅ Synced ${chats.length} chats.`);
   } catch (err) {
     console.error('❌ Error in syncAllChats:', err.message);
@@ -1207,15 +1216,44 @@ async function syncChatMessages(chatId, limit = 50, context = {}) {
   const accountId = normalizeAccountId(context.accountId);
   const adapter = resolveProviderAdapter(provider);
   if (!adapter.isReady()) return;
+
   try {
     const messages = await adapter.fetchMessages({
       accountId,
       conversationId: chatId,
       limit
     });
-    for (const m of messages) {
-      await upsertMessage(m, chatId, {}, { provider, accountId });
-    }
+
+    if (!messages || messages.length === 0) return;
+
+    // Parallel serialization
+    const payloads = await Promise.all(
+      messages.map(m => serializeMessage(m, chatId, { provider, accountId }))
+    );
+
+    // Bulk DB operation
+    const bulkOps = payloads.map(payload => {
+      const updateData = { ...payload };
+      Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+      return {
+        updateOne: {
+          filter: {
+            provider: payload.provider,
+            accountId: payload.accountId,
+            providerMessageId: payload.providerMessageId
+          },
+          update: { $set: updateData },
+          upsert: true
+        }
+      };
+    });
+
+    await Message.bulkWrite(bulkOps, { ordered: false });
+
+    // Single-pass cache invalidation
+    invalidateMessagesCache(provider, accountId, chatId);
+    invalidateChatsCache(provider, accountId);
   } catch (err) {
     console.error(`❌ Error syncing messages for chat ${chatId}:`, err.message);
   }
