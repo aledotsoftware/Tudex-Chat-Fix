@@ -182,6 +182,7 @@ function App() {
   const [checkingAiHealth, setCheckingAiHealth] = useState(false);
   const [aiHealth, setAiHealth] = useState(null);
   const [aiModels, setAiModels] = useState([]);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches
@@ -488,8 +489,18 @@ function App() {
       setApiAuthenticated(false);
       localStorage.removeItem("chatfix_api_key");
     };
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
     window.addEventListener('chatfix_auth_error', handleAuthError);
-    return () => window.removeEventListener('chatfix_auth_error', handleAuthError);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('chatfix_auth_error', handleAuthError);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
 
   const checkAuth = async (key) => {
@@ -758,6 +769,7 @@ function App() {
 
   async function fetchStatusArchive(background = false) {
     if (!apiAuthenticated) return;
+    if (!navigator.onLine) return;
     if (!background) setLoadingStatusArchive(true);
     try {
       const res = await fetch(`${API_URL}/api/status-archive?limit=120`);
@@ -773,6 +785,10 @@ function App() {
 
   async function fetchResources() {
     if (!selectedChatId) return;
+    if (!navigator.onLine) {
+      showNotice("No se pueden cargar los recursos sin conexión.", "error");
+      return;
+    }
     setLoadingResources(true);
     setShowResources(true);
     try {
@@ -796,6 +812,7 @@ function App() {
 
   async function fetchChats(selectFirst = false) {
     if (!apiAuthenticated) return;
+
     setLoadingChats(true);
     try {
       const cachedChats = await getCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID);
@@ -806,6 +823,14 @@ function App() {
         setChats(sortedCached);
       }
 
+      if (!navigator.onLine) {
+         setLoadingChats(false);
+         if (cachedChats.length > 0 && (!selectedChatIdRef.current || selectFirst)) {
+            setSelectedChatId(cachedChats[0].id);
+         }
+         return;
+      }
+
       const url = new URL(`${API_URL}/api/chats`);
       url.searchParams.set("provider", DEFAULT_PROVIDER);
       url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
@@ -813,7 +838,7 @@ function App() {
       if (!res.ok) throw new Error("No se pudieron cargar los chats.");
 
       const payload = await res.json();
-      const { items } = parseApiItemsPayload(payload);
+      const { items, syncState } = parseApiItemsPayload(payload);
       const safeChats = items.sort(
         (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
       );
@@ -855,14 +880,20 @@ function App() {
     const { withLoader = true, background = false } = options;
     if (!chatId) return;
     const reqId = ++messageFetchReqIdRef.current;
+
     if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: true }));
-    if (background) setSyncingChat(true);
+    if (background && navigator.onLine) setSyncingChat(true);
+
     try {
-      const cachedMessages = await getCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chatId);
-      if (cachedMessages.length > 0 && selectedChatIdRef.current === chatId) {
-        setMessages(cachedMessages);
-        setMessagesByChat((prev) => ({ ...prev, [chatId]: cachedMessages }));
+      if (!background) {
+        const cachedMessages = await getCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chatId);
+        if (cachedMessages.length > 0 && selectedChatIdRef.current === chatId) {
+          setMessages(cachedMessages);
+          setMessagesByChat((prev) => ({ ...prev, [chatId]: cachedMessages }));
+        }
       }
+
+      if (!navigator.onLine) return;
 
       const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/messages`);
       url.searchParams.set("provider", DEFAULT_PROVIDER);
@@ -871,7 +902,13 @@ function App() {
       if (!res.ok) throw new Error("No se pudieron cargar los mensajes.");
       const payload = await res.json();
       if (reqId !== messageFetchReqIdRef.current) return;
-      const { items } = parseApiItemsPayload(payload);
+      const { items, syncState } = parseApiItemsPayload(payload);
+
+      if (syncState && (syncState.status === 'syncing' || syncState.status === 'queued')) {
+         setSyncingChat(true);
+      } else {
+         setSyncingChat(false);
+      }
       const safeMessages = items
         .map((msg) => ({ ...msg, _uiId: messageId(msg) }))
         .sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
@@ -897,7 +934,7 @@ function App() {
   }
 
   async function markChatAsRead(chatId) {
-    if (!chatId) return;
+    if (!chatId || !navigator.onLine) return;
     try {
       const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/read`);
       url.searchParams.set("provider", DEFAULT_PROVIDER);
@@ -992,6 +1029,10 @@ function App() {
 
   async function sendMessage(textToSend) {
     if (!String(textToSend || "").trim()) return;
+    if (!navigator.onLine) {
+       showNotice("No puedes enviar mensajes sin conexión a internet.", "error");
+       return;
+    }
     const optimisticMsg = {
       _uiId: `optimistic-${Date.now()}`,
       chatId: selectedChatId,
@@ -1305,6 +1346,11 @@ function App() {
         <div className="bg-blob blob-1"></div>
         <div className="bg-blob blob-2"></div>
       </div>
+      {isOffline && (
+        <div className="offlineBanner">
+          <span>⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.
+        </div>
+      )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
         <aside className="sidebar">
         <header className="sidebarHeader">
