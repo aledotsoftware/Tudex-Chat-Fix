@@ -76,9 +76,9 @@ if (API_KEY === 'tu_contraseña_super_segura_aqui' || API_KEY.length < 8) {
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
-  
+
   if (req.method === 'OPTIONS') return next();
-  
+
   const providedKey = req.headers['x-api-key'] || req.query.api_key;
   if (providedKey !== API_KEY) {
     console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Expected: '${API_KEY}' vs Received: '${providedKey}'`);
@@ -118,7 +118,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, Accept');
-  
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -259,10 +259,7 @@ const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 function safeUrl(urlStr, defaultUrl = '') {
   if (!urlStr) return defaultUrl;
   try {
-    const parsed = new URL(urlStr);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return defaultUrl;
-    }
+    new URL(urlStr);
     return urlStr;
   } catch (e) {
     return defaultUrl;
@@ -872,12 +869,12 @@ async function buildMediaPayload(message) {
 
   try {
     const mediaPromise = message.downloadMedia();
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
 
     const media = await Promise.race([mediaPromise, timeoutPromise]);
-    
+
     if (!media || !media.mimetype) {
       return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
     }
@@ -1965,9 +1962,9 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Fetch messages error details:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch messages', 
-      detail: error.message 
+    res.status(500).json({
+      error: 'Failed to fetch messages',
+      detail: error.message
     });
   }
 });

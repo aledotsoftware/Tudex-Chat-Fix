@@ -26,10 +26,6 @@ services:
       MONGODB_URI: mongodb://mongo:27017/chatfix
       LM_STUDIO_URL: http://host.docker.internal:1234
       MODEL_NAME: ${MODEL_NAME}
-      AI_PROVIDER: ${AI_PROVIDER:-lmstudio}
-      CLOUDFLARE_ACCOUNT_ID: ${CLOUDFLARE_ACCOUNT_ID:-}
-      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN:-}
-      CLOUDFLARE_AI_BASE_URL: ${CLOUDFLARE_AI_BASE_URL:-}
       API_KEY: ${API_KEY}
     volumes:
       - whatsapp_auth:/app/.wwebjs_auth
