@@ -41,3 +41,4 @@ backend/.wwebjs_auth/
 
 # Backups
 *.old
+.wwebjs_auth/
