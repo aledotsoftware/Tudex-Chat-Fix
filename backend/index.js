@@ -154,7 +154,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatfix')
   .catch(err => console.error('❌ MongoDB error:', err));
 
 const MessageSchema = new mongoose.Schema({
-  id: { type: String, unique: true, index: true },
+  id: { type: String, index: true },
   provider: { type: String, default: DEFAULT_PROVIDER, index: true },
   accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
   conversationId: { type: String, index: true },
@@ -188,7 +188,7 @@ MessageSchema.index(
 const Message = mongoose.model('Message', MessageSchema);
 
 const ChatSchema = new mongoose.Schema({
-  id: { type: String, unique: true, index: true },
+  id: { type: String, index: true },
   provider: { type: String, default: DEFAULT_PROVIDER, index: true },
   accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
   conversationId: { type: String, index: true },
@@ -221,7 +221,7 @@ SyncStateSchema.index({ provider: 1, accountId: 1, conversationId: 1, kind: 1 },
 const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
 const StatusArchiveSchema = new mongoose.Schema({
-  id: { type: String, unique: true, index: true },
+  id: { type: String, index: true },
   provider: { type: String, default: DEFAULT_PROVIDER, index: true },
   accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
   providerStatusMessageId: { type: String, required: true, index: true },
@@ -1577,7 +1577,11 @@ async function handleMessageRevoke(after, before) {
 
   try {
     const updated = await Message.findOneAndUpdate(
-      { providerMessageId: msgId },
+      {
+        provider: DEFAULT_PROVIDER,
+        accountId: DEFAULT_ACCOUNT_ID,
+        providerMessageId: msgId
+      },
       { $set: { isRevoked: true } },
       { new: true }
     );
@@ -2036,11 +2040,9 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 
     const adapter = resolveProviderAdapter(provider);
     if (adapter.isReady()) {
-      try {
-        await adapter.markRead({ accountId, conversationId: chatId });
-      } catch (waErr) {
+      adapter.markRead({ accountId, conversationId: chatId }).catch(waErr => {
         console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, waErr.message);
-      }
+      });
     }
 
     res.json({ success: true, provider, accountId, conversationId: chatId });
