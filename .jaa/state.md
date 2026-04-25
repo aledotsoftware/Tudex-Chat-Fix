@@ -1,5 +1,15 @@
-Refactored provider bridge in backend to support multi-provider extensibility and isolate whatsapp-web.js logic.
-- [JAA] Frontend - Convertido a PWA con vite-plugin-pwa, manejando estado offline (App.jsx) e intercepción de fallos sin red, preservando el modelo canónico en IndexedDB.
+# JAA Global System State
 
-- **ChatFix-UX-Conversation-Flow**: Completada refactorización de la UI del compositor. Se mejoró la jerarquía visual de sugerencias de IA y estados de la actividad, reduciendo la fricción al elegir entre el borrador original y la versión corregida.
-- **ChatFix-UX-Mobile-Polish**: Optimizadas las microinteracciones y ergonomía móvil en `App.css`. Añadidas transiciones de panel suavizadas, incrementos de tamaño de toque (44px) y ajustes con `safe-area-inset-bottom` para soportar dispositivos móviles modernos.
+Este archivo contiene el estado compartido entre todos los repositorios gestionados por JAA.
+Los agentes pueden leer este estado para entender el contexto de otros proyectos.
+
+## 🚀 ACTIVE MILESTONES
+- [JAA] Implementación de Jerarquía de Contexto (.jaa.md global) - **COMPLETADO**
+- [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
+- [GENERAL] Estandarización de agentes para todos los repositorios.
+- [ChatFix-AI-Ops] Reforzamiento de seguridad para URL AI, expuesta configuración Cloudflare y variables avanzadas. Documentación actualizada. - **COMPLETADO**
+
+## 📝 AGENT NOTES
+- **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
+- **ErrorGuardian**: Monitoreando logs de error en producción.
+- **ChatFix-AI-Ops**: Validaciones de URLs de AI (http/https estricto) aplicadas a `safeUrl`. `docker-compose.yml`, `.env.example` y `README.md` actualizados con parámetros Cloudflare (`CLOUDFLARE_ACCOUNT_ID`, etc.) y avanzados (`AI_TEMPERATURE`, `AI_MAX_TOKENS`). Runbook operativo actualizado.
