@@ -261,16 +261,16 @@ function App() {
 
   const activityState = useMemo(() => {
     if (correctingAndSending) {
-      return { type: "loading", text: "Generando con IA y enviando..." };
+      return { type: "processing", icon: "✨", text: "Generando con IA y enviando..." };
     }
     if (correcting) {
-      return { type: "loading", text: "Generando corrección con IA..." };
+      return { type: "processing", icon: "✨", text: "Generando corrección con IA..." };
     }
     if (sending) {
-      return { type: "loading", text: "Enviando mensaje..." };
+      return { type: "sending", icon: "🚀", text: "Enviando mensaje..." };
     }
     if (syncingChat) {
-      return { type: "info", text: "Sincronizando chat en segundo plano..." };
+      return { type: "syncing", icon: "🔄", text: "Sincronizando chat en segundo plano..." };
     }
     return null;
   }, [correctingAndSending, correcting, sending, syncingChat]);
@@ -1799,6 +1799,14 @@ function App() {
                 <div className="correctedPreview">
                   <div className="correctedHeader">
                     <p className="correctedLabel">✨ Sugerencia de IA</p>
+                    <button
+                      className="iconButton"
+                      onClick={() => setCorrectedDraft("")}
+                      aria-label="Descartar sugerencia"
+                      title="Descartar"
+                    >
+                      ❌
+                    </button>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
                   <div className="correctedActions mt-2">
@@ -1819,15 +1827,7 @@ function App() {
                       }}
                       disabled={sending}
                     >
-                      ✏️ Usar
-                    </button>
-                    <button
-                      className="secondary small"
-                      aria-label="Descartar sugerencia"
-                      onClick={() => setCorrectedDraft("")}
-                      disabled={sending}
-                    >
-                      ❌ Descartar
+                      ✏️ Reemplazar borrador
                     </button>
                   </div>
                 </div>
@@ -1875,7 +1875,9 @@ function App() {
 
               {activityState ? (
                 <div className={`activityStateBadge ${activityState.type}`}>
-                  {activityState.type === "loading" ? <span className="spinner"></span> : null}
+                  <span className={`icon-anim ${activityState.type === "syncing" ? "spin" : "bounce"}`}>
+                    {activityState.icon}
+                  </span>
                   <span>{activityState.text}</span>
                 </div>
               ) : null}
