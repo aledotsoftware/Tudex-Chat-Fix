@@ -838,6 +838,75 @@ button:disabled {
   to { opacity: 1; transform: translateY(0); }
 }
 
+.correctedHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.correctedActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.correctedActions button {
+  flex: 1;
+}
+
+button.small {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
+button.fullWidth {
+  width: 100%;
+}
+
+.mt-2 {
+  margin-top: 12px;
+}
+
+/* Activity Badge */
+.activityStateBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 12px;
+  animation: slideIn 0.3s ease;
+}
+
+.activityStateBadge.loading {
+  background: rgba(0, 210, 255, 0.1);
+  color: var(--accent-primary);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+}
+
+.activityStateBadge.info {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 /* Custom badges */
 .grammarErrorBadge {
   background: var(--accent-secondary);
