@@ -267,6 +267,11 @@ button, textarea, input, select {
   text-align: left;
 }
 
+.chatItem:active {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(0.98);
+}
+
 .chatItem:hover {
   background: rgba(255, 255, 255, 0.06);
   transform: translateX(2px);
@@ -425,11 +430,14 @@ button, textarea, input, select {
 
 .mobileBackBtn {
   display: none;
-  width: 38px;
-  min-width: 38px;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
   padding: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   font-size: 18px;
+  align-items: center;
+  justify-content: center;
 }
 
 .messagesArea {
@@ -704,6 +712,7 @@ button, textarea, input, select {
 /* Composer Styling */
 .composer {
   padding: 14px 16px 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   background: rgba(9, 15, 21, 0.9);
   backdrop-filter: blur(20px);
   border-top: 1px solid var(--border-light);
@@ -1021,7 +1030,24 @@ button.fullWidth {
 }
 
 /* Animations and Responsive */
+@keyframes slideInMobile {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
 @media (max-width: 920px) {
+  .modalCard {
+    padding: 20px;
+    border-radius: 16px;
+  }
+  .resourcesModal {
+    padding: 16px;
+    max-height: 90vh;
+  }
+  .chatItem {
+    padding: 16px;
+    min-height: 76px;
+  }
   .waApp {
     grid-template-columns: 1fr;
     padding: 0;
@@ -1040,6 +1066,7 @@ button.fullWidth {
   }
 
   .waApp.chatOpen .chatPanel {
+    animation: slideInMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     display: flex;
   }
 
@@ -1056,6 +1083,9 @@ button.fullWidth {
   }
 
   .chatHeaderActions .secondary {
+    min-height: 44px;
+    min-width: 44px;
+    justify-content: center;
     padding: 8px 12px;
     font-size: 13px;
   }
@@ -1070,6 +1100,7 @@ button.fullWidth {
 
   .composer {
     padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .sidebarFooter {
