@@ -1151,3 +1151,25 @@ button:disabled {
   font-size: 11px;
   color: var(--text-muted);
 }
+
+/* Offline Banner */
+.offlineBanner {
+  background-color: var(--error);
+  color: white;
+  text-align: center;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
+}
+
+.offlineBanner span {
+  font-size: 16px;
+}
