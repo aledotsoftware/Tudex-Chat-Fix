@@ -29,6 +29,10 @@ class BaseAdapter {
   async markRead(_ctx) {
     throw new Error(`markRead() not implemented for provider=${this.provider}`);
   }
+
+  async sendMessage(_ctx) {
+    throw new Error(`sendMessage() not implemented for provider=${this.provider}`);
+  }
 }
 
 module.exports = { BaseAdapter };
