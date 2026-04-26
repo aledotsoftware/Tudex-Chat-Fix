@@ -1398,7 +1398,7 @@ function App() {
               onClick={() => fetchChats(false)}
               disabled={loadingChats}
             >
-              {loadingChats ? "..." : "🔄 Actualizar"}
+              {loadingChats ? "..." : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
             </button>
           </div>
         </header>
@@ -1529,7 +1529,7 @@ function App() {
                   onClick={() => fetchStatusArchive(false)}
                   disabled={loadingStatusArchive}
                 >
-                  {loadingStatusArchive ? "Actualizando..." : "Actualizar"}
+                  {loadingStatusArchive ? "..." : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
                 </button>
               </div>
             </header>
@@ -1614,7 +1614,7 @@ function App() {
                   onClick={fetchResources}
                   disabled={!selectedChatId}
                 >
-                  📂 Recursos
+                  📂 <span className="hideOnMobile">Recursos</span>
                 </button>
                 <button
                   className="secondary"
@@ -1622,7 +1622,7 @@ function App() {
                   onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
                   disabled={!selectedChatId}
                 >
-                  Recargar
+                  🔄 <span className="hideOnMobile">Recargar</span>
                 </button>
               </div>
             </header>
@@ -1850,7 +1850,7 @@ function App() {
                       onClick={correctDraft}
                       disabled={correcting || !draft.trim()}
                     >
-                      {correcting ? "Generando sugerencia..." : "✨ Revisar corrección"}
+                      {correcting ? "..." : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
                     </button>
                     <button
                       className="primary"
@@ -1858,7 +1858,7 @@ function App() {
                       onClick={correctAndSend}
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                     >
-                      {correctingAndSending ? "Procesando..." : "🚀 Corregir y enviar"}
+                      {correctingAndSending ? "..." : <>🚀 <span className="hideOnMobile">Corregir y enviar</span></>}
                     </button>
                     <button
                       className="primary"
@@ -1866,7 +1866,7 @@ function App() {
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                     >
-                      {sending ? "Enviando original..." : "📤 Enviar original"}
+                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
                     </button>
                   </>
                 ) : (
@@ -1876,7 +1876,7 @@ function App() {
                     onClick={() => sendMessage(draft)}
                     disabled={sending || !draft.trim()}
                   >
-                    {sending ? "Enviando original..." : "📤 Enviar original (ignorar IA)"}
+                    {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original (ignorar IA)</span></>}
                   </button>
                 )}
               </div>

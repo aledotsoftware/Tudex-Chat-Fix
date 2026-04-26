@@ -18,3 +18,5 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - **ChatFix-Frontend-PWA**: Se limitó el almacenamiento de IndexedDB a 150 mensajes por chat (`cacheStore.js`) para evitar bloat. En `App.jsx`, se refactorizó la hidratación PWA para actualizar `selectedChatIdRef` de forma síncrona al auto-seleccionar, previniendo UI jumps, y se ocultaron los mensajes "Cargando..." cuando ya hay mensajes locales en caché. Además, el polling se aceleró dinámicamente de 15s a 3s cuando hay sincronización activa de fondo (`syncingChat`).
 
 - **ChatFix-UX-Conversation-Flow**: Improved the UI logic for drafts and sending messages (`frontend/src/App.jsx`, `frontend/src/App.css`), reducing user friction and adding distinct states for AI operations.
+
+- [JAA] ChatFix-UX-Mobile-Polish: Mejorada la UX en pantallas móviles mediante App.css y App.jsx. Añadido `font-size: 16px` para evitar zoom en iOS, affordance táctil de `44px` para botones, transiciones `slideInLeftMobile` para navegación fluida, modales a pantalla completa, y simplificación visual en las cabeceras escondiendo texto con la nueva utilidad `.hideOnMobile` en botones y acciones.
