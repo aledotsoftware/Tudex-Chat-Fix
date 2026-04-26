@@ -916,7 +916,7 @@ async function buildReplyPayload(message, provider) {
     const adapter = resolveProviderAdapter(provider);
     const quoted = await adapter.getQuotedMessage(message);
     return {
-      replyToMessageId: quoted?.id?._serialized || null,
+      replyToMessageId: quoted?.id?._serialized || quoted?.id || null,
       replyToText: quoted?.body || '[Mensaje citado]'
     };
   } catch (error) {
@@ -930,7 +930,7 @@ async function buildReplyPayload(message, provider) {
 async function serializeMessage(message, chatId, context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
-  const providerMessageId = message?.id?._serialized || `${message?.timestamp}-${Math.random()}`;
+  const providerMessageId = message?.id?._serialized || message?.id || `${message?.timestamp}-${Math.random()}`;
   const canonicalMessageId =
     provider === DEFAULT_PROVIDER
       ? providerMessageId
@@ -969,7 +969,7 @@ async function upsertChat(waChat, index, context = {}) {
   try {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
-    const chatId = waChat.id._serialized;
+    const chatId = waChat?.id?._serialized || waChat?.id;
     const conversationId = chatId;
     const avatarUrl = await getChatAvatar(waChat, index || 0, context.provider);
     const now = new Date();
@@ -1067,15 +1067,18 @@ async function fetchCurrentStatusDescriptors() {
   }
 }
 
-async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
+async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+
   const normalized = normalizeStatusDescriptor(entry);
   if (!normalized.providerStatusMessageId) {
     return { archived: false, reason: 'missing_message_id' };
   }
 
   const existing = await StatusArchive.findOne({
-    provider: DEFAULT_PROVIDER,
-    accountId: DEFAULT_ACCOUNT_ID,
+    provider,
+    accountId,
     providerStatusMessageId: normalized.providerStatusMessageId
   }).lean();
   if (existing) {
@@ -1084,7 +1087,7 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
 
   let statusMessage = null;
   try {
-    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    const adapter = resolveProviderAdapter(provider);
     await adapter.markStatusRead().catch(() => {});
     statusMessage = await adapter.getMessageById(normalized.providerStatusMessageId).catch(() => null);
   } catch (err) {
@@ -1098,7 +1101,7 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
   if (statusMessage.hasMedia) {
-    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    const adapter = resolveProviderAdapter(provider);
     const media = await adapter.downloadMedia(statusMessage).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
@@ -1112,9 +1115,9 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
   }
 
   const payload = {
-    id: `${DEFAULT_PROVIDER}:${DEFAULT_ACCOUNT_ID}:${normalized.providerStatusMessageId}`,
-    provider: DEFAULT_PROVIDER,
-    accountId: DEFAULT_ACCOUNT_ID,
+    id: `${provider}:${accountId}:${normalized.providerStatusMessageId}`,
+    provider,
+    accountId,
     providerStatusMessageId: normalized.providerStatusMessageId,
     statusOwnerId: normalized.statusOwnerId,
     statusOwnerName: normalized.statusOwnerName || normalized.statusOwnerId,
@@ -1146,7 +1149,10 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
   return { archived: true, reason: 'stored', payload };
 }
 
-async function runStatusArchiveSweep(source = 'poll') {
+async function runStatusArchiveSweep(source = 'poll', context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+
   if (!whatsappReady || currentStatus !== 'authenticated') {
     return { checked: 0, archived: 0, skipped: 0, errors: 0, source };
   }
@@ -1168,7 +1174,7 @@ async function runStatusArchiveSweep(source = 'poll') {
     const results = await Promise.allSettled(
       descriptors.map(async (descriptor) => {
         stats.checked += 1;
-        return await archiveStatusFromDescriptor(descriptor, source);
+        return await archiveStatusFromDescriptor(descriptor, source, { provider, accountId });
       })
     );
 
@@ -1435,7 +1441,7 @@ async function toImageDataUrl(url) {
 }
 
 async function getChatAvatar(chat, index, provider) {
-  const chatId = chat?.id?._serialized;
+  const chatId = chat?.id?._serialized || chat?.id;
   if (!chatId) return null;
 
   const cached = avatarCache.get(chatId);
@@ -1517,8 +1523,10 @@ waAdapter.on('disconnected', (reason) => {
   io.emit('disconnected', reason);
 });
 
-async function handleMessageRevoke(after, before) {
-  const msgId = (before || after)?.id?._serialized;
+async function handleMessageRevoke(after, before, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const msgId = (before || after)?.id?._serialized || (before || after)?.id;
   if (!msgId) return;
 
   console.log(`🗑️ Message revoked: ${msgId}`);
@@ -1526,8 +1534,8 @@ async function handleMessageRevoke(after, before) {
   try {
     const updated = await Message.findOneAndUpdate(
       {
-        provider: DEFAULT_PROVIDER,
-        accountId: DEFAULT_ACCOUNT_ID,
+        provider,
+        accountId,
         providerMessageId: msgId
       },
       { $set: { isRevoked: true } },
@@ -1542,8 +1550,8 @@ async function handleMessageRevoke(after, before) {
   }
 }
 
-waAdapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before));
-waAdapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before));
+waAdapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }));
+waAdapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }));
 
 // Message handling (incoming and outgoing)
 waAdapter.on('message_create', async (msg) => {
@@ -1554,13 +1562,13 @@ waAdapter.on('message_create', async (msg) => {
       const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
       await adapter.markStatusRead();
       await archiveStatusFromDescriptor({
-        providerStatusMessageId: msg.id?._serialized,
+        providerStatusMessageId: msg.id?._serialized || msg.id,
         statusOwnerId: msg.author || msg.from,
         description: msg.caption || msg.body || '',
         caption: msg.caption || '',
         mediaType: msg.type,
         timestamp: msg.timestamp || Math.floor(Date.now() / 1000)
-      }, 'event');
+      }, 'event', { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
       console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
     } catch (e) {
       console.error('⚠️ Error al auto-ver status:', e.message);
@@ -2116,11 +2124,12 @@ app.get('/api/status', async (_req, res) => {
 
 app.get('/api/status-archive', async (req, res) => {
   try {
+    const { provider, accountId } = parseProviderContext(req);
     const limit = parsePositiveInt(req.query.limit, 100, 500);
     const ownerId = String(req.query.ownerId || '').trim();
     const query = {
-      provider: DEFAULT_PROVIDER,
-      accountId: DEFAULT_ACCOUNT_ID
+      provider,
+      accountId
     };
     if (ownerId) {
       query.statusOwnerId = ownerId;
@@ -2147,9 +2156,10 @@ app.get('/api/status-archive', async (req, res) => {
   }
 });
 
-app.post('/api/status-archive/sweep', async (_req, res) => {
+app.post('/api/status-archive/sweep', async (req, res) => {
   try {
-    const stats = await runStatusArchiveSweep('poll');
+    const { provider, accountId } = parseProviderContext(req);
+    const stats = await runStatusArchiveSweep('poll', { provider, accountId });
     res.json({ success: true, stats });
   } catch (error) {
     res.status(500).json({ error: 'Failed to sweep status archive', detail: error.message });
