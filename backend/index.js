@@ -218,7 +218,7 @@ const MessageSchema = new mongoose.Schema({
 MessageSchema.index({ provider: 1, accountId: 1, conversationId: 1, timestamp: -1 });
 MessageSchema.index(
   { provider: 1, accountId: 1, providerMessageId: 1 },
-  { unique: true, sparse: true }
+  { unique: true }
 );
 
 const Message = mongoose.model('Message', MessageSchema);
@@ -237,7 +237,7 @@ const ChatSchema = new mongoose.Schema({
   lastSyncedAt: Date
 }, { timestamps: true });
 ChatSchema.index({ provider: 1, accountId: 1, timestamp: -1 });
-ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: true, sparse: true });
+ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', ChatSchema);
 
