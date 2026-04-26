@@ -87,9 +87,9 @@ if (API_KEY === 'tu_contraseña_super_segura_aqui' || (API_KEY.length > 0 && API
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
-  
+
   if (req.method === 'OPTIONS') return next();
-  
+
   const providedKey = req.headers['x-api-key'] || req.query.api_key;
   if (providedKey !== API_KEY) {
     console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Invalid API Key provided.`);
@@ -116,10 +116,9 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
-  if (defaultState.status === 'qr' && defaultState.lastQR) {
-    socket.emit('qr', defaultState.lastQR);
-  } else if (defaultState.status === 'authenticated') {
+  if (currentStatus === 'qr' && lastQR) {
+    socket.emit('qr', lastQR);
+  } else if (currentStatus === 'authenticated') {
     socket.emit('ready', { status: 'authenticated' });
   }
 });
@@ -129,7 +128,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, Accept');
-  
+
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -883,12 +882,12 @@ async function buildMediaPayload(message, provider) {
   try {
     const adapter = resolveProviderAdapter(provider);
     const mediaPromise = adapter.downloadMedia(message);
-    const timeoutPromise = new Promise((_, reject) => 
+    const timeoutPromise = new Promise((_, reject) =>
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
 
     const media = await Promise.race([mediaPromise, timeoutPromise]);
-    
+
     if (!media || !media.mimetype) {
       return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
     }
@@ -1163,8 +1162,7 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
 
-  const adapter = resolveProviderAdapter(provider);
-  if (!adapter.isReady()) {
+  if (!whatsappReady || currentStatus !== 'authenticated') {
     return { checked: 0, archived: 0, skipped: 0, errors: 0, source };
   }
   if (statusArchivePollInFlight) {
@@ -1489,22 +1487,20 @@ providerRegistry.register(waAdapter);
 
 waAdapter.on('qr', (qr) => {
   console.log('📡 QR Received - Emitting to frontend...');
-  const state = getProviderState(waAdapter.getProviderName());
-  state.lastQR = qr;
-  state.status = 'qr';
-  state.isReady = false;
-  state.lastDisconnectReason = null;
+  lastQR = qr;
+  currentStatus = 'qr';
+  whatsappReady = false;
+  lastWhatsappDisconnectReason = null;
   io.emit('qr', qr);
 });
 
 waAdapter.on('ready', () => {
   console.log('✅ Client is ready!');
-  const state = getProviderState(waAdapter.getProviderName());
-  state.lastQR = null;
-  state.status = 'authenticated';
-  state.isReady = true;
-  state.lastReadyAt = new Date().toISOString();
-  state.lastDisconnectReason = null;
+  lastQR = null;
+  currentStatus = 'authenticated';
+  whatsappReady = true;
+  lastWhatsappReadyAt = new Date().toISOString();
+  lastWhatsappDisconnectReason = null;
   io.emit('ready', { status: 'authenticated' });
 
   // Start background sync (async queue, read-path safe)
@@ -1525,18 +1521,14 @@ waAdapter.on('authenticated', () => {
 
 waAdapter.on('auth_failure', msg => {
   console.error('AUTHENTICATION FAILURE', msg);
-  const state = getProviderState(waAdapter.getProviderName());
-  state.isReady = false;
-  state.status = 'auth_failure';
+  whatsappReady = false;
   io.emit('auth_failure', msg);
 });
 
 waAdapter.on('disconnected', (reason) => {
   console.log('Client was logged out', reason);
-  const state = getProviderState(waAdapter.getProviderName());
-  state.isReady = false;
-  state.status = 'disconnected';
-  state.lastDisconnectReason = String(reason || 'unknown');
+  whatsappReady = false;
+  lastWhatsappDisconnectReason = String(reason || 'unknown');
   io.emit('disconnected', reason);
 });
 
@@ -1653,13 +1645,12 @@ setInterval(() => {
   });
 }, STATUS_POLL_INTERVAL_MS);
 
-function ensureProviderReady(res, provider) {
-  const adapter = resolveProviderAdapter(provider);
-  if (!adapter.isReady()) {
+function ensureWhatsappReady(res) {
+  if (!whatsappReady || currentStatus !== 'authenticated') {
     res.status(503).json({
-      error: `${provider} client not ready`,
-      providerStatus: adapter.getStatus(),
-      ready: false
+      error: 'WhatsApp client not ready',
+      whatsappStatus: currentStatus,
+      ready: whatsappReady
     });
     return false;
   }
@@ -1944,9 +1935,9 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
     });
   } catch (error) {
     console.error('❌ Fetch messages error details:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch messages', 
-      detail: error.message 
+    res.status(500).json({
+      error: 'Failed to fetch messages',
+      detail: error.message
     });
   }
 });
@@ -2120,13 +2111,12 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 });
 
 app.get('/api/status', async (_req, res) => {
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
   res.json({
-    whatsappStatus: defaultState.status,
+    whatsappStatus: currentStatus,
     providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
-    hasQr: Boolean(defaultState.lastQR),
-    lastWhatsappReadyAt: defaultState.lastReadyAt,
-    lastWhatsappDisconnectReason: defaultState.lastDisconnectReason,
+    hasQr: Boolean(lastQR),
+    lastWhatsappReadyAt,
+    lastWhatsappDisconnectReason,
     statusArchive: {
       lastRunAt: lastStatusArchiveRunAt,
       inFlight: statusArchivePollInFlight,
@@ -2188,13 +2178,12 @@ app.post('/api/status-archive/sweep', async (req, res) => {
 app.get('/api/health', async (_req, res) => {
   const mongoOk = mongoose.connection.readyState === 1;
   const aiConfigured = isAiConfigured(aiConfig);
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
-  const whatsappOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
+  const whatsappOk = currentStatus === 'authenticated' || currentStatus === 'qr';
   res.status(mongoOk ? 200 : 503).json({
     ok: mongoOk,
     services: {
       mongo: mongoOk ? 'up' : 'down',
-      whatsapp: whatsappOk ? defaultState.status : 'down',
+      whatsapp: whatsappOk ? currentStatus : 'down',
       ai: aiConfigured ? 'configured' : 'missing'
     },
     uptimeSec: Math.floor(process.uptime()),
