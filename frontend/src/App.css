@@ -1673,10 +1673,11 @@ button.fullWidth {
   }
 
   button.replyBtn {
-    min-height: 36px;
+    min-height: 44px;
   }
 
-  .iconButton {
+  .iconButton,
+  .passwordToggleBtn {
     min-height: 44px;
     min-width: 44px;
   }
