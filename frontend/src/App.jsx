@@ -5,7 +5,8 @@ import {
   getCachedChats,
   getCachedMessages,
   setCachedChats,
-  setCachedMessages
+  setCachedMessages,
+  clearCache
 } from "./cacheStore";
 
 const runtimeHost =
@@ -187,6 +188,7 @@ function App() {
   const [aiModels, setAiModels] = useState([]);
   const [showCloudflareToken, setShowCloudflareToken] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState(null);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches
@@ -490,14 +492,18 @@ function App() {
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
+    const handlePwaUpdate = (e) => setPwaUpdateAvailable(() => e.detail.updateSW);
+
     window.addEventListener('chatfix_auth_error', handleAuthError);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    window.addEventListener("pwa_update_available", handlePwaUpdate);
 
     return () => {
       window.removeEventListener('chatfix_auth_error', handleAuthError);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("pwa_update_available", handlePwaUpdate);
     };
   }, []);
 
@@ -515,6 +521,7 @@ function App() {
         setApiAuthenticated(false);
         setAuthError("API Key incorrecta. Por favor, verificá tus credenciales.");
         localStorage.removeItem("chatfix_api_key");
+        clearCache().catch(() => {});
       }
     } catch (e) {
       setApiAuthenticated(false);
@@ -619,14 +626,11 @@ function App() {
       prev.map((item) => (item.id === selectedChatId ? { ...item, unreadCount: 0 } : item))
     );
     markChatAsRead(selectedChatId);
-    const cached = messagesByChat[selectedChatId];
-    if (cached) {
-      setMessages(cached);
-      fetchMessages(selectedChatId, { withLoader: false, background: true });
-    } else {
-      setMessages([]);
-      fetchMessages(selectedChatId, { withLoader: true });
-    }
+    setMessages(messagesByChat[selectedChatId] || []);
+    fetchMessages(selectedChatId, {
+      withLoader: !messagesByChat[selectedChatId],
+      background: !!messagesByChat[selectedChatId]
+    });
   }, [selectedChatId]);
 
   useEffect(() => {
@@ -864,6 +868,7 @@ function App() {
           selectedChatIdRef.current = "";
           setSelectedChatId("");
         }
+        await clearCache();
         await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, []);
         return;
       }
@@ -1427,6 +1432,13 @@ function App() {
         <div className="bg-blob blob-1"></div>
         <div className="bg-blob blob-2"></div>
       </div>
+      {pwaUpdateAvailable && (
+        <div className="updateBanner" role="alert" aria-live="assertive">
+          <span aria-hidden="true">🎁</span> Hay una nueva versión de ChatFix disponible.
+          <button className="primary" onClick={() => pwaUpdateAvailable(true)}>Actualizar ahora</button>
+          <button className="secondary" onClick={() => setPwaUpdateAvailable(null)}>Ignorar</button>
+        </div>
+      )}
       {isOffline && (
         <div className="offlineBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true">⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.

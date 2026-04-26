@@ -6,9 +6,7 @@ import "./App.css";
 
 const updateSW = registerSW({
   onNeedRefresh() {
-    if (confirm("Hay una nueva versión disponible. ¿Deseas recargar para actualizar?")) {
-      updateSW(true);
-    }
+    window.dispatchEvent(new CustomEvent("pwa_update_available", { detail: { updateSW } }));
   },
   onOfflineReady() {
     console.log("Aplicación lista para trabajar sin conexión");
