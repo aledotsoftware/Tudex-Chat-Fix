@@ -1478,8 +1478,9 @@ function App() {
               aria-label="Actualizar chats"
               onClick={() => fetchChats(false)}
               disabled={loadingChats}
+              aria-busy={loadingChats}
             >
-              {loadingChats ? "..." : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
+              {loadingChats ? <><span className="buttonSpinner" aria-hidden="true" /><span>Actualizando...</span></> : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
             </button>
           </div>
         </header>
@@ -1615,8 +1616,9 @@ function App() {
                   aria-label="Actualizar estados archivados"
                   onClick={() => fetchStatusArchive(false)}
                   disabled={loadingStatusArchive}
+                  aria-busy={loadingStatusArchive}
                 >
-                  {loadingStatusArchive ? "..." : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
+                  {loadingStatusArchive ? <><span className="buttonSpinner" aria-hidden="true" /><span>Actualizando...</span></> : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
                 </button>
               </div>
             </header>
@@ -1707,9 +1709,10 @@ function App() {
                   className="secondary"
                   aria-label="Recargar mensajes"
                   onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
-                  disabled={!selectedChatId}
+                  disabled={!selectedChatId || loadingMessages[selectedChatId]}
+                  aria-busy={loadingMessages[selectedChatId]}
                 >
-                  🔄 <span className="hideOnMobile">Recargar</span>
+                  {loadingMessages[selectedChatId] ? <><span className="buttonSpinner" aria-hidden="true" /><span>Recargando...</span></> : <>🔄 <span className="hideOnMobile">Recargar</span></>}
                 </button>
               </div>
             </header>
@@ -1838,8 +1841,9 @@ function App() {
                           aria-label="Enviar respuesta sugerida"
                           disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim()}
                           onClick={() => sendQueuedReply(item)}
+                          aria-busy={Boolean(sendingReplyQueueIds[item.localId])}
                         >
-                          {sendingReplyQueueIds[item.localId] ? "Enviando..." : "Enviar"}
+                          {sendingReplyQueueIds[item.localId] ? <><span className="buttonSpinner" aria-hidden="true" /><span>Enviando...</span></> : "Enviar"}
                         </button>
                         <button
                           className="secondary"
@@ -2210,16 +2214,18 @@ function App() {
                 aria-label="Probar conexión con IA"
                 onClick={checkAiHealth}
                 disabled={checkingAiHealth}
+                aria-busy={checkingAiHealth}
               >
-                {checkingAiHealth ? "Probando..." : "Probar conexión"}
+                {checkingAiHealth ? <><span className="buttonSpinner" aria-hidden="true" /><span>Probando...</span></> : "Probar conexión"}
               </button>
               <button
                 className="primary"
                 aria-label="Guardar configuración de IA"
                 onClick={saveAiConfig}
                 disabled={savingAiConfig}
+                aria-busy={savingAiConfig}
               >
-                {savingAiConfig ? "Guardando..." : "Guardar"}
+                {savingAiConfig ? <><span className="buttonSpinner" aria-hidden="true" /><span>Guardando...</span></> : "Guardar"}
               </button>
             </div>
 
