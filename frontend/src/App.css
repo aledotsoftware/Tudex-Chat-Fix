@@ -1528,8 +1528,9 @@ button.fullWidth {
     min-height: 44px;
   }
 
-  button.small, .iconButton {
-    min-height: unset;
+  .iconButton {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
 
@@ -1542,6 +1543,16 @@ button.fullWidth {
   .composerActions button {
     min-width: 0;
     flex: 1 1 100%;
+  }
+
+  .bubbleActions {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .statusArchiveGrid {
+    grid-template-columns: 1fr;
   }
 }
 input[type="text"],
