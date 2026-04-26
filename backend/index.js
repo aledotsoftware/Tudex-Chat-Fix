@@ -129,9 +129,8 @@ app.use(express.json({ limit: '1mb' }));
 app.use(STATUS_ARCHIVE_PUBLIC_BASE, express.static(STATUS_ARCHIVE_DIR));
 app.use(MEDIA_ARCHIVE_PUBLIC_BASE, express.static(MEDIA_ARCHIVE_DIR));
 
-// Middleware global para proteger todas las rutas /api/ (excepto health)
+// Middleware global para proteger todas las rutas /api/ (incluyendo health y status)
 app.use('/api', (req, res, next) => {
-  if (req.path === '/health') return next();
   return authenticateApiKey(req, res, next);
 });
 
@@ -521,14 +520,14 @@ async function ensureCanonicalProviderFields() {
         $set: {
           provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
           accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
-          conversationId: { $ifNull: ['$conversationId', '$id'] },
+          conversationId: { $ifNull: ['$conversationId', { $ifNull: ['$id', { $toString: '$_id' }] }] },
           conversationKey: {
             $concat: [
               { $ifNull: ['$provider', DEFAULT_PROVIDER] },
               ':',
               { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
               ':',
-              { $ifNull: ['$conversationId', '$id'] }
+              { $ifNull: ['$conversationId', { $ifNull: ['$id', { $toString: '$_id' }] }] }
             ]
           }
         }
@@ -551,15 +550,15 @@ async function ensureCanonicalProviderFields() {
         $set: {
           provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
           accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
-          conversationId: { $ifNull: ['$conversationId', '$chatId'] },
-          providerMessageId: { $ifNull: ['$providerMessageId', '$id'] },
+          conversationId: { $ifNull: ['$conversationId', { $ifNull: ['$chatId', { $toString: '$_id' }] }] },
+          providerMessageId: { $ifNull: ['$providerMessageId', { $ifNull: ['$id', { $toString: '$_id' }] }] },
           conversationKey: {
             $concat: [
               { $ifNull: ['$provider', DEFAULT_PROVIDER] },
               ':',
               { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
               ':',
-              { $ifNull: ['$conversationId', '$chatId'] }
+              { $ifNull: ['$conversationId', { $ifNull: ['$chatId', { $toString: '$_id' }] }] }
             ]
           }
         }
