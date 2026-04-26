@@ -55,6 +55,18 @@ async function writeEntry(key, value) {
   });
 }
 
+export async function clearCache() {
+  const db = await openDb();
+  if (!db) return;
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
 export async function getCachedChats(provider, accountId) {
   try {
     const key = getStorageKey(CHATS_PREFIX, provider, accountId);
@@ -67,8 +79,9 @@ export async function getCachedChats(provider, accountId) {
 
 export async function setCachedChats(provider, accountId, chats) {
   if (!Array.isArray(chats)) return;
+  const limitedChats = chats.slice(0, 150);
   const key = getStorageKey(CHATS_PREFIX, provider, accountId);
-  await writeEntry(key, chats);
+  await writeEntry(key, limitedChats);
 }
 
 export async function getCachedMessages(provider, accountId, conversationId) {

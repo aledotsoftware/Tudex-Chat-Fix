@@ -168,7 +168,7 @@ button, textarea, input, select {
 }
 
 .instructionText {
-  font-size: 15px;
+  font-size: 16px; /* 16px to prevent iOS auto-zoom */
   color: var(--text-secondary);
   margin-bottom: 16px;
   line-height: 1.5;
@@ -1617,6 +1617,22 @@ button.fullWidth {
 }
 
 /* Offline Banner */
+.updateBanner {
+  background: var(--accent);
+  color: white;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  z-index: 1000;
+}
+.updateBanner button {
+  padding: 6px 16px;
+  min-height: 32px;
+  font-size: 14px;
+}
+
 .offlineBanner,
 .warningBanner {
   color: white;
