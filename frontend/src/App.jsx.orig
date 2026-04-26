@@ -45,11 +45,11 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   let [resource, config] = args;
   const key = localStorage.getItem("chatfix_api_key");
-  
+
   if (key) {
     config = config || {};
     let headers = config.headers || {};
-    
+
     if (headers instanceof Headers) {
       headers.set("X-API-Key", key);
     } else if (Array.isArray(headers)) {
@@ -60,7 +60,7 @@ window.fetch = async (...args) => {
     config.headers = headers;
     args[1] = config;
   }
-  
+
   const response = await originalFetch(...args);
   if (response.status === 401) {
     console.warn("Auth failure for:", resource);
@@ -136,7 +136,6 @@ function AckIcon({ status }) {
 function App() {
   const socketRef = useRef(null);
   const selectedChatIdRef = useRef("");
-  const chatsRef = useRef([]);
   const messagesAreaRef = useRef(null);
   const shouldStickToBottomRef = useRef(true);
   const previousMessageCountRef = useRef(0);
@@ -541,9 +540,9 @@ function App() {
     const mediaQuery = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`);
     const handleChange = (event) => {
       setIsMobileLayout(event.matches);
-      if (!event.matches && !selectedChatIdRef.current && chatsRef.current?.length > 0) {
-        setSelectedChatId(chatsRef.current[0].id);
-        selectedChatIdRef.current = chatsRef.current[0].id;
+      if (!event.matches && !selectedChatIdRef.current && window.__chatsCache?.length > 0) {
+        setSelectedChatId(window.__chatsCache[0].id);
+        selectedChatIdRef.current = window.__chatsCache[0].id;
       }
     };
     setIsMobileLayout(mediaQuery.matches);
@@ -832,7 +831,7 @@ function App() {
         const sortedCached = [...cachedChats].sort(
           (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
         );
-        chatsRef.current = sortedCached;
+        window.__chatsCache = sortedCached;
         setChats(sortedCached);
 
         // PWA Hydration: Auto-select chat from cache immediately to prevent UI jumps
@@ -869,7 +868,7 @@ function App() {
       const safeChats = items.sort(
         (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
       );
-      chatsRef.current = safeChats;
+      window.__chatsCache = safeChats;
       setChats(safeChats);
 
       if (safeChats.length === 0) {
@@ -1347,10 +1346,10 @@ function App() {
               {showApiKey ? "🙈" : "👁️"}
             </button>
           </div>
-          <button 
+          <button
             className="primary fullWidth"
             aria-label="Ingresar al panel de control"
-            onClick={() => checkAuth(inputApiKey)} 
+            onClick={() => checkAuth(inputApiKey)}
             disabled={authChecking || !inputApiKey}
             aria-busy={authChecking}
           >
