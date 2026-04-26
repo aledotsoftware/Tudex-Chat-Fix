@@ -965,7 +965,7 @@ function App() {
       if (!res.ok) throw new Error("No se pudo corregir el mensaje.");
       const data = await res.json();
       setCorrectedDraft(data.corrected || "");
-      showNotice("Texto corregido listo para enviar.", "success");
+      showNotice("Sugerencia de IA lista para revisar.", "success");
     } catch (error) {
       showNotice(error.message, "error");
     } finally {
@@ -1072,8 +1072,12 @@ function App() {
   function handleDraftKeyDown(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
-      if (!sending && !correcting && !correctingAndSending && draft.trim()) {
-        correctAndSend();
+      if (!sending && !correcting && !correctingAndSending && (draft.trim() || correctedDraft)) {
+        if (correctedDraft) {
+          sendMessage(correctedDraft);
+        } else if (draft.trim()) {
+          correctAndSend();
+        }
       }
     }
   }
@@ -1793,9 +1797,10 @@ function App() {
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={handleDraftKeyDown}
-                placeholder="Escribí un mensaje... (Enter envía, Shift+Enter salto de línea)"
+                placeholder={correctedDraft ? "Enter: enviar sugerencia..." : "Escribí un mensaje... (Enter: corregir y enviar, Shift+Enter: salto de línea)"}
                 rows={3}
                 aria-label="Mensaje"
+                disabled={sending || correcting || correctingAndSending}
               />
 
               {correctedDraft ? (
@@ -1845,7 +1850,7 @@ function App() {
                       onClick={correctDraft}
                       disabled={correcting || !draft.trim()}
                     >
-                      {correcting ? "Corrigiendo..." : "✨ Corregir IA"}
+                      {correcting ? "Generando sugerencia..." : "✨ Revisar corrección"}
                     </button>
                     <button
                       className="primary"
@@ -1861,7 +1866,7 @@ function App() {
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                     >
-                      {sending ? "Enviando..." : "📤 Enviar"}
+                      {sending ? "Enviando original..." : "📤 Enviar original"}
                     </button>
                   </>
                 ) : (
@@ -1871,7 +1876,7 @@ function App() {
                     onClick={() => sendMessage(draft)}
                     disabled={sending || !draft.trim()}
                   >
-                    {sending ? "Enviando original..." : "📤 Enviar original sin corrección"}
+                    {sending ? "Enviando original..." : "📤 Enviar original (ignorar IA)"}
                   </button>
                 )}
               </div>
