@@ -1,5 +1,8 @@
-class BaseAdapter {
+const { EventEmitter } = require('events');
+
+class BaseAdapter extends EventEmitter {
   constructor(provider) {
+    super();
     this.provider = String(provider || '').trim().toLowerCase();
     if (!this.provider) {
       throw new Error('Provider adapter requires a provider name');
@@ -8,6 +11,10 @@ class BaseAdapter {
 
   getProviderName() {
     return this.provider;
+  }
+
+  initialize() {
+    throw new Error(`initialize() not implemented for provider=${this.provider}`);
   }
 
   isReady() {
@@ -44,6 +51,18 @@ class BaseAdapter {
 
   async markStatusRead() {
     throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
+  }
+
+  async downloadMedia(message) {
+    throw new Error(`downloadMedia() not implemented for provider=${this.provider}`);
+  }
+
+  async getQuotedMessage(message) {
+    throw new Error(`getQuotedMessage() not implemented for provider=${this.provider}`);
+  }
+
+  async getChatAvatarUrl(chat) {
+    throw new Error(`getChatAvatarUrl() not implemented for provider=${this.provider}`);
   }
 }
 
