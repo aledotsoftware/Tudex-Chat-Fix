@@ -129,9 +129,8 @@ app.use(express.json({ limit: '1mb' }));
 app.use(STATUS_ARCHIVE_PUBLIC_BASE, express.static(STATUS_ARCHIVE_DIR));
 app.use(MEDIA_ARCHIVE_PUBLIC_BASE, express.static(MEDIA_ARCHIVE_DIR));
 
-// Middleware global para proteger todas las rutas /api/ (excepto health)
+// Middleware global para proteger todas las rutas /api/
 app.use('/api', (req, res, next) => {
-  if (req.path === '/health') return next();
   return authenticateApiKey(req, res, next);
 });
 
@@ -542,7 +541,6 @@ async function ensureCanonicalProviderFields() {
         { provider: { $exists: false } },
         { accountId: { $exists: false } },
         { conversationId: { $exists: false } },
-        { providerMessageId: { $exists: false } },
         { conversationKey: { $exists: false } }
       ]
     },
@@ -552,7 +550,6 @@ async function ensureCanonicalProviderFields() {
           provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
           accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
           conversationId: { $ifNull: ['$conversationId', '$chatId'] },
-          providerMessageId: { $ifNull: ['$providerMessageId', '$id'] },
           conversationKey: {
             $concat: [
               { $ifNull: ['$provider', DEFAULT_PROVIDER] },
@@ -1879,7 +1876,8 @@ app.get('/api/chats', async (req, res) => {
       });
     }
 
-    const cachedChats = await Chat.find({ provider, accountId }).sort({ timestamp: -1 }).lean();
+    const limit = parsePositiveInt(req.query.limit, 1000, 2000);
+    const cachedChats = await Chat.find({ provider, accountId }).sort({ timestamp: -1 }).limit(limit).lean();
     setL1CachedValue(l1ChatsCache, cacheKey, cachedChats, CHATS_CACHE_TTL_MS);
 
     enqueueSyncTask({
@@ -2141,24 +2139,29 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 });
 
 app.get('/api/status', async (_req, res) => {
-  res.json({
-    whatsappStatus: currentStatus,
-    providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
-    hasQr: Boolean(lastQR),
-    lastWhatsappReadyAt,
-    lastWhatsappDisconnectReason,
-    statusArchive: {
-      lastRunAt: lastStatusArchiveRunAt,
-      inFlight: statusArchivePollInFlight,
-      stats: lastStatusArchiveStats
-    },
-    syncQueue: {
-      queued: syncQueue.length,
-      pendingKeys: syncPendingKeys.size,
-      inFlightKeys: syncInFlightKeys.size
-    },
-    uptimeSec: Math.floor(process.uptime())
-  });
+  try {
+    res.json({
+      whatsappStatus: currentStatus,
+      providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
+      hasQr: Boolean(lastQR),
+      lastWhatsappReadyAt,
+      lastWhatsappDisconnectReason,
+      statusArchive: {
+        lastRunAt: lastStatusArchiveRunAt,
+        inFlight: statusArchivePollInFlight,
+        stats: lastStatusArchiveStats
+      },
+      syncQueue: {
+        queued: syncQueue.length,
+        pendingKeys: syncPendingKeys.size,
+        inFlightKeys: syncInFlightKeys.size
+      },
+      uptimeSec: Math.floor(process.uptime())
+    });
+  } catch (error) {
+    console.error('❌ Fetch status error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch status', detail: error.message });
+  }
 });
 
 app.get('/api/status-archive', async (req, res) => {
@@ -2204,19 +2207,24 @@ app.post('/api/status-archive/sweep', async (_req, res) => {
 });
 
 app.get('/api/health', async (_req, res) => {
-  const mongoOk = mongoose.connection.readyState === 1;
-  const aiConfigured = isAiConfigured(aiConfig);
-  const whatsappOk = currentStatus === 'authenticated' || currentStatus === 'qr';
-  res.status(mongoOk ? 200 : 503).json({
-    ok: mongoOk,
-    services: {
-      mongo: mongoOk ? 'up' : 'down',
-      whatsapp: whatsappOk ? currentStatus : 'down',
-      ai: aiConfigured ? 'configured' : 'missing'
-    },
-    uptimeSec: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const mongoOk = mongoose.connection.readyState === 1;
+    const aiConfigured = isAiConfigured(aiConfig);
+    const whatsappOk = currentStatus === 'authenticated' || currentStatus === 'qr';
+    res.status(mongoOk ? 200 : 503).json({
+      ok: mongoOk,
+      services: {
+        mongo: mongoOk ? 'up' : 'down',
+        whatsapp: whatsappOk ? currentStatus : 'down',
+        ai: aiConfigured ? 'configured' : 'missing'
+      },
+      uptimeSec: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Fetch health error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch health status', detail: error.message });
+  }
 });
 
 app.get('/api/sync/state', async (req, res) => {
