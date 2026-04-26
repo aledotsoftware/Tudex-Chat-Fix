@@ -170,6 +170,13 @@ class WhatsAppAdapter extends BaseAdapter {
     return null;
   }
 
+  async getChatByMessage(message) {
+    if (typeof message.getChat === 'function') {
+      return message.getChat();
+    }
+    return null;
+  }
+
   async getChatAvatarUrl(chat) {
     if (!chat) return null;
     try {
