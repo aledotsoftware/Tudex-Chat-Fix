@@ -93,6 +93,29 @@ function validateStartupConfig() {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
     }
   }
+
+  // Check URL values for LM_STUDIO_URL and CLOUDFLARE_AI_BASE_URL
+  if (process.env.LM_STUDIO_URL) {
+    try {
+      const parsed = new URL(process.env.LM_STUDIO_URL);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        console.warn(`⚠️ WARNING: Invalid protocol in LM_STUDIO_URL ("${process.env.LM_STUDIO_URL}"). Must be http or https. Falling back to default.`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ WARNING: Malformed URL in LM_STUDIO_URL ("${process.env.LM_STUDIO_URL}"). Falling back to default.`);
+    }
+  }
+
+  if (process.env.CLOUDFLARE_AI_BASE_URL) {
+    try {
+      const parsed = new URL(process.env.CLOUDFLARE_AI_BASE_URL);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        console.warn(`⚠️ WARNING: Invalid protocol in CLOUDFLARE_AI_BASE_URL ("${process.env.CLOUDFLARE_AI_BASE_URL}"). Must be http or https. Falling back to default.`);
+      }
+    } catch (e) {
+      console.warn(`⚠️ WARNING: Malformed URL in CLOUDFLARE_AI_BASE_URL ("${process.env.CLOUDFLARE_AI_BASE_URL}"). Falling back to default.`);
+    }
+  }
 }
 
 // Invoke validation on startup
