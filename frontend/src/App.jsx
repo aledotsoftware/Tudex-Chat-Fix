@@ -210,7 +210,6 @@ function App() {
   const [sendingReplyQueueIds, setSendingReplyQueueIds] = useState({});
   const [syncingChat, setSyncingChat] = useState(false);
   const [syncingChats, setSyncingChats] = useState(false);
-  const [chatStates, setChatStates] = useState({});
   const [aiConfig, setAiConfig] = useState({
     provider: "lmstudio",
     aiBaseUrl: "",
@@ -590,13 +589,9 @@ function App() {
         return { ...prev, [updated.chatId]: next };
       });
     });
-    socket.on("chat_state", ({ chatId, state }) => {
-      setChatStates(prev => ({ ...prev, [chatId]: state }));
-    });
 
     return () => {
       socket.off("new_message", mergeLiveMessage);
-      socket.off("chat_state");
       socket.close();
     };
   }, [apiAuthenticated]);
@@ -1676,14 +1671,8 @@ function App() {
                 <div className="chatHeaderInfo">
                   <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
                   <p>
-                    {chatStates[selectedChatId] === 'typing' ? (
-                      <span className="typingIndicator">Escribiendo...</span>
-                    ) : (
-                      <>
-                        {selectedChat?.id || "Sin chat seleccionado"}
-                        {selectedChat?.isGroup ? " · Grupo" : ""}
-                      </>
-                    )}
+                    {selectedChat?.id || "Sin chat seleccionado"}
+                    {selectedChat?.isGroup ? " · Grupo" : ""}
                   </p>
                 </div>
               </div>
@@ -1929,7 +1918,7 @@ function App() {
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                       aria-busy={correctingAndSending}
                     >
-                      {correctingAndSending ? <><span className="spinner" aria-hidden="true" /> <span>Mejorando y enviando...</span></> : <>🚀 <span className="hideOnMobile">Mejorar y enviar</span></>}
+                      {correctingAndSending ? <><span className="buttonSpinner" aria-hidden="true" /> <span>Mejorando y enviando...</span></> : <>🚀 <span className="hideOnMobile">Mejorar y enviar</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1938,7 +1927,7 @@ function App() {
                       disabled={correcting || !draft.trim()}
                       aria-busy={correcting}
                     >
-                      {correcting ? <><span className="spinner" aria-hidden="true" /> <span>Mejorando...</span></> : <>✨ <span className="hideOnMobile">Previsualizar</span></>}
+                      {correcting ? <><span className="buttonSpinner" aria-hidden="true" /> <span>Mejorando...</span></> : <>✨ <span className="hideOnMobile">Previsualizar</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1947,7 +1936,7 @@ function App() {
                       disabled={sending || !draft.trim()}
                       aria-busy={sending}
                     >
-                      {sending && !correctingAndSending ? <><span className="spinner" aria-hidden="true" /> <span>Enviando...</span></> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                      {sending && !correctingAndSending ? <><span className="buttonSpinner" aria-hidden="true" /> <span>Enviando...</span></> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
                     </button>
                   </>
                 ) : (
@@ -1959,7 +1948,7 @@ function App() {
                       disabled={sending}
                       aria-busy={sending}
                     >
-                      {sending ? <><span className="spinner" aria-hidden="true" /> <span>Enviando sugerencia...</span></> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
+                      {sending ? <><span className="buttonSpinner" aria-hidden="true" /> <span>Enviando sugerencia...</span></> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1968,7 +1957,7 @@ function App() {
                       disabled={sending || !draft.trim()}
                       aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span></>}
+                      {sending ? <span className="buttonSpinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span></>}
                     </button>
                   </>
                 )}
