@@ -33,6 +33,18 @@ class BaseAdapter {
   async sendMessage(_ctx) {
     throw new Error(`sendMessage() not implemented for provider=${this.provider}`);
   }
+
+  async getMessageById(messageId) {
+    throw new Error(`getMessageById() not implemented for provider=${this.provider}`);
+  }
+
+  async fetchStatusDescriptors() {
+    throw new Error(`fetchStatusDescriptors() not implemented for provider=${this.provider}`);
+  }
+
+  async markStatusRead() {
+    throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
+  }
 }
 
 module.exports = { BaseAdapter };

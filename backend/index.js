@@ -1056,48 +1056,13 @@ function normalizeStatusDescriptor(entry = {}) {
 }
 
 async function fetchCurrentStatusDescriptors() {
-  if (!client?.pupPage) return [];
-  return client.pupPage.evaluate(async () => {
-    const statuses = window.Store.Status?.getModelsArray?.() || [];
-    const results = [];
-
-    for (const status of statuses) {
-      const ownerId =
-        status?.id?._serialized ||
-        status?.contact?.id?._serialized ||
-        status?.contact?.userid ||
-        '';
-      const ownerName =
-        status?.contact?.formattedName ||
-        status?.contact?.pushname ||
-        status?.contact?.name ||
-        status?.name ||
-        '';
-      const collection = status?.msgs || status?._msgs;
-      const messages =
-        typeof collection?.getModelsArray === 'function'
-          ? collection.getModelsArray()
-          : Array.isArray(collection)
-            ? collection
-            : [];
-
-      for (const msg of messages) {
-        const serialized = window.WWebJS.getMessageModel(msg);
-        results.push({
-          providerStatusMessageId: serialized?.id?._serialized || serialized?.id,
-          statusOwnerId: ownerId || serialized?.author || serialized?.from || '',
-          statusOwnerName: ownerName,
-          chatId: serialized?.from || 'status@broadcast',
-          description: serialized?.caption || serialized?.body || '',
-          caption: serialized?.caption || '',
-          mediaType: serialized?.type || '',
-          timestamp: serialized?.timestamp || serialized?.t || 0
-        });
-      }
-    }
-
-    return results;
-  });
+  try {
+    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    return await adapter.fetchStatusDescriptors();
+  } catch (err) {
+    console.error('⚠️ fetchStatusDescriptors error:', err.message);
+    return [];
+  }
 }
 
 async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
@@ -1115,9 +1080,15 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
     return { archived: false, reason: 'duplicate' };
   }
 
-  await client.sendSeen('status@broadcast').catch(() => {});
+  let statusMessage = null;
+  try {
+    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    await adapter.markStatusRead().catch(() => {});
+    statusMessage = await adapter.getMessageById(normalized.providerStatusMessageId).catch(() => null);
+  } catch (err) {
+    console.warn('⚠️ Adapter call failed during archiveStatusFromDescriptor:', err.message);
+  }
 
-  const statusMessage = await client.getMessageById(normalized.providerStatusMessageId).catch(() => null);
   if (!statusMessage) {
     return { archived: false, reason: 'status_not_found' };
   }
@@ -1606,7 +1577,8 @@ client.on('message_create', async (msg) => {
   if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
     try {
       // Marcamos el chat de estados como visto de forma directa y rápida
-      await client.sendSeen('status@broadcast');
+      const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+      await adapter.markStatusRead();
       await archiveStatusFromDescriptor({
         providerStatusMessageId: msg.id?._serialized,
         statusOwnerId: msg.author || msg.from,
