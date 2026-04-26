@@ -229,6 +229,18 @@ button, textarea, input, select {
   border-top-color: var(--warning);
 }
 
+.buttonSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -1361,17 +1373,17 @@ button.fullWidth {
 }
 .notice.error {
   background: rgba(255, 82, 82, 0.15);
-  color: #ff8a8a;
+  color: #ffb3b3;
   border-left-color: var(--error);
 }
 .notice.warning {
   background: rgba(255, 202, 40, 0.15);
-  color: #ffe066;
+  color: #ffe680;
   border-left-color: var(--warning);
 }
 .notice.info {
   background: rgba(0, 210, 255, 0.1);
-  color: #66e0ff;
+  color: #80e5ff;
   border-left-color: var(--accent-primary);
 }
 
@@ -1539,8 +1551,8 @@ button.fullWidth {
 }
 
 /* Offline Banner */
-.offlineBanner {
-  background-color: var(--error);
+.offlineBanner,
+.warningBanner {
   color: white;
   text-align: center;
   padding: 8px;
@@ -1553,10 +1565,21 @@ button.fullWidth {
   justify-content: center;
   align-items: center;
   gap: 8px;
+}
+
+.offlineBanner {
+  background-color: var(--error);
   box-shadow: 0 4px 12px rgba(255, 82, 82, 0.3);
 }
 
-.offlineBanner span {
+.warningBanner {
+  background-color: var(--warning);
+  color: #000;
+  box-shadow: 0 4px 12px rgba(255, 202, 40, 0.3);
+}
+
+.offlineBanner span,
+.warningBanner span {
   font-size: 16px;
 }
 

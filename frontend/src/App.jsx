@@ -1339,7 +1339,12 @@ function App() {
             disabled={authChecking || !inputApiKey}
             aria-busy={authChecking}
           >
-            {authChecking ? "Comprobando credenciales..." : "Ingresar de forma segura"}
+            {authChecking ? (
+              <>
+                <span className="buttonSpinner" aria-hidden="true" />
+                <span>Comprobando...</span>
+              </>
+            ) : "Ingresar de forma segura"}
           </button>
         </section>
       </main>
@@ -1400,7 +1405,7 @@ function App() {
                 Reintentar conexión
               </button>
               {sessionStatus === "auth_failure" && (
-                <p className="helperText mt-2">
+                <p className="helperText mt-2" role="alert">
                   Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono.
                 </p>
               )}
@@ -1421,6 +1426,11 @@ function App() {
       {isOffline && (
         <div className="offlineBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true">⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.
+        </div>
+      )}
+      {!isOffline && !socketConnected && (
+        <div className="warningBanner" role="alert" aria-live="polite">
+          <span aria-hidden="true">⚡</span> Conexión al servidor inestable. Intentando reconectar...
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
