@@ -843,6 +843,21 @@ button, textarea, input, select {
   overflow: visible;
 }
 
+.composerInputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.composerOriginalLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  display: block;
+  letter-spacing: 0.05em;
+}
+
 .composer textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.04);
@@ -856,6 +871,13 @@ button, textarea, input, select {
   min-height: 60px;
   max-height: 180px;
   overflow-y: hidden;
+}
+
+.composerInputWrapper.hasCorrection textarea {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--text-muted);
+  border-style: dashed;
 }
 
 .composer textarea:focus {
@@ -981,6 +1003,12 @@ button:disabled {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 8px;
+}
+
+.correctedHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .correctedLabel {
