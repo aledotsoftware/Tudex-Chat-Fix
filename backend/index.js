@@ -1465,32 +1465,6 @@ async function getAvailableModels(forceRefresh = false) {
   return models;
 }
 
-async function resolveChatAvatar(chat) {
-  if (!chat) return null;
-  try {
-    if (typeof chat.getProfilePicUrl === 'function') {
-      const pic = await chat.getProfilePicUrl();
-      if (pic) return pic;
-    }
-  } catch (_error) {
-    // ignore and fallback
-  }
-
-  try {
-    if (typeof chat.getContact === 'function') {
-      const contact = await chat.getContact();
-      if (contact && typeof contact.getProfilePicUrl === 'function') {
-        const pic = await contact.getProfilePicUrl();
-        if (pic) return pic;
-      }
-    }
-  } catch (_error) {
-    // ignore and fallback
-  }
-
-  return null;
-}
-
 async function toImageDataUrl(url) {
   if (!url) return null;
   try {
@@ -1521,7 +1495,14 @@ async function getChatAvatar(chat, index, provider) {
     return cached?.dataUrl || null;
   }
 
-  const avatarSourceUrl = await resolveChatAvatar(chat, provider);
+  let avatarSourceUrl = null;
+  try {
+    const adapter = resolveProviderAdapter(provider);
+    avatarSourceUrl = await adapter.getChatAvatarUrl(chat);
+  } catch (err) {
+    console.warn(`⚠️ Error resolving avatar for chat ${chatId}:`, err.message);
+  }
+
   const avatarDataUrl = await toImageDataUrl(avatarSourceUrl);
   avatarCache.set(chatId, {
     dataUrl: avatarDataUrl || null,
@@ -1543,59 +1524,6 @@ const waAdapter = new WhatsAppAdapter({
   chromeExecutablePath: chromeExecutablePath
 });
 providerRegistry.register(waAdapter);
-
-waAdapter.on('qr', (qr) => {
-  console.log('📡 QR Received - Emitting to frontend...');
-  const state = getProviderState(waAdapter.getProviderName());
-  state.lastQR = qr;
-  state.status = 'qr';
-  state.isReady = false;
-  state.lastDisconnectReason = null;
-  io.emit('qr', qr);
-});
-
-waAdapter.on('ready', () => {
-  console.log('✅ Client is ready!');
-  const state = getProviderState(waAdapter.getProviderName());
-  state.lastQR = null;
-  state.status = 'authenticated';
-  state.isReady = true;
-  state.lastReadyAt = new Date().toISOString();
-  state.lastDisconnectReason = null;
-  io.emit('ready', { status: 'authenticated' });
-
-  // Start background sync (async queue, read-path safe)
-  enqueueSyncTask({
-    kind: 'chats',
-    provider: DEFAULT_PROVIDER,
-    accountId: DEFAULT_ACCOUNT_ID,
-    reason: 'provider_ready'
-  });
-  runStatusArchiveSweep('poll').catch((error) => {
-    console.error('⚠️ Initial status archive sweep failed:', error.message);
-  });
-});
-
-waAdapter.on('authenticated', () => {
-  console.log('AUTHENTICATED');
-});
-
-waAdapter.on('auth_failure', msg => {
-  console.error('AUTHENTICATION FAILURE', msg);
-  const state = getProviderState(waAdapter.getProviderName());
-  state.isReady = false;
-  state.status = 'auth_failure';
-  io.emit('auth_failure', msg);
-});
-
-waAdapter.on('disconnected', (reason) => {
-  console.log('Client was logged out', reason);
-  const state = getProviderState(waAdapter.getProviderName());
-  state.isReady = false;
-  state.status = 'disconnected';
-  state.lastDisconnectReason = String(reason || 'unknown');
-  io.emit('disconnected', reason);
-});
 
 async function handleMessageRevoke(after, before, context = {}) {
   const provider = normalizeProvider(context.provider);
@@ -1624,56 +1552,116 @@ async function handleMessageRevoke(after, before, context = {}) {
   }
 }
 
-waAdapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }));
-waAdapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }));
+function bindProviderEvents(adapter, accountId) {
+  const providerName = adapter.getProviderName();
 
-// Message handling (incoming and outgoing)
-waAdapter.on('message_create', async (msg) => {
-  // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-  if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
-    try {
-      // Marcamos el chat de estados como visto de forma directa y rápida
-      const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
-      await adapter.markStatusRead();
-      await archiveStatusFromDescriptor({
-        providerStatusMessageId: msg.id?._serialized || msg.id,
-        statusOwnerId: msg.author || msg.from,
-        description: msg.caption || msg.body || '',
-        caption: msg.caption || '',
-        mediaType: msg.type,
-        timestamp: msg.timestamp || Math.floor(Date.now() / 1000)
-      }, 'event', { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
-      console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
-    } catch (e) {
-      console.error('⚠️ Error al auto-ver status:', e.message);
+  adapter.on('qr', (qr) => {
+    console.log('📡 QR Received - Emitting to frontend...');
+    const state = getProviderState(providerName);
+    state.lastQR = qr;
+    state.status = 'qr';
+    state.isReady = false;
+    state.lastDisconnectReason = null;
+    io.emit('qr', qr);
+  });
+
+  adapter.on('ready', () => {
+    console.log(`✅ Client is ready for provider: ${providerName}!`);
+    const state = getProviderState(providerName);
+    state.lastQR = null;
+    state.status = 'authenticated';
+    state.isReady = true;
+    state.lastReadyAt = new Date().toISOString();
+    state.lastDisconnectReason = null;
+    io.emit('ready', { status: 'authenticated' });
+
+    // Start background sync (async queue, read-path safe)
+    enqueueSyncTask({
+      kind: 'chats',
+      provider: providerName,
+      accountId: accountId,
+      reason: 'provider_ready'
+    });
+    runStatusArchiveSweep('poll').catch((error) => {
+      console.error('⚠️ Initial status archive sweep failed:', error.message);
+    });
+  });
+
+  adapter.on('authenticated', () => {
+    console.log(`AUTHENTICATED for provider: ${providerName}`);
+  });
+
+  adapter.on('auth_failure', msg => {
+    console.error(`AUTHENTICATION FAILURE for provider: ${providerName}`, msg);
+    const state = getProviderState(providerName);
+    state.isReady = false;
+    state.status = 'auth_failure';
+    io.emit('auth_failure', msg);
+  });
+
+  adapter.on('disconnected', (reason) => {
+    console.log(`Client was logged out for provider: ${providerName}`, reason);
+    const state = getProviderState(providerName);
+    state.isReady = false;
+    state.status = 'disconnected';
+    state.lastDisconnectReason = String(reason || 'unknown');
+    io.emit('disconnected', reason);
+  });
+
+  adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
+  adapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
+
+  // Message handling (incoming and outgoing)
+  adapter.on('message_create', async (msg) => {
+    // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
+    if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
+      try {
+        // Marcamos el chat de estados como visto de forma directa y rápida
+        await adapter.markStatusRead();
+        await archiveStatusFromDescriptor({
+          providerStatusMessageId: msg.id?._serialized || msg.id,
+          statusOwnerId: msg.author || msg.from,
+          description: msg.caption || msg.body || '',
+          caption: msg.caption || '',
+          mediaType: msg.type,
+          timestamp: msg.timestamp || Math.floor(Date.now() / 1000)
+        }, 'event', { provider: providerName, accountId });
+        console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
+      } catch (e) {
+        console.error('⚠️ Error al auto-ver status:', e.message);
+      }
+      return; // No procesamos los estados como mensajes normales en la UI
     }
-    return; // No procesamos los estados como mensajes normales en la UI
-  }
 
-  let chatId = msg.from;
-  if (msg.fromMe) {
-    chatId = msg.to;
-  }
+    let chatId = msg.from;
+    if (msg.fromMe) {
+      chatId = msg.to;
+    }
 
-  // Cache and Emit
-  const payload = await upsertMessage(
-    msg,
-    chatId,
-    {},
-    { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID }
-  );
-  if (payload) {
-    io.emit('new_message', payload);
-  }
+    // Cache and Emit
+    const payload = await upsertMessage(
+      msg,
+      chatId,
+      {},
+      { provider: providerName, accountId }
+    );
+    if (payload) {
+      io.emit('new_message', payload);
+    }
 
-  // Also update chat timestamp/unread in cache
-  try {
-    const chat = await msg.getChat();
-    await upsertChat(chat, 0, { provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
-  } catch (err) {
-    console.error('⚠️ Failed to update chat on message_create:', err.message);
-  }
-});
+    // Also update chat timestamp/unread in cache
+    try {
+      const chat = await adapter.getChatByMessage(msg);
+      if (chat) {
+        await upsertChat(chat, 0, { provider: providerName, accountId });
+      }
+    } catch (err) {
+      console.error('⚠️ Failed to update chat on message_create:', err.message);
+    }
+  });
+}
+
+bindProviderEvents(waAdapter, DEFAULT_ACCOUNT_ID);
 
 // Función para limpiar bloqueos de Chromium antes de iniciar
 function cleanChromiumLocks() {

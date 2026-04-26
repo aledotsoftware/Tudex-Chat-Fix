@@ -64,6 +64,10 @@ class BaseAdapter extends EventEmitter {
   async getChatAvatarUrl(chat) {
     throw new Error(`getChatAvatarUrl() not implemented for provider=${this.provider}`);
   }
+
+  async getChatByMessage(message) {
+    throw new Error(`getChatByMessage() not implemented for provider=${this.provider}`);
+  }
 }
 
 module.exports = { BaseAdapter };

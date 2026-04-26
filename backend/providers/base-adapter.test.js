@@ -43,4 +43,9 @@ describe('BaseAdapter', () => {
     const adapter = new BaseAdapter('test');
     await assert.rejects(() => adapter.markRead({}), /markRead\(\) not implemented for provider=test/);
   });
+
+  test('getChatByMessage() should throw not implemented error', async () => {
+    const adapter = new BaseAdapter('test');
+    await assert.rejects(() => adapter.getChatByMessage({}), /getChatByMessage\(\) not implemented for provider=test/);
+  });
 });

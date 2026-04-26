@@ -53,6 +53,27 @@ describe('WhatsAppAdapter', () => {
     });
   });
 
+  describe('getChatByMessage', () => {
+    test('should delegate to message.getChat if function exists', async () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const mockChatInstance = { id: 'chat123' };
+      const mockMessage = {
+        getChat: async () => mockChatInstance
+      };
+
+      const chat = await adapter.getChatByMessage(mockMessage);
+      assert.strictEqual(chat.id, 'chat123');
+    });
+
+    test('should return null if message.getChat does not exist', async () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const mockMessage = { text: 'hello' };
+
+      const chat = await adapter.getChatByMessage(mockMessage);
+      assert.strictEqual(chat, null);
+    });
+  });
+
   describe('markRead', () => {
     test('should delegate to chat.sendSeen if chat exists', async () => {
       mockChat.seenSent = false;
