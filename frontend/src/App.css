@@ -749,6 +749,11 @@ button, textarea, input, select {
   flex-wrap: wrap;
 }
 
+.composerActions button {
+  flex: 1;
+  min-width: 140px;
+}
+
 .jumpToLatest {
   position: sticky;
   bottom: 10px;
@@ -912,27 +917,32 @@ button.fullWidth {
 
 /* Activity Badge */
 .activityStateBadge {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
+  width: 100%;
   gap: 8px;
-  padding: 6px 14px;
+  padding: 10px 16px;
   border-radius: 12px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   margin-top: 12px;
   animation: slideIn 0.3s ease;
+  box-sizing: border-box;
 }
 
 .activityStateBadge.processing {
   background: rgba(0, 210, 255, 0.1);
   color: var(--accent-primary);
-  border: 1px solid rgba(0, 210, 255, 0.2);
+  border: 1px solid rgba(0, 210, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 210, 255, 0.15);
 }
 
 .activityStateBadge.sending {
   background: rgba(0, 230, 118, 0.1);
   color: var(--success);
-  border: 1px solid rgba(0, 230, 118, 0.2);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.15);
 }
 
 .activityStateBadge.syncing {
