@@ -38,6 +38,59 @@ class WhatsAppAdapter extends BaseAdapter {
     }
   }
 
+  async getMessageById(messageId) {
+    return this.client.getMessageById(messageId);
+  }
+
+  async fetchStatusDescriptors() {
+    if (!this.client?.pupPage) return [];
+    return this.client.pupPage.evaluate(async () => {
+      const statuses = window.Store.Status?.getModelsArray?.() || [];
+      const results = [];
+
+      for (const status of statuses) {
+        const ownerId =
+          status?.id?._serialized ||
+          status?.contact?.id?._serialized ||
+          status?.contact?.userid ||
+          '';
+        const ownerName =
+          status?.contact?.formattedName ||
+          status?.contact?.pushname ||
+          status?.contact?.name ||
+          status?.name ||
+          '';
+        const collection = status?.msgs || status?._msgs;
+        const messages =
+          typeof collection?.getModelsArray === 'function'
+            ? collection.getModelsArray()
+            : Array.isArray(collection)
+              ? collection
+              : [];
+
+        for (const msg of messages) {
+          const serialized = window.WWebJS.getMessageModel(msg);
+          results.push({
+            providerStatusMessageId: serialized?.id?._serialized || serialized?.id,
+            statusOwnerId: ownerId || serialized?.author || serialized?.from || '',
+            statusOwnerName: ownerName,
+            chatId: serialized?.from || 'status@broadcast',
+            description: serialized?.caption || serialized?.body || '',
+            caption: serialized?.caption || '',
+            mediaType: serialized?.type || '',
+            timestamp: serialized?.timestamp || serialized?.t || 0
+          });
+        }
+      }
+
+      return results;
+    });
+  }
+
+  async markStatusRead() {
+    await this.client.sendSeen('status@broadcast').catch(() => {});
+  }
+
   async sendMessage(params) {
     let {
       chatId,
