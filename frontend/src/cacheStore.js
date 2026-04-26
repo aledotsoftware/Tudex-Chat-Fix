@@ -84,6 +84,7 @@ export async function getCachedMessages(provider, accountId, conversationId) {
 
 export async function setCachedMessages(provider, accountId, conversationId, messages) {
   if (!conversationId || !Array.isArray(messages)) return;
+  const limitedMessages = messages.slice(-150);
   const key = getStorageKey(MESSAGES_PREFIX, provider, accountId, conversationId);
-  await writeEntry(key, messages);
+  await writeEntry(key, limitedMessages);
 }
