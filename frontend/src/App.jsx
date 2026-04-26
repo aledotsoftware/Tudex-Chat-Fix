@@ -154,6 +154,7 @@ function App() {
 
   const [apiAuthenticated, setApiAuthenticated] = useState(false);
   const [inputApiKey, setInputApiKey] = useState(localStorage.getItem("chatfix_api_key") || "");
+  const [showApiKey, setShowApiKey] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [authError, setAuthError] = useState("");
 
@@ -183,6 +184,7 @@ function App() {
   const [checkingAiHealth, setCheckingAiHealth] = useState(false);
   const [aiHealth, setAiHealth] = useState(null);
   const [aiModels, setAiModels] = useState([]);
+  const [showCloudflareToken, setShowCloudflareToken] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== "undefined"
@@ -1323,23 +1325,34 @@ function App() {
           {authError && <div id="apiKeyError" role="alert" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
           <p>Para continuar, necesitas proporcionar tu clave de acceso API.</p>
           <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
-          <input 
-            id="apiKeyInput"
-            className="authInput"
-            type="password" 
-            value={inputApiKey} 
-            onChange={(e) => setInputApiKey(e.target.value)}
-            placeholder="Introduce tu API Key" 
-            aria-required="true"
-            aria-invalid={!!authError}
-            aria-describedby={authError ? "apiKeyError" : undefined}
-            onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
-          />
+          <div className="passwordInputWrapper">
+            <input
+              id="apiKeyInput"
+              className="authInput"
+              type={showApiKey ? "text" : "password"}
+              value={inputApiKey}
+              onChange={(e) => setInputApiKey(e.target.value)}
+              placeholder="Introduce tu API Key"
+              aria-required="true"
+              aria-invalid={!!authError}
+              aria-describedby={authError ? "apiKeyError" : undefined}
+              onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
+            />
+            <button
+              type="button"
+              className="passwordToggleBtn"
+              onClick={() => setShowApiKey(!showApiKey)}
+              aria-label={showApiKey ? "Ocultar API Key" : "Mostrar API Key"}
+            >
+              {showApiKey ? "🙈" : "👁️"}
+            </button>
+          </div>
           <button 
             className="primary fullWidth"
             aria-label="Ingresar al panel de control"
             onClick={() => checkAuth(inputApiKey)} 
             disabled={authChecking || !inputApiKey}
+            aria-busy={authChecking}
           >
             {authChecking ? "Comprobando credenciales..." : "Ingresar de forma segura"}
           </button>
@@ -1372,7 +1385,7 @@ function App() {
                   <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
                 </ol>
               </div>
-              <div className="qrBox" aria-label="Código QR para vincular dispositivo">
+              <div className="qrBox" role="img" aria-label="Código QR para vincular dispositivo">
                 <QRCode value={qr} size={230} />
               </div>
             </>
@@ -1913,24 +1926,27 @@ function App() {
                       aria-label="Mejorar y enviar mensaje"
                       onClick={correctAndSend}
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
+                      aria-busy={correctingAndSending}
                     >
-                      {correctingAndSending ? <span className="spinner" /> : <>🚀 <span className="hideOnMobile">Mejorar y Enviar</span></>}
+                      {correctingAndSending ? <span className="spinner" aria-hidden="true" /> : <>🚀 <span className="hideOnMobile">Mejorar y Enviar</span></>}
                     </button>
                     <button
                       className="secondary"
                       aria-label="Revisar corrección"
                       onClick={correctDraft}
                       disabled={correcting || !draft.trim()}
+                      aria-busy={correcting}
                     >
-                      {correcting ? <span className="spinner" /> : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
+                      {correcting ? <span className="spinner" aria-hidden="true" /> : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
                     </button>
                     <button
                       className="secondary"
                       aria-label="Enviar sin IA"
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
+                      aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" /> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
                     </button>
                   </>
                 ) : (
@@ -1940,8 +1956,9 @@ function App() {
                       aria-label="Enviar sugerencia"
                       onClick={() => sendMessage(correctedDraft)}
                       disabled={sending}
+                      aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" /> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
+                      {sending ? <span className="spinner" aria-hidden="true" /> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1959,8 +1976,9 @@ function App() {
                       aria-label="Enviar texto original"
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
+                      aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" /> : <>📤 <span className="hideOnMobile">Ignorar IA y enviar</span></>}
+                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Ignorar IA y enviar</span></>}
                     </button>
                   </>
                 )}
@@ -2077,13 +2095,23 @@ function App() {
                 />
 
                 <label>Cloudflare API Token</label>
-                <input
-                  type="password"
-                  value={aiConfig.cloudflareApiToken}
-                  onChange={(e) =>
-                    setAiConfig((prev) => ({ ...prev, cloudflareApiToken: e.target.value }))
-                  }
-                />
+                <div className="passwordInputWrapper">
+                  <input
+                    type={showCloudflareToken ? "text" : "password"}
+                    value={aiConfig.cloudflareApiToken}
+                    onChange={(e) =>
+                      setAiConfig((prev) => ({ ...prev, cloudflareApiToken: e.target.value }))
+                    }
+                  />
+                  <button
+                    type="button"
+                    className="passwordToggleBtn"
+                    onClick={() => setShowCloudflareToken(!showCloudflareToken)}
+                    aria-label={showCloudflareToken ? "Ocultar Cloudflare Token" : "Mostrar Cloudflare Token"}
+                  >
+                    {showCloudflareToken ? "🙈" : "👁️"}
+                  </button>
+                </div>
 
                 <label>Cloudflare Base URL (opcional)</label>
                 <input
