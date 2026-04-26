@@ -1456,3 +1456,11 @@ button.fullWidth {
     flex: 1 1 100%;
   }
 }
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+textarea,
+select {
+  font-size: 16px;
+}
