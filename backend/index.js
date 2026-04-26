@@ -76,11 +76,33 @@ let lastStatusArchiveStats = {
   source: 'idle'
 };
 
+// Startup validation logic
+function validateStartupConfig() {
+  const provider = (process.env.AI_PROVIDER || 'lmstudio').toLowerCase();
+
+  // Validate AI config values that aren't inherently checked by safeUrl/safeNumber correctly
+  if (!process.env.MODEL_NAME || process.env.MODEL_NAME.trim() === '') {
+    console.warn('⚠️ WARNING: MODEL_NAME is not set or empty. Falling back to "llama-3.1-8b-instruct".');
+  }
+
+  if (provider === 'cloudflare') {
+    if (!process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID.trim() === '') {
+      console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_ACCOUNT_ID is missing or empty.');
+    }
+    if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
+      console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
+    }
+  }
+}
+
+// Invoke validation on startup
+validateStartupConfig();
+
 // API Key authentication middleware
 const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : 'tu_contraseña_super_segura_aqui';
 
 if (API_KEY === 'tu_contraseña_super_segura_aqui' || (API_KEY.length > 0 && API_KEY.length < 8)) {
-  console.warn('⚠️ WARNING: API_KEY is missing, default, or too short. This is insecure for production environments.');
+  console.warn('⚠️ WARNING: API_KEY is missing, default, or too short. This is insecure for production environments. Minimum length is 8 characters.');
 } else if (API_KEY.length === 0) {
   console.warn('⚠️ WARNING: API_KEY is empty. Authentication is DISABLED. This is highly insecure for production environments.');
 }
@@ -266,42 +288,54 @@ const AiSettingsSchema = new mongoose.Schema({
 const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 
-function safeUrl(urlStr, defaultUrl = '') {
+function safeUrl(urlStr, defaultUrl = '', varName = 'URL') {
   if (!urlStr) return defaultUrl;
   try {
     const parsed = new URL(urlStr);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      if (varName) console.warn(`⚠️ WARNING: Invalid protocol in ${varName} ("${urlStr}"). Must be http or https. Falling back to default.`);
       return defaultUrl;
     }
     return urlStr;
   } catch (e) {
+    if (varName) console.warn(`⚠️ WARNING: Malformed URL in ${varName} ("${urlStr}"). Falling back to default.`);
     return defaultUrl;
   }
 }
 
-function safeNumber(val, defaultVal, min, max) {
+function safeNumber(val, defaultVal, min, max, varName = 'Number') {
+  if (val === undefined || val === null || val === '') return defaultVal;
   const num = Number(val);
-  if (!Number.isFinite(num)) return defaultVal;
-  if (min !== undefined && num < min) return defaultVal;
-  if (max !== undefined && num > max) return defaultVal;
+  if (!Number.isFinite(num)) {
+    if (varName) console.warn(`⚠️ WARNING: Non-numeric value in ${varName} ("${val}"). Falling back to ${defaultVal}.`);
+    return defaultVal;
+  }
+  if (min !== undefined && num < min) {
+    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is less than minimum (${min}). Clamping to ${min}.`);
+    return min;
+  }
+  if (max !== undefined && num > max) {
+    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is greater than maximum (${max}). Clamping to ${max}.`);
+    return max;
+  }
   return num;
 }
 
 const DEFAULT_AI_CONFIG = {
   provider: (process.env.AI_PROVIDER || 'lmstudio').toLowerCase(),
-  lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234')
+  lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL')
     .replace(/\/+$/, '')
     .replace(/\/v1\/chat\/completions$/, ''),
   cloudflareAccountId: (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim(),
   cloudflareApiToken: (process.env.CLOUDFLARE_API_TOKEN || '').trim(),
-  cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '')
+  cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL')
     .replace(/\/+$/, ''),
   modelName: (process.env.MODEL_NAME || 'llama-3.1-8b-instruct').trim(),
-  temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2),
-  maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192),
+  temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'),
+  maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'),
   systemPrompt: (process.env.AI_SYSTEM_PROMPT || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.').trim(),
   userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}').trim(),
-  timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000)
+  timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS')
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };
@@ -1739,7 +1773,17 @@ app.put('/api/ai/config', async (req, res) => {
     }
     if (typeof req.body.lmStudioBaseUrl === 'string') {
       const trimmed = req.body.lmStudioBaseUrl.trim();
-      nextConfig.lmStudioBaseUrl = safeUrl(trimmed, DEFAULT_AI_CONFIG.lmStudioBaseUrl)
+      if (trimmed !== '') {
+        try {
+          const parsed = new URL(trimmed);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+             return res.status(400).json({ error: 'Invalid lmStudioBaseUrl protocol. Must be http or https.' });
+          }
+        } catch (e) {
+          return res.status(400).json({ error: 'Malformed URL provided for lmStudioBaseUrl.' });
+        }
+      }
+      nextConfig.lmStudioBaseUrl = safeUrl(trimmed, DEFAULT_AI_CONFIG.lmStudioBaseUrl, 'PUT_LM_STUDIO_URL')
         .replace(/\/+$/, '')
         .replace(/\/v1\/chat\/completions$/, '');
     }
@@ -1754,7 +1798,17 @@ app.put('/api/ai/config', async (req, res) => {
     }
     if (typeof req.body.cloudflareBaseUrl === 'string') {
       const trimmed = req.body.cloudflareBaseUrl.trim();
-      nextConfig.cloudflareBaseUrl = safeUrl(trimmed, '')
+      if (trimmed !== '') {
+        try {
+          const parsed = new URL(trimmed);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+             return res.status(400).json({ error: 'Invalid cloudflareBaseUrl protocol. Must be http or https.' });
+          }
+        } catch (e) {
+          return res.status(400).json({ error: 'Malformed URL provided for cloudflareBaseUrl.' });
+        }
+      }
+      nextConfig.cloudflareBaseUrl = safeUrl(trimmed, '', 'PUT_CLOUDFLARE_BASE_URL')
         .replace(/\/+$/, '');
     }
     if (req.body.temperature !== undefined) {
