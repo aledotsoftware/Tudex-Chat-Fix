@@ -1,5 +1,5 @@
 const express = require('express');
-const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
+
 const http = require('http');
 const { Server } = require('socket.io');
 const axios = require('axios');
@@ -864,13 +864,14 @@ async function archiveMedia(media, prefix = 'media') {
   };
 }
 
-async function buildMediaPayload(message) {
+async function buildMediaPayload(message, provider) {
   if (!message.hasMedia) {
     return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
   }
 
   try {
-    const mediaPromise = message.downloadMedia();
+    const adapter = resolveProviderAdapter(provider);
+    const mediaPromise = adapter.downloadMedia(message);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
@@ -902,7 +903,7 @@ async function buildMediaPayload(message) {
   return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
 }
 
-async function buildReplyPayload(message) {
+async function buildReplyPayload(message, provider) {
   if (!message?.hasQuotedMsg) {
     return {
       replyToMessageId: null,
@@ -911,7 +912,8 @@ async function buildReplyPayload(message) {
   }
 
   try {
-    const quoted = await message.getQuotedMessage();
+    const adapter = resolveProviderAdapter(provider);
+    const quoted = await adapter.getQuotedMessage(message);
     return {
       replyToMessageId: quoted?.id?._serialized || null,
       replyToText: quoted?.body || '[Mensaje citado]'
@@ -934,8 +936,8 @@ async function serializeMessage(message, chatId, context = {}) {
       : `${provider}:${accountId}:${providerMessageId}`;
 
   const [mediaPayload, replyPayload] = await Promise.all([
-    buildMediaPayload(message),
-    buildReplyPayload(message)
+    buildMediaPayload(message, provider),
+    buildReplyPayload(message, provider)
   ]);
 
   const conversationId = chatId;
@@ -968,7 +970,7 @@ async function upsertChat(waChat, index, context = {}) {
     const accountId = normalizeAccountId(context.accountId);
     const chatId = waChat.id._serialized;
     const conversationId = chatId;
-    const avatarUrl = await getChatAvatar(waChat, index || 0);
+    const avatarUrl = await getChatAvatar(waChat, index || 0, context.provider);
     const now = new Date();
 
     await Chat.findOneAndUpdate(
@@ -1095,7 +1097,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll') {
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
   if (statusMessage.hasMedia) {
-    const media = await statusMessage.downloadMedia().catch(() => null);
+    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    const media = await adapter.downloadMedia(statusMessage).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
       if (archived) {
@@ -1430,7 +1433,7 @@ async function toImageDataUrl(url) {
   }
 }
 
-async function getChatAvatar(chat, index) {
+async function getChatAvatar(chat, index, provider) {
   const chatId = chat?.id?._serialized;
   if (!chatId) return null;
 
@@ -1443,7 +1446,7 @@ async function getChatAvatar(chat, index) {
     return cached?.dataUrl || null;
   }
 
-  const avatarSourceUrl = await resolveChatAvatar(chat);
+  const avatarSourceUrl = await resolveChatAvatar(chat, provider);
   const avatarDataUrl = await toImageDataUrl(avatarSourceUrl);
   avatarCache.set(chatId, {
     dataUrl: avatarDataUrl || null,
@@ -1458,38 +1461,15 @@ const chromeExecutablePath = process.env.CHROME_EXECUTABLE_PATH ||
     ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
     : '/usr/bin/chromium');
 
-// WhatsApp Client
-const client = new Client({
-  authStrategy: new LocalAuth({
-    dataPath: './.wwebjs_auth'
-  }),
-  puppeteer: {
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-      '--disable-gpu',
-      '--disable-extensions'
-    ],
-    executablePath: chromeExecutablePath
-  },
-  webVersionCache: {
-    type: 'remote',
-    remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018921608-alpha.html'
-  }
-});
-
+// WhatsApp Client and Adapter Initialization
 providerRegistry = new ProviderRegistry();
-providerRegistry.register(
-  new WhatsAppAdapter({
-    client,
-    getStatus: () => currentStatus,
-    isReady: () => whatsappReady && currentStatus === 'authenticated'
-  })
-);
+const waAdapter = new WhatsAppAdapter({
+  dataPath: './.wwebjs_auth',
+  chromeExecutablePath: chromeExecutablePath
+});
+providerRegistry.register(waAdapter);
 
-client.on('qr', (qr) => {
+waAdapter.on('qr', (qr) => {
   console.log('📡 QR Received - Emitting to frontend...');
   lastQR = qr;
   currentStatus = 'qr';
@@ -1498,7 +1478,7 @@ client.on('qr', (qr) => {
   io.emit('qr', qr);
 });
 
-client.on('ready', () => {
+waAdapter.on('ready', () => {
   console.log('✅ Client is ready!');
   lastQR = null;
   currentStatus = 'authenticated';
@@ -1519,17 +1499,17 @@ client.on('ready', () => {
   });
 });
 
-client.on('authenticated', () => {
+waAdapter.on('authenticated', () => {
   console.log('AUTHENTICATED');
 });
 
-client.on('auth_failure', msg => {
+waAdapter.on('auth_failure', msg => {
   console.error('AUTHENTICATION FAILURE', msg);
   whatsappReady = false;
   io.emit('auth_failure', msg);
 });
 
-client.on('disconnected', (reason) => {
+waAdapter.on('disconnected', (reason) => {
   console.log('Client was logged out', reason);
   whatsappReady = false;
   lastWhatsappDisconnectReason = String(reason || 'unknown');
@@ -1561,11 +1541,11 @@ async function handleMessageRevoke(after, before) {
   }
 }
 
-client.on('message_revoke_everyone', handleMessageRevoke);
-client.on('message_revoke_me', handleMessageRevoke);
+waAdapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before));
+waAdapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before));
 
 // Message handling (incoming and outgoing)
-client.on('message_create', async (msg) => {
+waAdapter.on('message_create', async (msg) => {
   // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
   if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
     try {
@@ -1639,7 +1619,7 @@ function cleanChromiumLocks() {
 }
 
 cleanChromiumLocks();
-client.initialize();
+waAdapter.initialize();
 
 setInterval(() => {
   runStatusArchiveSweep('poll').catch((error) => {

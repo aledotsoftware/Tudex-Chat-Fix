@@ -1,21 +1,89 @@
-const { MessageMedia } = require('whatsapp-web.js');
+const { Client, LocalAuth, MessageMedia } = require('whatsapp-web.js');
 const { BaseAdapter } = require('./base-adapter');
 
 class WhatsAppAdapter extends BaseAdapter {
-  constructor(options) {
+  constructor(options = {}) {
     super('whatsapp');
-    this.client = options.client;
-    this.getStatusFn = options.getStatus;
-    this.isReadyFn = options.isReady;
-    this.markReadFn = options.markRead;
+
+    // Configurable initialization
+    if (options.client) {
+      this.client = options.client;
+    } else {
+      this.client = new Client({
+        authStrategy: options.authStrategy || new LocalAuth({ dataPath: options.dataPath || './.wwebjs_auth' }),
+        puppeteer: options.puppeteer || {
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-extensions'
+          ],
+          executablePath: options.chromeExecutablePath
+        },
+        webVersionCache: options.webVersionCache || {
+          type: 'remote',
+          remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1018921608-alpha.html'
+        }
+      });
+    }
+
+    this._isReady = false;
+    this._status = 'initializing';
+  }
+
+  initialize() {
+    this.client.on('qr', (qr) => {
+      this._status = 'qr';
+      this._isReady = false;
+      this.emit('qr', qr);
+    });
+
+    this.client.on('ready', () => {
+      this._status = 'authenticated';
+      this._isReady = true;
+      this.emit('ready');
+    });
+
+    this.client.on('authenticated', () => {
+      this._status = 'authenticated';
+      this.emit('authenticated');
+    });
+
+    this.client.on('auth_failure', (msg) => {
+      this._status = 'auth_failure';
+      this._isReady = false;
+      this.emit('auth_failure', msg);
+    });
+
+    this.client.on('disconnected', (reason) => {
+      this._status = 'disconnected';
+      this._isReady = false;
+      this.emit('disconnected', reason);
+    });
+
+    this.client.on('message_revoke_everyone', (after, before) => {
+      this.emit('message_revoke_everyone', after, before);
+    });
+
+    this.client.on('message_revoke_me', (after, before) => {
+      this.emit('message_revoke_me', after, before);
+    });
+
+    this.client.on('message_create', (msg) => {
+      this.emit('message_create', msg);
+    });
+
+    this.client.initialize();
   }
 
   isReady() {
-    return Boolean(this.isReadyFn?.());
+    return this._isReady;
   }
 
   getStatus() {
-    return String(this.getStatusFn?.() || 'unknown');
+    return this._status;
   }
 
   async listChats() {
@@ -29,9 +97,6 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async markRead({ conversationId }) {
-    if (typeof this.markReadFn === 'function') {
-      return this.markReadFn({ conversationId });
-    }
     const chat = await this.client.getChatById(conversationId);
     if (chat) {
       await chat.sendSeen();
@@ -91,6 +156,45 @@ class WhatsAppAdapter extends BaseAdapter {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 
+  async downloadMedia(message) {
+    if (typeof message.downloadMedia === 'function') {
+      return message.downloadMedia();
+    }
+    return null;
+  }
+
+  async getQuotedMessage(message) {
+    if (typeof message.getQuotedMessage === 'function') {
+      return message.getQuotedMessage();
+    }
+    return null;
+  }
+
+  async getChatAvatarUrl(chat) {
+    if (!chat) return null;
+    try {
+      if (typeof chat.getProfilePicUrl === 'function') {
+        const pic = await chat.getProfilePicUrl();
+        if (pic) return pic;
+      }
+    } catch (_error) {
+      // ignore and fallback
+    }
+
+    try {
+      if (typeof chat.getContact === 'function') {
+        const contact = await chat.getContact();
+        if (contact && typeof contact.getProfilePicUrl === 'function') {
+          const pic = await contact.getProfilePicUrl();
+          if (pic) return pic;
+        }
+      }
+    } catch (_error) {
+      // ignore and fallback
+    }
+    return null;
+  }
+
   async sendMessage(params) {
     let {
       chatId,
@@ -102,7 +206,6 @@ class WhatsAppAdapter extends BaseAdapter {
       mediaMimeType = 'image/jpeg'
     } = params;
 
-    // 1. Auto-resolve WhatsApp Channel URLs or bare invite codes
     const isChannelUrl = chatId.includes('whatsapp.com/channel/');
     const looksLikeInviteCode = !chatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(chatId);
 
@@ -112,12 +215,9 @@ class WhatsAppAdapter extends BaseAdapter {
 
       try {
         console.log(`🔍 Resolving channel for invite code: ${code}...`);
-
-        // Call queryNewsletterMetadataByInviteCode directly
         const page = this.client.pupPage;
         const channelData = await page.evaluate(async (inviteCode) => {
           try {
-            // Direct Store call
             const response = await window.Store.ChannelUtils.queryNewsletterMetadataByInviteCode(inviteCode);
             if (response && response.idJid) {
               const name = response.newsletterNameMetadataMixin?.nameElementValue || null;
@@ -151,17 +251,13 @@ class WhatsAppAdapter extends BaseAdapter {
       throw new Error('Missing parameters (chatId + text/media)');
     }
 
-    // 2. Build send options
     const isNewsletter = chatId.includes('@newsletter');
     const sendOptions = {};
     if (replyToMessageId && !isNewsletter) {
       sendOptions.quotedMessageId = replyToMessageId;
     }
 
-    // 3. Send
     if (isNewsletter) {
-      // Newsletter: bypass client.sendMessage which crashes on getChat()
-      // Send directly through WhatsApp Web internal Store
       let mediaData = null;
       if (mediaUrl || mediaBase64) {
         let media;
@@ -181,7 +277,6 @@ class WhatsAppAdapter extends BaseAdapter {
 
       const sendResult = await this.client.pupPage.evaluate(async (newsletterId, content, mediaInfo) => {
         try {
-          // Get or load the channel chat object from the Store directly
           const chatWid = window.Store.WidFactory.createWid(newsletterId);
           let chat = window.Store.WAWebNewsletterMetadataCollection.get(newsletterId);
           if (!chat) {
@@ -190,18 +285,14 @@ class WhatsAppAdapter extends BaseAdapter {
           }
           if (!chat) return { error: 'Could not load channel chat object' };
 
-          // Process media if provided
           let mediaOptions = {};
           let mediaHandle = null;
           if (mediaInfo) {
-            const processedMedia = await window.WWebJS.processMediaData(mediaInfo, {
-              sendToChannel: true
-            });
+            const processedMedia = await window.WWebJS.processMediaData(mediaInfo, { sendToChannel: true });
             mediaOptions = processedMedia.toJSON ? processedMedia.toJSON() : processedMedia;
             mediaHandle = mediaOptions.mediaHandle || null;
           }
 
-          // Build message
           const meUser = window.Store.User.getMaybeMePnUser();
           const newId = await window.Store.MsgKey.newId();
           const newMsgKey = new window.Store.MsgKey({
@@ -248,7 +339,6 @@ class WhatsAppAdapter extends BaseAdapter {
         throw new Error(`Failed to send to channel: ${sendResult.error}`);
       }
     } else {
-      // Regular chat: use client.sendMessage as usual
       if (mediaUrl || mediaBase64) {
         let media;
         if (mediaUrl) {
@@ -268,11 +358,7 @@ class WhatsAppAdapter extends BaseAdapter {
       }
     }
 
-    return {
-      success: true,
-      chatId,
-      isNewsletter
-    };
+    return { success: true, chatId, isNewsletter };
   }
 }
 

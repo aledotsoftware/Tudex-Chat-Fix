@@ -10,6 +10,8 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [ChatFix-AI-Ops] Reforzamiento de seguridad para URL AI, expuesta configuración Cloudflare y variables avanzadas. Documentación actualizada. - **COMPLETADO**
 
 ## 📝 AGENT NOTES
+- **ChatFix-Provider-Bridge**: Completada la encapsulación total de `whatsapp-web.js` dentro de `WhatsAppAdapter` y `BaseAdapter`. Se implementaron métodos estandarizados (`downloadMedia`, `getQuotedMessage`, `getChatAvatarUrl`) y soporte nativo de `EventEmitter` en la capa base. Se refactorizó `backend/index.js` para eliminar referencias directas a `Client` o dependencias de WhatsApp, inyectando el adaptador activo mediante la configuración del registro y enlazando los eventos de estado/mensajería al adaptador. Pruebas automáticas exitosas.
+
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
 - **ChatFix-AI-Ops**: Validaciones de URLs de AI (http/https estricto) aplicadas a `safeUrl`. `docker-compose.yml`, `.env.example` y `README.md` actualizados con parámetros Cloudflare (`CLOUDFLARE_ACCOUNT_ID`, etc.) y avanzados (`AI_TEMPERATURE`, `AI_MAX_TOKENS`). Runbook operativo actualizado.

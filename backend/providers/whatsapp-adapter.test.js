@@ -13,24 +13,18 @@ describe('WhatsAppAdapter', () => {
     getChatById: async (id) => id === 'valid' ? mockChat : null
   };
 
-  test('isReady() should return true when isReadyFn returns true', () => {
-    const adapter = new WhatsAppAdapter({ isReady: () => true });
+  test('isReady() should return the internal ready state', () => {
+    const adapter = new WhatsAppAdapter({ client: mockClient });
+    assert.strictEqual(adapter.isReady(), false);
+    adapter._isReady = true;
     assert.strictEqual(adapter.isReady(), true);
   });
 
-  test('isReady() should return false when isReadyFn is not provided', () => {
-    const adapter = new WhatsAppAdapter({});
-    assert.strictEqual(adapter.isReady(), false);
-  });
-
-  test('getStatus() should return the status from getStatusFn', () => {
-    const adapter = new WhatsAppAdapter({ getStatus: () => 'connected' });
-    assert.strictEqual(adapter.getStatus(), 'connected');
-  });
-
-  test('getStatus() should return "unknown" when getStatusFn is not provided', () => {
-    const adapter = new WhatsAppAdapter({});
-    assert.strictEqual(adapter.getStatus(), 'unknown');
+  test('getStatus() should return the internal status state', () => {
+    const adapter = new WhatsAppAdapter({ client: mockClient });
+    assert.strictEqual(adapter.getStatus(), 'initializing');
+    adapter._status = 'authenticated';
+    assert.strictEqual(adapter.getStatus(), 'authenticated');
   });
 
   test('listChats() should delegate to client.getChats', async () => {
@@ -60,27 +54,15 @@ describe('WhatsAppAdapter', () => {
   });
 
   describe('markRead', () => {
-    test('should use markReadFn if provided', async () => {
-      let called = false;
-      const adapter = new WhatsAppAdapter({
-        markRead: ({ conversationId }) => {
-          called = conversationId === 'testId';
-        }
-      });
-      await adapter.markRead({ conversationId: 'testId' });
-      assert.strictEqual(called, true);
-    });
-
-    test('should delegate to chat.sendSeen if markReadFn is not provided and chat exists', async () => {
+    test('should delegate to chat.sendSeen if chat exists', async () => {
       mockChat.seenSent = false;
       const adapter = new WhatsAppAdapter({ client: mockClient });
       await adapter.markRead({ conversationId: 'valid' });
       assert.strictEqual(mockChat.seenSent, true);
     });
 
-    test('should do nothing if markReadFn is not provided and chat does not exist', async () => {
+    test('should do nothing if chat does not exist', async () => {
       const adapter = new WhatsAppAdapter({ client: mockClient });
-      // Should not throw
       await adapter.markRead({ conversationId: 'invalid' });
     });
   });
