@@ -1571,8 +1571,17 @@ button.fullWidth {
 }
 
 @media (max-width: 920px) {
+  .composerActions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
   .composerActions button {
     min-width: 0;
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .composerActions button.primary {
     flex: 1 1 100%;
   }
 
