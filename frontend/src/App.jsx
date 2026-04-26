@@ -2046,7 +2046,10 @@ function App() {
       {showAiSettings ? (
         <section className="modalOverlay" onClick={() => setShowAiSettings(false)}>
           <div className="modalCard" onClick={(e) => e.stopPropagation()}>
-            <h3>Configuración IA</h3>
+            <div className="modalHeader">
+              <h3>Configuración IA</h3>
+              <button className="secondary" onClick={() => setShowAiSettings(false)}>Cerrar</button>
+            </div>
             {loadingAiConfig ? <p className="helper">Cargando configuración...</p> : null}
 
             <label>Proveedor</label>
@@ -2195,13 +2198,6 @@ function App() {
                 disabled={savingAiConfig}
               >
                 {savingAiConfig ? "Guardando..." : "Guardar"}
-              </button>
-              <button
-                className="secondary"
-                aria-label="Cerrar configuración"
-                onClick={() => setShowAiSettings(false)}
-              >
-                Cerrar
               </button>
             </div>
 
