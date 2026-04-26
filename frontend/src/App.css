@@ -1426,23 +1426,23 @@ button.fullWidth {
 }
 
 .notice.success {
-  background: rgba(0, 230, 118, 0.1);
+  background: rgba(0, 230, 118, 0.15);
   color: var(--success);
   border-left-color: var(--success);
 }
 .notice.error {
-  background: rgba(255, 82, 82, 0.15);
-  color: #ffb3b3;
+  background: rgba(255, 82, 82, 0.2);
+  color: var(--error);
   border-left-color: var(--error);
 }
 .notice.warning {
-  background: rgba(255, 202, 40, 0.15);
-  color: #ffe680;
+  background: rgba(255, 202, 40, 0.2);
+  color: var(--warning);
   border-left-color: var(--warning);
 }
 .notice.info {
-  background: rgba(0, 210, 255, 0.1);
-  color: #80e5ff;
+  background: rgba(0, 210, 255, 0.15);
+  color: var(--accent-primary);
   border-left-color: var(--accent-primary);
 }
 
