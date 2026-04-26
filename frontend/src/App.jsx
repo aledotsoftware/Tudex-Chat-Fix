@@ -1851,7 +1851,10 @@ function App() {
               <textarea
                 ref={draftInputRef}
                 value={draft}
-                onChange={(e) => setDraft(e.target.value)}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  if (correctedDraft) setCorrectedDraft("");
+                }}
                 onKeyDown={handleDraftKeyDown}
                 placeholder={correctedDraft ? "Enter: enviar sugerencia..." : "Escribí un mensaje... (Enter: corregir y enviar, Shift+Enter: salto de línea)"}
                 rows={3}
@@ -1873,69 +1876,8 @@ function App() {
                     </button>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
-                  <div className="correctedActions mt-2">
-                    <button
-                      className="primary small fullWidth"
-                      aria-label="Enviar sugerencia"
-                      onClick={() => sendMessage(correctedDraft)}
-                      disabled={sending}
-                    >
-                      ✅ Enviar sugerencia
-                    </button>
-                    <button
-                      className="secondary small"
-                      aria-label="Reemplazar borrador con sugerencia"
-                      onClick={() => {
-                        setDraft(correctedDraft);
-                        setCorrectedDraft("");
-                      }}
-                      disabled={sending}
-                    >
-                      ✏️ Reemplazar borrador
-                    </button>
-                  </div>
                 </div>
               ) : null}
-
-              <div className="composerActions">
-                {!correctedDraft ? (
-                  <>
-                    <button
-                      className="secondary"
-                      aria-label="Corregir texto con IA"
-                      onClick={correctDraft}
-                      disabled={correcting || !draft.trim()}
-                    >
-                      {correcting ? "..." : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
-                    </button>
-                    <button
-                      className="primary"
-                      aria-label="Corregir y enviar mensaje"
-                      onClick={correctAndSend}
-                      disabled={sending || correcting || correctingAndSending || !draft.trim()}
-                    >
-                      {correctingAndSending ? "..." : <>🚀 <span className="hideOnMobile">Corregir y enviar</span></>}
-                    </button>
-                    <button
-                      className="primary"
-                      aria-label="Enviar texto original"
-                      onClick={() => sendMessage(draft)}
-                      disabled={sending || !draft.trim()}
-                    >
-                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    className="secondary fullWidth"
-                    aria-label="Enviar texto original"
-                    onClick={() => sendMessage(draft)}
-                    disabled={sending || !draft.trim()}
-                  >
-                    {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original (ignorar IA)</span></>}
-                  </button>
-                )}
-              </div>
 
               {activityState ? (
                 <div className={`activityStateBadge ${activityState.type}`}>
@@ -1945,6 +1887,67 @@ function App() {
                   <span>{activityState.text}</span>
                 </div>
               ) : null}
+
+              <div className="composerActions">
+                {!correctedDraft ? (
+                  <>
+                    <button
+                      className="primary"
+                      aria-label="Corregir y enviar mensaje"
+                      onClick={correctAndSend}
+                      disabled={sending || correcting || correctingAndSending || !draft.trim()}
+                    >
+                      {correctingAndSending ? "..." : <>🚀 <span className="hideOnMobile">Corregir y enviar</span></>}
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="Corregir texto con IA"
+                      onClick={correctDraft}
+                      disabled={correcting || !draft.trim()}
+                    >
+                      {correcting ? "..." : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="Enviar texto original"
+                      onClick={() => sendMessage(draft)}
+                      disabled={sending || !draft.trim()}
+                    >
+                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      className="primary"
+                      aria-label="Enviar sugerencia"
+                      onClick={() => sendMessage(correctedDraft)}
+                      disabled={sending}
+                    >
+                      ✅ <span className="hideOnMobile">Enviar sugerencia</span>
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="Reemplazar borrador con sugerencia"
+                      onClick={() => {
+                        setDraft(correctedDraft);
+                        setCorrectedDraft("");
+                      }}
+                      disabled={sending}
+                    >
+                      ✏️ <span className="hideOnMobile">Usar sugerencia</span>
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="Enviar texto original"
+                      onClick={() => sendMessage(draft)}
+                      disabled={sending || !draft.trim()}
+                    >
+                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                    </button>
+                  </>
+                )}
+              </div>
 
               {notice ? <p className={`notice ${noticeType}`}>{notice}</p> : null}
             </footer>
