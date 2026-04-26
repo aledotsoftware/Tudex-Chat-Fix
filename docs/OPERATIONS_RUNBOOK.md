@@ -57,3 +57,4 @@ Mismo formato (`items` + metadata).
 - `API_KEY`: Must be at least 8 characters long in production environments to avoid security warnings.
 - **AI Configuration**: Values provided for `LM_STUDIO_URL` and `CLOUDFLARE_AI_BASE_URL` are strict-validated as proper URLs (must be `http:` or `https:`). If invalid, they fallback to safe defaults or empty strings. `AI_PROVIDER` supports `lmstudio` or `cloudflare`.
 - **Timeouts/Intervals**: Limits are strictly enforced. `AI_TIMEOUT_MS` is bounded between `1000` and `60000`. `STATUS_POLL_INTERVAL_MS` ensures a minimum of `1000` ms to prevent event loop starvation.
+- **Advanced AI Tuning**: Advanced variables like `AI_TEMPERATURE` and `AI_MAX_TOKENS` are parsed and constrained to safe values (e.g. Temperature between `0` and `2`, Max Tokens between `1` and `8192`) via `safeNumber()` validation.
