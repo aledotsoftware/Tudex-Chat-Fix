@@ -207,6 +207,7 @@ function App() {
   const [replyQueue, setReplyQueue] = useState([]);
   const [sendingReplyQueueIds, setSendingReplyQueueIds] = useState({});
   const [syncingChat, setSyncingChat] = useState(false);
+  const [syncingChats, setSyncingChats] = useState(false);
   const [chatStates, setChatStates] = useState({});
   const [aiConfig, setAiConfig] = useState({
     provider: "lmstudio",
@@ -853,6 +854,13 @@ function App() {
 
       const payload = await res.json();
       const { items, syncState } = parseApiItemsPayload(payload);
+
+      if (syncState && (syncState.status === 'syncing' || syncState.status === 'queued')) {
+         setSyncingChats(true);
+      } else {
+         setSyncingChats(false);
+      }
+
       const safeChats = items.sort(
         (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
       );
@@ -1398,7 +1406,12 @@ function App() {
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
         <aside className="sidebar">
         <header className="sidebarHeader">
-          <h2>{viewMode === "statuses" ? "Estados" : "Chats"}</h2>
+          <h2>
+            {viewMode === "statuses" ? "Estados" : "Chats"}
+            {viewMode === "chats" && syncingChats && (
+              <span className="syncIndicator" title="Sincronizando chats..."> 🔄</span>
+            )}
+          </h2>
           <div className="headerActions">
             <button
               className={`secondary ${viewMode === "statuses" ? "activeToggle" : ""}`}

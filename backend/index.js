@@ -1486,13 +1486,7 @@ providerRegistry.register(
   new WhatsAppAdapter({
     client,
     getStatus: () => currentStatus,
-    isReady: () => whatsappReady && currentStatus === 'authenticated',
-    markRead: async ({ conversationId }) => {
-      const chat = await client.getChatById(conversationId);
-      if (chat) {
-        await chat.sendSeen();
-      }
-    }
+    isReady: () => whatsappReady && currentStatus === 'authenticated'
   })
 );
 
