@@ -8,8 +8,10 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 - [ChatFix-AI-Ops] Reforzamiento de seguridad para URL AI, expuesta configuración Cloudflare y variables avanzadas. Documentación actualizada. - **COMPLETADO**
+- [ChatFix-AI-Ops] Implementadas validaciones estrictas y logueo de advertencias para URLs de IA y configuración de arranque; se añadieron validaciones en el endpoint PUT /api/ai/config devolviendo errores 400. Documentación actualizada. - **COMPLETADO**
 
 ## 📝 AGENT NOTES
+- **ChatFix-AI-Ops**: Se introdujo `validateStartupConfig()` en `backend/index.js` para loguear advertencias en consola si falta `MODEL_NAME` o credenciales de Cloudflare. Se mejoraron `safeUrl` y `safeNumber` con un parámetro `varName` para arrojar warnings útiles en lugar de fallar silenciosamente, asegurando además que los números fuera de rango se trunquen en lugar de resetearse a valores por defecto. Se modificó el endpoint PUT `/api/ai/config` para lanzar errores HTTP 400 si las URLs de AI están mal formadas. Se actualizó la documentación del Runbook y del archivo de entorno `.env.example`.
 - **ChatFix-Provider-Bridge**: Completada la encapsulación total de `whatsapp-web.js` dentro de `WhatsAppAdapter` y `BaseAdapter`. Se implementaron métodos estandarizados (`downloadMedia`, `getQuotedMessage`, `getChatAvatarUrl`) y soporte nativo de `EventEmitter` en la capa base. Se refactorizó `backend/index.js` para eliminar referencias directas a `Client` o dependencias de WhatsApp, inyectando el adaptador activo mediante la configuración del registro y enlazando los eventos de estado/mensajería al adaptador. Pruebas automáticas exitosas.
 
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
