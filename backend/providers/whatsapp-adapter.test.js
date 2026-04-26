@@ -74,6 +74,32 @@ describe('WhatsAppAdapter', () => {
     });
   });
 
+  describe('isStatusMessage', () => {
+    test('should return true for status messages', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.isStatusMessage({ from: 'status@broadcast' }), true);
+      assert.strictEqual(adapter.isStatusMessage({ type: 'status_v3' }), true);
+      assert.strictEqual(adapter.isStatusMessage({ isStatus: true }), true);
+    });
+
+    test('should return false for regular messages', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.isStatusMessage({ from: '123@c.us', type: 'chat' }), false);
+    });
+  });
+
+  describe('getChatIdFromMessage', () => {
+    test('should return to if fromMe is true', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.getChatIdFromMessage({ fromMe: true, to: '123@c.us', from: 'me@c.us' }), '123@c.us');
+    });
+
+    test('should return from if fromMe is false', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.getChatIdFromMessage({ fromMe: false, to: 'me@c.us', from: '123@c.us' }), '123@c.us');
+    });
+  });
+
   describe('markRead', () => {
     test('should delegate to chat.sendSeen if chat exists', async () => {
       mockChat.seenSent = false;

@@ -1595,7 +1595,7 @@ function bindProviderEvents(adapter, accountId) {
   // Message handling (incoming and outgoing)
   adapter.on('message_create', async (msg) => {
     // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-    if (msg.from === 'status@broadcast' || msg.type === 'status_v3' || msg.isStatus) {
+    if (adapter.isStatusMessage(msg)) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
         await adapter.markStatusRead();
@@ -1614,10 +1614,7 @@ function bindProviderEvents(adapter, accountId) {
       return; // No procesamos los estados como mensajes normales en la UI
     }
 
-    let chatId = msg.from;
-    if (msg.fromMe) {
-      chatId = msg.to;
-    }
+    let chatId = adapter.getChatIdFromMessage(msg);
 
     // Cache and Emit
     const payload = await upsertMessage(
@@ -1644,33 +1641,6 @@ function bindProviderEvents(adapter, accountId) {
 
 bindProviderEvents(waAdapter, DEFAULT_ACCOUNT_ID);
 
-// Función para limpiar bloqueos de Chromium antes de iniciar
-function cleanChromiumLocks() {
-  const authPath = path.resolve(__dirname, './.wwebjs_auth');
-  if (fs.existsSync(authPath)) {
-    try {
-      // Buscamos archivos SingletonLock recursivamente y los borramos
-      const deleteLock = (dir) => {
-        if (!fs.existsSync(dir)) return;
-        const files = fs.readdirSync(dir);
-        for (const file of files) {
-          const fullPath = path.join(dir, file);
-          if (fs.lstatSync(fullPath).isDirectory()) {
-            deleteLock(fullPath);
-          } else if (file === 'SingletonLock') {
-            fs.unlinkSync(fullPath);
-            console.log('🧹 Archivo SingletonLock eliminado para permitir el inicio.');
-          }
-        }
-      };
-      deleteLock(authPath);
-    } catch (err) {
-      console.warn('⚠️ No se pudo limpiar SingletonLock (puede que no exista o no haya permisos):', err.message);
-    }
-  }
-}
-
-cleanChromiumLocks();
 waAdapter.initialize();
 
 setInterval(() => {

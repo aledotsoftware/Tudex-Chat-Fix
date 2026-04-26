@@ -68,6 +68,14 @@ class BaseAdapter extends EventEmitter {
   async getChatByMessage(message) {
     throw new Error(`getChatByMessage() not implemented for provider=${this.provider}`);
   }
+
+  isStatusMessage(message) {
+    throw new Error(`isStatusMessage() not implemented for provider=${this.provider}`);
+  }
+
+  getChatIdFromMessage(message) {
+    throw new Error(`getChatIdFromMessage() not implemented for provider=${this.provider}`);
+  }
 }
 
 module.exports = { BaseAdapter };

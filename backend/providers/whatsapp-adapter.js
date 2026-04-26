@@ -31,9 +31,38 @@ class WhatsAppAdapter extends BaseAdapter {
 
     this._isReady = false;
     this._status = 'initializing';
+    this._authPath = options.dataPath || './.wwebjs_auth';
+  }
+
+  _cleanChromiumLocks() {
+    const fs = require('fs');
+    const path = require('path');
+    const authPath = path.resolve(process.cwd(), this._authPath);
+    if (fs.existsSync(authPath)) {
+      try {
+        const deleteLock = (dir) => {
+          if (!fs.existsSync(dir)) return;
+          const files = fs.readdirSync(dir);
+          for (const file of files) {
+            const fullPath = path.join(dir, file);
+            if (fs.lstatSync(fullPath).isDirectory()) {
+              deleteLock(fullPath);
+            } else if (file === 'SingletonLock') {
+              fs.unlinkSync(fullPath);
+              console.log('🧹 Archivo SingletonLock eliminado para permitir el inicio.');
+            }
+          }
+        };
+        deleteLock(authPath);
+      } catch (err) {
+        console.warn('⚠️ No se pudo limpiar SingletonLock:', err.message);
+      }
+    }
   }
 
   initialize() {
+    this._cleanChromiumLocks();
+
     this.client.on('qr', (qr) => {
       this._status = 'qr';
       this._isReady = false;
@@ -175,6 +204,14 @@ class WhatsAppAdapter extends BaseAdapter {
       return message.getChat();
     }
     return null;
+  }
+
+  isStatusMessage(message) {
+    return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
+  }
+
+  getChatIdFromMessage(message) {
+    return message.fromMe ? message.to : message.from;
   }
 
   async getChatAvatarUrl(chat) {
