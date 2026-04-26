@@ -836,13 +836,20 @@ function App() {
           (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
         );
         setChats(sortedCached);
+
+        // PWA Hydration: Auto-select chat from cache immediately to prevent UI jumps
+        const existsInCache = sortedCached.some((chat) => chat.id === selectedChatIdRef.current);
+        const nextCachedId = existsInCache ? selectedChatIdRef.current : sortedCached[0].id;
+        const shouldAutoSelectCache = !isMobileLayout && (selectFirst || !selectedChatIdRef.current || !existsInCache);
+
+        if (shouldAutoSelectCache && sortedCached.length > 0) {
+          selectedChatIdRef.current = nextCachedId;
+          setSelectedChatId(nextCachedId);
+        }
       }
 
       if (!navigator.onLine) {
          setLoadingChats(false);
-         if (cachedChats.length > 0 && (!selectedChatIdRef.current || selectFirst)) {
-            setSelectedChatId(cachedChats[0].id);
-         }
          return;
       }
 
@@ -864,13 +871,14 @@ function App() {
       const safeChats = items.sort(
         (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
       );
-
       setChats(safeChats);
-      await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, safeChats);
 
       if (safeChats.length === 0) {
-        setSelectedChatId("");
-        setMessages([]);
+        if (selectedChatIdRef.current) {
+          selectedChatIdRef.current = "";
+          setSelectedChatId("");
+        }
+        await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, []);
         return;
       }
 
@@ -878,22 +886,19 @@ function App() {
       const nextChatId = exists ? selectedChatIdRef.current : safeChats[0].id;
       const shouldAutoSelect = !isMobileLayout && (selectFirst || !selectedChatIdRef.current || !exists);
 
-      if (shouldAutoSelect) {
-        setSelectedChatId(nextChatId);
+      if (shouldAutoSelect && safeChats.length > 0) {
         selectedChatIdRef.current = nextChatId; // Update ref immediately to avoid jumpy behavior
-        const cached = messagesByChat[nextChatId];
-        if (cached && cached.length > 0) {
-          setMessages(cached);
-          fetchMessages(nextChatId, { withLoader: false, background: true });
-        } else {
-          await fetchMessages(nextChatId, { withLoader: true });
-        }
-      } else if (!exists) {
-        setSelectedChatId("");
+        setSelectedChatId(nextChatId);
+        fetchMessages(nextChatId, { withLoader: false });
+      } else if (!exists && selectedChatIdRef.current) {
         selectedChatIdRef.current = "";
+        setSelectedChatId("");
         setMessages([]);
       }
+
+      await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, safeChats);
     } catch (error) {
+      console.error(error);
       showNotice(error.message, "error");
     } finally {
       setLoadingChats(false);
