@@ -82,6 +82,11 @@ En Docker Compose ya se inyectan:
 - `MODEL_NAME=llama-3.1-8b-instruct`
 - `CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`
 - `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas (Mínimo de 1000ms).
+- `AI_TEMPERATURE=0.7` Configuración avanzada de la temperatura del modelo IA.
+- `AI_MAX_TOKENS=180` Configuración del máximo de tokens para la generación de la IA.
+- `AI_TIMEOUT_MS=15000` Configuración de timeout para la IA en milisegundos.
+- `AI_SYSTEM_PROMPT` Define el rol y comportamiento esperado de la IA.
+- `AI_USER_PROMPT_TEMPLATE` Formato en el que se envía el mensaje original a la IA.
 - `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción.
 - `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas.
 
