@@ -271,21 +271,6 @@ function App() {
     return "Iniciando sesión de WhatsApp...";
   }, [sessionStatus, socketConnected]);
 
-  const activityState = useMemo(() => {
-    if (correctingAndSending) {
-      return { type: "processing", icon: "✨", text: "Mejorando redacción y enviando..." };
-    }
-    if (correcting) {
-      return { type: "processing", icon: "✨", text: "Mejorando redacción con IA..." };
-    }
-    if (sending) {
-      return { type: "sending", icon: "🚀", text: "Enviando..." };
-    }
-    if (syncingChat) {
-      return { type: "syncing", icon: "🔄", text: "Sincronizando chat..." };
-    }
-    return null;
-  }, [correctingAndSending, correcting, sending, syncingChat]);
 
   function showNotice(text, type = "info") {
     setNotice(text);
@@ -1878,43 +1863,49 @@ function App() {
                 </div>
               ) : null}
 
-              <textarea
-                ref={draftInputRef}
-                value={draft}
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  if (correctedDraft) setCorrectedDraft("");
-                }}
-                onKeyDown={handleDraftKeyDown}
-                placeholder={correctedDraft ? "Enter: enviar sugerencia..." : "Escribí un mensaje... (Enter: corregir y enviar, Shift+Enter: salto de línea)"}
-                rows={3}
-                aria-label="Mensaje"
-                disabled={sending || correcting || correctingAndSending}
-              />
+              <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""}`}>
+                {correctedDraft && <span className="composerOriginalLabel">Mensaje Original</span>}
+                <textarea
+                  ref={draftInputRef}
+                  value={draft}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    if (correctedDraft) setCorrectedDraft("");
+                  }}
+                  onKeyDown={handleDraftKeyDown}
+                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar, Shift+Enter: salto)"
+                  rows={3}
+                  aria-label="Mensaje"
+                  disabled={sending || correcting || correctingAndSending}
+                />
+              </div>
 
               {correctedDraft ? (
                 <div className="correctedPreview">
                   <div className="correctedHeader">
-                    <p className="correctedLabel">✨ Sugerencia de IA</p>
-                    <button
-                      className="iconButton"
-                      onClick={() => setCorrectedDraft("")}
-                      aria-label="Descartar sugerencia"
-                      title="Descartar"
-                    >
-                      ❌
-                    </button>
+                    <p className="correctedLabel">✨ Sugerencia de IA lista para enviar</p>
+                    <div className="correctedHeaderActions">
+                      <button
+                        className="secondary small"
+                        onClick={() => {
+                          setDraft(correctedDraft);
+                          setCorrectedDraft("");
+                        }}
+                        aria-label="Editar sugerencia en el cuadro principal"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        className="iconButton"
+                        onClick={() => setCorrectedDraft("")}
+                        aria-label="Descartar sugerencia"
+                        title="Descartar"
+                      >
+                        ❌
+                      </button>
+                    </div>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
-                </div>
-              ) : null}
-
-              {activityState ? (
-                <div className={`activityStateBadge ${activityState.type}`}>
-                  <span className={`icon-anim ${activityState.type === "syncing" ? "spin" : activityState.type === "sending" ? "bounceRight" : "bounce"}`}>
-                    {activityState.icon}
-                  </span>
-                  <span>{activityState.text}</span>
                 </div>
               ) : null}
 
@@ -1923,62 +1914,51 @@ function App() {
                   <>
                     <button
                       className="primary"
-                      aria-label="Mejorar y enviar mensaje"
+                      aria-label="Mejorar redacción con IA y enviar"
                       onClick={correctAndSend}
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                       aria-busy={correctingAndSending}
                     >
-                      {correctingAndSending ? <span className="spinner" aria-hidden="true" /> : <>🚀 <span className="hideOnMobile">Mejorar y Enviar</span></>}
+                      {correctingAndSending ? <><span className="spinner" aria-hidden="true" /> <span>Mejorando y enviando...</span></> : <>🚀 <span className="hideOnMobile">Mejorar y enviar</span></>}
                     </button>
                     <button
                       className="secondary"
-                      aria-label="Revisar corrección"
+                      aria-label="Previsualizar corrección de IA sin enviar"
                       onClick={correctDraft}
                       disabled={correcting || !draft.trim()}
                       aria-busy={correcting}
                     >
-                      {correcting ? <span className="spinner" aria-hidden="true" /> : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
+                      {correcting ? <><span className="spinner" aria-hidden="true" /> <span>Mejorando...</span></> : <>✨ <span className="hideOnMobile">Previsualizar</span></>}
                     </button>
                     <button
                       className="secondary"
-                      aria-label="Enviar sin IA"
+                      aria-label="Enviar mensaje original sin revisar"
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                       aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                      {sending && !correctingAndSending ? <><span className="spinner" aria-hidden="true" /> <span>Enviando...</span></> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
                     </button>
                   </>
                 ) : (
                   <>
                     <button
                       className="primary"
-                      aria-label="Enviar sugerencia"
+                      aria-label="Enviar la sugerencia de IA"
                       onClick={() => sendMessage(correctedDraft)}
                       disabled={sending}
                       aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" aria-hidden="true" /> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
+                      {sending ? <><span className="spinner" aria-hidden="true" /> <span>Enviando sugerencia...</span></> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
                     </button>
                     <button
                       className="secondary"
-                      aria-label="Reemplazar borrador con sugerencia"
-                      onClick={() => {
-                        setDraft(correctedDraft);
-                        setCorrectedDraft("");
-                      }}
-                      disabled={sending}
-                    >
-                      ✏️ <span className="hideOnMobile">Editar sugerencia</span>
-                    </button>
-                    <button
-                      className="secondary"
-                      aria-label="Enviar texto original"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                       aria-busy={sending}
                     >
-                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Ignorar IA y enviar</span></>}
+                      {sending ? <span className="spinner" aria-hidden="true" /> : <>📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span></>}
                     </button>
                   </>
                 )}
