@@ -963,11 +963,12 @@ button:disabled {
 
 .correctedPreview {
   margin-top: 16px;
-  background: rgba(0, 210, 255, 0.05);
-  border: 1px solid var(--accent-glow);
+  background: linear-gradient(145deg, rgba(0, 210, 255, 0.05), rgba(0, 210, 255, 0.02));
+  border: 1px dashed var(--accent-primary);
   border-radius: 16px;
   padding: 16px;
   animation: slideIn 0.3s ease;
+  position: relative;
 }
 
 @keyframes slideIn {
@@ -983,16 +984,25 @@ button:disabled {
 }
 
 .correctedLabel {
-  font-weight: bold;
+  font-weight: 700;
   color: var(--accent-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .correctedText {
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   color: var(--text-primary);
   margin: 0;
+  font-style: italic;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent-primary);
 }
 
 .iconButton {
@@ -1049,6 +1059,7 @@ button.fullWidth {
   color: var(--accent-primary);
   border: 1px solid rgba(0, 210, 255, 0.3);
   box-shadow: 0 4px 12px rgba(0, 210, 255, 0.15);
+  animation: slideIn 0.3s ease, pulseIcon 2s infinite;
 }
 
 .activityStateBadge.sending {
@@ -1059,9 +1070,11 @@ button.fullWidth {
 }
 
 .activityStateBadge.syncing {
-  background: rgba(255, 255, 255, 0.05);
+  background: transparent;
   color: var(--text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
+  font-size: 13px;
+  opacity: 0.8;
 }
 
 .icon-anim {
@@ -1076,6 +1089,10 @@ button.fullWidth {
   animation: bounce 1s ease-in-out infinite alternate;
 }
 
+.icon-anim.bounceRight {
+  animation: bounceRight 1s ease-in-out infinite alternate;
+}
+
 .spinner {
   width: 14px;
   height: 14px;
@@ -1083,6 +1100,8 @@ button.fullWidth {
   border-right-color: transparent;
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 @keyframes spin {
@@ -1092,6 +1111,17 @@ button.fullWidth {
 @keyframes bounce {
   from { transform: translateY(0); }
   to { transform: translateY(-3px); }
+}
+
+@keyframes bounceRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(3px); }
+}
+
+@keyframes pulseIcon {
+  0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 210, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
 }
 
 /* Custom badges */

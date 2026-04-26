@@ -271,16 +271,16 @@ function App() {
 
   const activityState = useMemo(() => {
     if (correctingAndSending) {
-      return { type: "processing", icon: "✨", text: "Generando con IA y enviando..." };
+      return { type: "processing", icon: "✨", text: "Mejorando redacción y enviando..." };
     }
     if (correcting) {
-      return { type: "processing", icon: "✨", text: "Generando corrección con IA..." };
+      return { type: "processing", icon: "✨", text: "Mejorando redacción con IA..." };
     }
     if (sending) {
-      return { type: "sending", icon: "🚀", text: "Enviando mensaje..." };
+      return { type: "sending", icon: "🚀", text: "Enviando..." };
     }
     if (syncingChat) {
-      return { type: "syncing", icon: "🔄", text: "Sincronizando chat en segundo plano..." };
+      return { type: "syncing", icon: "🔄", text: "Sincronizando chat..." };
     }
     return null;
   }, [correctingAndSending, correcting, sending, syncingChat]);
@@ -1898,7 +1898,7 @@ function App() {
 
               {activityState ? (
                 <div className={`activityStateBadge ${activityState.type}`}>
-                  <span className={`icon-anim ${activityState.type === "syncing" ? "spin" : "bounce"}`}>
+                  <span className={`icon-anim ${activityState.type === "syncing" ? "spin" : activityState.type === "sending" ? "bounceRight" : "bounce"}`}>
                     {activityState.icon}
                   </span>
                   <span>{activityState.text}</span>
@@ -1910,27 +1910,27 @@ function App() {
                   <>
                     <button
                       className="primary"
-                      aria-label="Corregir y enviar mensaje"
+                      aria-label="Mejorar y enviar mensaje"
                       onClick={correctAndSend}
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                     >
-                      {correctingAndSending ? "..." : <>🚀 <span className="hideOnMobile">Corregir y enviar</span></>}
+                      {correctingAndSending ? <span className="spinner" /> : <>🚀 <span className="hideOnMobile">Mejorar y Enviar</span></>}
                     </button>
                     <button
                       className="secondary"
-                      aria-label="Corregir texto con IA"
+                      aria-label="Revisar corrección"
                       onClick={correctDraft}
                       disabled={correcting || !draft.trim()}
                     >
-                      {correcting ? "..." : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
+                      {correcting ? <span className="spinner" /> : <>✨ <span className="hideOnMobile">Revisar corrección</span></>}
                     </button>
                     <button
                       className="secondary"
-                      aria-label="Enviar texto original"
+                      aria-label="Enviar sin IA"
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                     >
-                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                      {sending ? <span className="spinner" /> : <>📤 <span className="hideOnMobile">Enviar original</span></>}
                     </button>
                   </>
                 ) : (
@@ -1941,7 +1941,7 @@ function App() {
                       onClick={() => sendMessage(correctedDraft)}
                       disabled={sending}
                     >
-                      ✅ <span className="hideOnMobile">Enviar sugerencia</span>
+                      {sending ? <span className="spinner" /> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1952,7 +1952,7 @@ function App() {
                       }}
                       disabled={sending}
                     >
-                      ✏️ <span className="hideOnMobile">Usar sugerencia</span>
+                      ✏️ <span className="hideOnMobile">Editar sugerencia</span>
                     </button>
                     <button
                       className="secondary"
@@ -1960,7 +1960,7 @@ function App() {
                       onClick={() => sendMessage(draft)}
                       disabled={sending || !draft.trim()}
                     >
-                      {sending ? "..." : <>📤 <span className="hideOnMobile">Enviar original</span></>}
+                      {sending ? <span className="spinner" /> : <>📤 <span className="hideOnMobile">Ignorar IA y enviar</span></>}
                     </button>
                   </>
                 )}
