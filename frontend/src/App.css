@@ -21,13 +21,13 @@
   --warning: #ffca28;
   
   /* Text */
-  --text-primary: #f0f5f9;
-  --text-secondary: #b0bec5;
-  --text-muted: #94a3b8;
+  --text-primary: #ffffff;
+  --text-secondary: #e2e8f0;
+  --text-muted: #cbd5e1;
   
   /* Borders */
-  --border-light: rgba(255, 255, 255, 0.12);
-  --border-focus: rgba(0, 210, 255, 0.5);
+  --border-light: rgba(255, 255, 255, 0.18);
+  --border-focus: rgba(0, 210, 255, 0.6);
 }
 
 * {
@@ -142,14 +142,25 @@ button, textarea, input, select {
 
 .authInput {
   width: 100%;
-  padding: 12px;
+  padding: 14px;
   margin-bottom: 20px;
   box-sizing: border-box;
-  border: 1px solid var(--border-light);
+  border: 2px solid var(--border-light);
   border-radius: 8px;
   font-size: 16px;
   background: var(--bg-darker);
   color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.authInput::placeholder {
+  color: var(--text-muted);
+}
+
+.authInput:focus-visible {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
+  outline: none;
 }
 
 .authInput[aria-invalid="true"] {
@@ -157,9 +168,43 @@ button, textarea, input, select {
 }
 
 .instructionText {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.instructionList {
+  text-align: left;
+  margin-bottom: 20px;
+  color: var(--text-secondary);
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px 20px;
+  border-radius: 12px;
   font-size: 14px;
-  color: var(--text-muted);
-  margin-bottom: 12px;
+}
+
+.instructionList p {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.instructionList ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.instructionList li {
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.authRecoveryOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .loadingSpinnerContainer {
@@ -178,6 +223,10 @@ button, textarea, input, select {
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 12px;
+}
+
+.warningSpinner {
+  border-top-color: var(--warning);
 }
 
 @keyframes spin {
@@ -1239,15 +1288,34 @@ button.fullWidth {
 }
 
 .notice {
-  font-size: 12px;
-  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 12px 16px;
   border-radius: 8px;
   margin-top: 12px;
+  border-left: 4px solid transparent;
 }
 
-.notice.success { background: rgba(0, 230, 118, 0.1); color: var(--success); }
-.notice.error { background: rgba(255, 82, 82, 0.1); color: var(--error); }
-.notice.info { background: rgba(0, 210, 255, 0.1); color: var(--accent-primary); }
+.notice.success {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--success);
+  border-left-color: var(--success);
+}
+.notice.error {
+  background: rgba(255, 82, 82, 0.15);
+  color: var(--error);
+  border-left-color: var(--error);
+}
+.notice.warning {
+  background: rgba(255, 202, 40, 0.15);
+  color: var(--warning);
+  border-left-color: var(--warning);
+}
+.notice.info {
+  background: rgba(0, 210, 255, 0.1);
+  color: var(--accent-primary);
+  border-left-color: var(--accent-primary);
+}
 
 /* Revoked Messages */
 .revokedRow .bubble {

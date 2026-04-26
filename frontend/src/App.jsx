@@ -253,20 +253,20 @@ function App() {
   }, [chatSearch, statusArchiveItems]);
 
   const connectionLabel = useMemo(() => {
-    if (!socketConnected) return "Socket desconectado";
-    if (sessionStatus === "authenticated") return "Conectado";
-    if (sessionStatus === "qr") return "Esperando escaneo QR";
-    if (sessionStatus === "auth_failure") return "Error de autenticación de WhatsApp";
+    if (!socketConnected) return "Esperando red (WebSocket)...";
+    if (sessionStatus === "authenticated") return "Conectado a WhatsApp";
+    if (sessionStatus === "qr") return "Requiere escaneo de QR";
+    if (sessionStatus === "auth_failure") return "Error de sesión (Rechazado)";
     if (sessionStatus === "disconnected") return "WhatsApp desconectado";
-    return "Conectando sesión...";
+    return "Sincronizando sesión...";
   }, [sessionStatus, socketConnected]);
 
   const authScreenLabel = useMemo(() => {
-    if (!socketConnected) return "Esperando conexión con el servidor (WebSocket)...";
-    if (sessionStatus === "qr") return "Vincular dispositivo";
-    if (sessionStatus === "auth_failure") return "La sesión de WhatsApp fue rechazada. Por favor, reintente.";
-    if (sessionStatus === "disconnected") return "WhatsApp se ha desconectado.";
-    return "Conectando sesión de WhatsApp...";
+    if (!socketConnected) return "Conectando al servidor...";
+    if (sessionStatus === "qr") return "Vincular con WhatsApp";
+    if (sessionStatus === "auth_failure") return "La sesión fue rechazada o expiró. Por favor, reinicia la conexión.";
+    if (sessionStatus === "disconnected") return "WhatsApp se ha desconectado. Intenta reconectar.";
+    return "Iniciando sesión de WhatsApp...";
   }, [sessionStatus, socketConnected]);
 
   const activityState = useMemo(() => {
@@ -1313,16 +1313,16 @@ function App() {
   if (!apiAuthenticated) {
     return (
       <>
-        <div className="bg-blob-container">
+        <div className="bg-blob-container" aria-hidden="true">
           <div className="bg-blob blob-1"></div>
           <div className="bg-blob blob-2"></div>
         </div>
         <main className="authScreen">
-        <section className="authCard" aria-live="polite">
-          <h1>ChatFix API</h1>
-          {authError && <div role="alert" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
-          <p>Autenticación Requerida</p>
-          <label htmlFor="apiKeyInput" className="sr-only">API Key</label>
+        <section className="authCard" aria-live="polite" aria-labelledby="apiKeyHeading">
+          <h1 id="apiKeyHeading">ChatFix API</h1>
+          {authError && <div id="apiKeyError" role="alert" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
+          <p>Para continuar, necesitas proporcionar tu clave de acceso API.</p>
+          <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
           <input 
             id="apiKeyInput"
             className="authInput"
@@ -1332,15 +1332,16 @@ function App() {
             placeholder="Introduce tu API Key" 
             aria-required="true"
             aria-invalid={!!authError}
+            aria-describedby={authError ? "apiKeyError" : undefined}
             onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
           />
           <button 
-            className="primary" 
+            className="primary fullWidth"
             aria-label="Ingresar al panel de control"
             onClick={() => checkAuth(inputApiKey)} 
             disabled={authChecking || !inputApiKey}
           >
-            {authChecking ? "Comprobando..." : "Ingresar al Panel"}
+            {authChecking ? "Comprobando credenciales..." : "Ingresar de forma segura"}
           </button>
         </section>
       </main>
@@ -1351,19 +1352,27 @@ function App() {
   if (sessionStatus !== "authenticated") {
     return (
       <>
-        <div className="bg-blob-container">
+        <div className="bg-blob-container" aria-hidden="true">
           <div className="bg-blob blob-1"></div>
           <div className="bg-blob blob-2"></div>
         </div>
         <main className="authScreen">
-        <section className="authCard" aria-live="polite">
-          <h1>ChatFix</h1>
+        <section className="authCard" aria-live="polite" aria-labelledby="waAuthHeading">
+          <h1 id="waAuthHeading">ChatFix</h1>
           <h2>{authScreenLabel}</h2>
 
           {sessionStatus === "qr" && qr && socketConnected && (
             <>
-              <p className="instructionText">Abre WhatsApp en tu teléfono, toca "Dispositivos vinculados" y escanea este código QR.</p>
-              <div className="qrBox">
+              <div className="instructionList">
+                <p>Para usar WhatsApp en ChatFix:</p>
+                <ol>
+                  <li>Abre WhatsApp en tu teléfono</li>
+                  <li>Toca el menú (tres puntos) o "Configuración"</li>
+                  <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
+                  <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
+                </ol>
+              </div>
+              <div className="qrBox" aria-label="Código QR para vincular dispositivo">
                 <QRCode value={qr} size={230} />
               </div>
             </>
@@ -1372,24 +1381,32 @@ function App() {
           {sessionStatus === "connecting" && socketConnected && (
             <div className="loadingSpinnerContainer">
               <div className="spinner" aria-hidden="true"></div>
-              <p className="helperText">Iniciando y sincronizando...</p>
+              <p className="helperText" aria-live="polite">Sincronizando mensajes y contactos...</p>
             </div>
           )}
 
           {!socketConnected && (
              <div className="loadingSpinnerContainer">
-                <p className="helperText errorText">Reconectando con el servidor...</p>
+                <div className="spinner warningSpinner" aria-hidden="true"></div>
+                <p className="helperText errorText" role="alert">Buscando conexión con el servidor...</p>
              </div>
           )}
 
           {(!qr && sessionStatus !== "connecting" && socketConnected) && (
-            <button
-              className="primary"
-              aria-label="Reintentar conexión de WhatsApp"
-              onClick={() => fetchChats(true)}
-            >
-              Reintentar conexión
-            </button>
+            <div className="authRecoveryOptions">
+              <button
+                className="primary fullWidth"
+                aria-label="Reintentar conexión de WhatsApp"
+                onClick={() => fetchChats(true)}
+              >
+                Reintentar conexión
+              </button>
+              {sessionStatus === "auth_failure" && (
+                <p className="helperText mt-2">
+                  Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono.
+                </p>
+              )}
+            </div>
           )}
         </section>
       </main>

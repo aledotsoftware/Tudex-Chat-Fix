@@ -31,3 +31,4 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 
 - **ChatFix-Frontend-PWA**: PWA hydration logic refactored in `App.jsx` to immediately auto-select the active chat from the IndexedDB cache before the network fetch completes, drastically reducing UI layout jumps and perceived latency on load. Safely handled empty cache states. Enforced `font-size: 16px` globally on all input fields (`App.css`) to strictly prevent iOS Safari automatic zoom issues on mobile devices.
 - **ChatFix-UX-Conversation-Flow**: Improved the UI logic for drafts and sending messages (`frontend/src/App.jsx`, `frontend/src/App.css`), reducing user friction and adding distinct states for AI operations. Removed ambiguous UI actions.
+- [JAA] ChatFix-UX-Accessibility-Trust completado. Implementada accesibilidad funcional (aria-labels, contrastes mejorados, roles) y mejorada la comunicación de estados de sesión y red en App.jsx y App.css.
