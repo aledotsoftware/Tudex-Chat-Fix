@@ -691,11 +691,12 @@ function App() {
 
   useEffect(() => {
     if (!selectedChatId || sessionStatus !== "authenticated") return;
+    const intervalMs = syncingChat ? 3000 : 15000;
     const timer = setInterval(() => {
       fetchMessages(selectedChatId, { withLoader: false, background: true });
-    }, 15000);
+    }, intervalMs);
     return () => clearInterval(timer);
-  }, [selectedChatId, sessionStatus]);
+  }, [selectedChatId, sessionStatus, syncingChat]);
 
   useEffect(() => {
     const container = messagesAreaRef.current;
@@ -858,8 +859,9 @@ function App() {
 
       if (shouldAutoSelect) {
         setSelectedChatId(nextChatId);
+        selectedChatIdRef.current = nextChatId; // Update ref immediately to avoid jumpy behavior
         const cached = messagesByChat[nextChatId];
-        if (cached) {
+        if (cached && cached.length > 0) {
           setMessages(cached);
           fetchMessages(nextChatId, { withLoader: false, background: true });
         } else {
@@ -867,6 +869,7 @@ function App() {
         }
       } else if (!exists) {
         setSelectedChatId("");
+        selectedChatIdRef.current = "";
         setMessages([]);
       }
     } catch (error) {
@@ -1625,9 +1628,9 @@ function App() {
               ref={messagesAreaRef}
               onScroll={handleMessagesScroll}
             >
-              {loadingMessages[selectedChatId] ? <p className="helper">Cargando mensajes...</p> : null}
-              {!loadingMessages[selectedChatId] && syncingChat ? <p className="helper">Sincronizando...</p> : null}
-              {!loadingMessages[selectedChatId] && messages.length === 0 ? (
+              {loadingMessages[selectedChatId] && messages.length === 0 ? <p className="helper">Cargando mensajes...</p> : null}
+              {!loadingMessages[selectedChatId] && syncingChat && messages.length === 0 ? <p className="helper">Sincronizando...</p> : null}
+              {!loadingMessages[selectedChatId] && !syncingChat && messages.length === 0 ? (
                 <p className="helper">Este chat todavía no tiene mensajes visibles.</p>
               ) : null}
 
