@@ -210,6 +210,14 @@ class WhatsAppAdapter extends BaseAdapter {
     return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
   }
 
+  hasMedia(message) {
+    return Boolean(message?.hasMedia);
+  }
+
+  hasQuotedMsg(message) {
+    return Boolean(message?.hasQuotedMsg);
+  }
+
   getChatIdFromMessage(message) {
     return message.fromMe ? message.to : message.from;
   }

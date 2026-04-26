@@ -914,12 +914,12 @@ async function archiveMedia(media, prefix = 'media') {
 }
 
 async function buildMediaPayload(message, provider) {
-  if (!message.hasMedia) {
+  const adapter = resolveProviderAdapter(provider);
+  if (!adapter.hasMedia(message)) {
     return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
   }
 
   try {
-    const adapter = resolveProviderAdapter(provider);
     const mediaPromise = adapter.downloadMedia(message);
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
@@ -953,7 +953,8 @@ async function buildMediaPayload(message, provider) {
 }
 
 async function buildReplyPayload(message, provider) {
-  if (!message?.hasQuotedMsg) {
+  const adapter = resolveProviderAdapter(provider);
+  if (!adapter.hasQuotedMsg(message)) {
     return {
       replyToMessageId: null,
       replyToText: null
@@ -961,7 +962,6 @@ async function buildReplyPayload(message, provider) {
   }
 
   try {
-    const adapter = resolveProviderAdapter(provider);
     const quoted = await adapter.getQuotedMessage(message);
     return {
       replyToMessageId: quoted?.id?._serialized || quoted?.id || null,
@@ -1148,8 +1148,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
 
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
-  if (statusMessage.hasMedia) {
-    const adapter = resolveProviderAdapter(provider);
+  const adapter = resolveProviderAdapter(provider);
+  if (adapter.hasMedia(statusMessage)) {
     const media = await adapter.downloadMedia(statusMessage).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
