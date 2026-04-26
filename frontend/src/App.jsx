@@ -891,7 +891,6 @@ function App() {
       if (shouldAutoSelect && safeChats.length > 0) {
         selectedChatIdRef.current = nextChatId; // Update ref immediately to avoid jumpy behavior
         setSelectedChatId(nextChatId);
-        fetchMessages(nextChatId, { withLoader: false });
       } else if (!exists && selectedChatIdRef.current) {
         selectedChatIdRef.current = "";
         setSelectedChatId("");
@@ -921,6 +920,7 @@ function App() {
         if (cachedMessages.length > 0 && selectedChatIdRef.current === chatId) {
           setMessages(cachedMessages);
           setMessagesByChat((prev) => ({ ...prev, [chatId]: cachedMessages }));
+          if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: false }));
         }
       }
 
