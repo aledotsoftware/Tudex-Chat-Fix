@@ -68,10 +68,12 @@ let lastStatusArchiveStats = {
 };
 
 // API Key authentication middleware
-const API_KEY = process.env.API_KEY || 'tu_contraseña_super_segura_aqui';
+const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : 'tu_contraseña_super_segura_aqui';
 
-if (API_KEY === 'tu_contraseña_super_segura_aqui' || API_KEY.length < 8) {
+if (API_KEY === 'tu_contraseña_super_segura_aqui' || (API_KEY.length > 0 && API_KEY.length < 8)) {
   console.warn('⚠️ WARNING: API_KEY is missing, default, or too short. This is insecure for production environments.');
+} else if (API_KEY.length === 0) {
+  console.warn('⚠️ WARNING: API_KEY is empty. Authentication is DISABLED. This is highly insecure for production environments.');
 }
 
 const authenticateApiKey = (req, res, next) => {
@@ -81,8 +83,7 @@ const authenticateApiKey = (req, res, next) => {
   
   const providedKey = req.headers['x-api-key'] || req.query.api_key;
   if (providedKey !== API_KEY) {
-    console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Expected: '${API_KEY}' vs Received: '${providedKey}'`);
-    console.error(`[HEADERS DUMP]`, JSON.stringify(req.headers));
+    console.error(`[AUTH FAILED] Path: ${req.path} | Method: ${req.method} | Invalid API Key provided.`);
     return res.status(401).json({
       error: 'Unauthorized',
       message: 'A valid API Key is required in X-API-Key header or api_key query parameter.'
@@ -1681,11 +1682,15 @@ app.post('/api/correct', async (req, res) => {
 });
 
 app.get('/api/ai/config', async (_req, res) => {
-  res.json({
+  const configResponse = {
     ...aiConfig,
     provider: getAiProvider(aiConfig),
     aiBaseUrl: getAiBaseUrl(aiConfig)
-  });
+  };
+  if (configResponse.cloudflareApiToken) {
+    configResponse.cloudflareApiToken = '********';
+  }
+  res.json(configResponse);
 });
 
 app.put('/api/ai/config', async (req, res) => {
@@ -1716,7 +1721,10 @@ app.put('/api/ai/config', async (req, res) => {
       nextConfig.cloudflareAccountId = req.body.cloudflareAccountId.trim();
     }
     if (typeof req.body.cloudflareApiToken === 'string') {
-      nextConfig.cloudflareApiToken = req.body.cloudflareApiToken.trim();
+      const trimmedToken = req.body.cloudflareApiToken.trim();
+      if (trimmedToken !== '********') {
+        nextConfig.cloudflareApiToken = trimmedToken;
+      }
     }
     if (typeof req.body.cloudflareBaseUrl === 'string') {
       const trimmed = req.body.cloudflareBaseUrl.trim();
