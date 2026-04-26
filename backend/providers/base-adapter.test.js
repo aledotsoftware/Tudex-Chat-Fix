@@ -48,4 +48,14 @@ describe('BaseAdapter', () => {
     const adapter = new BaseAdapter('test');
     await assert.rejects(() => adapter.getChatByMessage({}), /getChatByMessage\(\) not implemented for provider=test/);
   });
+
+  test('isStatusMessage() should throw not implemented error', () => {
+    const adapter = new BaseAdapter('test');
+    assert.throws(() => adapter.isStatusMessage({}), /isStatusMessage\(\) not implemented for provider=test/);
+  });
+
+  test('getChatIdFromMessage() should throw not implemented error', () => {
+    const adapter = new BaseAdapter('test');
+    assert.throws(() => adapter.getChatIdFromMessage({}), /getChatIdFromMessage\(\) not implemented for provider=test/);
+  });
 });
