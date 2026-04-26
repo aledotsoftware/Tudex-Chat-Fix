@@ -1384,14 +1384,14 @@ function App() {
 
           {sessionStatus === "connecting" && socketConnected && (
             <div className="loadingSpinnerContainer">
-              <div className="spinner" aria-hidden="true"></div>
+              <div className="largeSpinner" aria-hidden="true"></div>
               <p className="helperText" aria-live="polite">Sincronizando mensajes y contactos...</p>
             </div>
           )}
 
           {!socketConnected && (
              <div className="loadingSpinnerContainer">
-                <div className="spinner warningSpinner" aria-hidden="true"></div>
+                <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
                 <p className="helperText errorText" role="alert">Buscando conexión con el servidor...</p>
              </div>
           )}
@@ -1406,9 +1406,12 @@ function App() {
                 Reintentar conexión
               </button>
               {sessionStatus === "auth_failure" && (
-                <p className="helperText mt-2" role="alert">
-                  Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono.
-                </p>
+                <div className="notice error mt-2" role="alert" aria-live="assertive">
+                  <p className="helperText errorText">
+                    <strong>⚠️ Error de Autenticación</strong><br />
+                    Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono.
+                  </p>
+                </div>
               )}
             </div>
           )}
