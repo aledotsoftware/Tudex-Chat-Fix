@@ -546,6 +546,12 @@ button, textarea, input, select {
   gap: 10px;
 }
 
+.chatHeaderInfo {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .chatHeader h3 {
   font-family: var(--font-heading);
   font-size: 17px;
@@ -995,6 +1001,35 @@ button:disabled {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
+.modalCard label {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.modalCard input,
+.modalCard select,
+.modalCard textarea {
+  width: 100%;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.modalCard input:focus,
+.modalCard select:focus,
+.modalCard textarea:focus {
+  border-color: var(--accent-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.2);
+}
+
 .correctedPreview {
   margin-top: 16px;
   background: linear-gradient(145deg, rgba(0, 210, 255, 0.05), rgba(0, 210, 255, 0.02));
@@ -1304,6 +1339,22 @@ button.fullWidth {
     padding: 16px;
     min-height: 76px;
   }
+
+  .sidebarHeader {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .headerActions {
+    justify-content: space-between;
+  }
+
+  .headerActions button {
+    flex: 1;
+    padding: 8px 12px;
+  }
+
   .waApp {
     grid-template-columns: 1fr;
     padding: 0;
@@ -1539,7 +1590,7 @@ button.fullWidth {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -1596,6 +1647,7 @@ button.fullWidth {
     display: none;
   }
 
+  .modalCard,
   .resourcesModal {
     width: 100vw;
     height: 100dvh;
@@ -1604,6 +1656,8 @@ button.fullWidth {
     border-radius: 0;
     padding: 16px;
     margin: 0;
+    animation: slideUpMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    overflow-y: auto;
   }
 
   .modalOverlay {
@@ -1618,6 +1672,10 @@ button.fullWidth {
     min-height: 44px;
   }
 
+  button.replyBtn {
+    min-height: 36px;
+  }
+
   .iconButton {
     min-height: 44px;
     min-width: 44px;
@@ -1627,6 +1685,11 @@ button.fullWidth {
 @keyframes slideInLeftMobile {
   from { transform: translateX(-100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideUpMobile {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 @media (max-width: 920px) {
