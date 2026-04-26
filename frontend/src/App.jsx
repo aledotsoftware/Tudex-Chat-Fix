@@ -562,6 +562,9 @@ function App() {
     socket.on("disconnect", () => {
       setSocketConnected(false);
     });
+    socket.on("connect_error", () => {
+      setSocketConnected(false);
+    });
     socket.on("qr", (value) => {
       setQr(value);
       setSessionStatus("qr");
@@ -1491,7 +1494,11 @@ function App() {
         </div>
 
         <div className="searchWrap">
+          <label htmlFor="chatSearchInput" className="sr-only">
+            {viewMode === "statuses" ? "Buscar estado" : "Buscar chat"}
+          </label>
           <input
+            id="chatSearchInput"
             ref={searchInputRef}
             type="text"
             value={chatSearch}
@@ -1507,7 +1514,7 @@ function App() {
               className="chatItem statusArchiveSidebarItem"
               onClick={() => setSelectedChatId("")}
             >
-              <div className="chatAvatar statusArchiveThumb">
+              <div className="chatAvatar statusArchiveThumb" aria-hidden="true">
                 {(item.imageUrl || item.mediaUrl) ? (
                   <img
                     className="chatAvatarImg"
@@ -1537,6 +1544,7 @@ function App() {
               <div
                 className="chatAvatar"
                 style={!chat.avatarUrl ? { background: getAvatarGradient(chat.id) } : {}}
+                aria-hidden="true"
               >
                 {chat.avatarUrl ? (
                   <img
@@ -1591,7 +1599,7 @@ function App() {
                 >
                   ←
                 </button>
-                <div className="chatHeaderAvatar statusArchivePanelIcon">ST</div>
+                <div className="chatHeaderAvatar statusArchivePanelIcon" aria-hidden="true">ST</div>
                 <div className="chatHeaderInfo">
                   <h3>Estados archivados</h3>
                   <p>
@@ -1659,6 +1667,7 @@ function App() {
                 <div
                   className="chatHeaderAvatar"
                   style={!selectedChat?.avatarUrl ? { background: getAvatarGradient(selectedChat?.id) } : {}}
+                  aria-hidden="true"
                 >
                   {selectedChat?.avatarUrl ? (
                     <img
@@ -1971,7 +1980,7 @@ function App() {
                 )}
               </div>
 
-              {notice ? <p className={`notice ${noticeType}`}>{notice}</p> : null}
+              {notice ? <p className={`notice ${noticeType}`} role="status" aria-live="polite">{notice}</p> : null}
             </footer>
           </>
         )}
@@ -2052,8 +2061,9 @@ function App() {
             </div>
             {loadingAiConfig ? <p className="helper">Cargando configuración...</p> : null}
 
-            <label>Proveedor</label>
+            <label htmlFor="aiProvider">Proveedor</label>
             <select
+              id="aiProvider"
               value={aiConfig.provider}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, provider: e.target.value }))}
             >
@@ -2061,13 +2071,14 @@ function App() {
               <option value="cloudflare">Cloudflare AI</option>
             </select>
 
-            <label>Endpoint activo</label>
-            <input value={aiConfig.aiBaseUrl} readOnly />
+            <label htmlFor="aiEndpoint">Endpoint activo</label>
+            <input id="aiEndpoint" value={aiConfig.aiBaseUrl} readOnly />
 
             {aiConfig.provider === "lmstudio" ? (
               <>
-                <label>URL LM Studio</label>
+                <label htmlFor="lmStudioBaseUrl">URL LM Studio</label>
                 <input
+                  id="lmStudioBaseUrl"
                   value={aiConfig.lmStudioBaseUrl}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, lmStudioBaseUrl: e.target.value }))
@@ -2076,17 +2087,19 @@ function App() {
               </>
             ) : (
               <>
-                <label>Cloudflare Account ID</label>
+                <label htmlFor="cfAccountId">Cloudflare Account ID</label>
                 <input
+                  id="cfAccountId"
                   value={aiConfig.cloudflareAccountId}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))
                   }
                 />
 
-                <label>Cloudflare API Token</label>
+                <label htmlFor="cfApiToken">Cloudflare API Token</label>
                 <div className="passwordInputWrapper">
                   <input
+                    id="cfApiToken"
                     type={showCloudflareToken ? "text" : "password"}
                     value={aiConfig.cloudflareApiToken}
                     onChange={(e) =>
@@ -2103,8 +2116,9 @@ function App() {
                   </button>
                 </div>
 
-                <label>Cloudflare Base URL (opcional)</label>
+                <label htmlFor="cfBaseUrl">Cloudflare Base URL (opcional)</label>
                 <input
+                  id="cfBaseUrl"
                   value={aiConfig.cloudflareBaseUrl}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareBaseUrl: e.target.value }))
@@ -2114,8 +2128,9 @@ function App() {
               </>
             )}
 
-            <label>Modelo</label>
+            <label htmlFor="aiModel">Modelo</label>
             <select
+              id="aiModel"
               value={aiConfig.modelName}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             >
@@ -2126,13 +2141,16 @@ function App() {
                 </option>
               ))}
             </select>
+            <label htmlFor="aiModelInput" className="sr-only">Modelo (texto)</label>
             <input
+              id="aiModelInput"
               value={aiConfig.modelName}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             />
 
-            <label>Temperatura</label>
+            <label htmlFor="aiTemperature">Temperatura</label>
             <input
+              id="aiTemperature"
               type="number"
               step="0.1"
               min="0"
@@ -2143,8 +2161,9 @@ function App() {
               }
             />
 
-            <label>Timeout IA (ms)</label>
+            <label htmlFor="aiTimeoutMs">Timeout IA (ms)</label>
             <input
+              id="aiTimeoutMs"
               type="number"
               min="5000"
               step="1000"
@@ -2154,8 +2173,9 @@ function App() {
               }
             />
 
-            <label>Max tokens</label>
+            <label htmlFor="aiMaxTokens">Max tokens</label>
             <input
+              id="aiMaxTokens"
               type="number"
               min="32"
               max="2048"
@@ -2166,15 +2186,17 @@ function App() {
               }
             />
 
-            <label>Prompt de sistema</label>
+            <label htmlFor="aiSystemPrompt">Prompt de sistema</label>
             <textarea
+              id="aiSystemPrompt"
               rows={4}
               value={aiConfig.systemPrompt}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, systemPrompt: e.target.value }))}
             />
 
-            <label>Prompt de usuario (usar {`{{text}}`})</label>
+            <label htmlFor="aiUserPrompt">Prompt de usuario (usar {`{{text}}`})</label>
             <textarea
+              id="aiUserPrompt"
               rows={5}
               value={aiConfig.userPromptTemplate}
               onChange={(e) =>
