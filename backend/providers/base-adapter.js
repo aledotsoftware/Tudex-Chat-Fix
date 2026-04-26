@@ -73,6 +73,14 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`isStatusMessage() not implemented for provider=${this.provider}`);
   }
 
+  hasMedia(message) {
+    throw new Error(`hasMedia() not implemented for provider=${this.provider}`);
+  }
+
+  hasQuotedMsg(message) {
+    throw new Error(`hasQuotedMsg() not implemented for provider=${this.provider}`);
+  }
+
   getChatIdFromMessage(message) {
     throw new Error(`getChatIdFromMessage() not implemented for provider=${this.provider}`);
   }

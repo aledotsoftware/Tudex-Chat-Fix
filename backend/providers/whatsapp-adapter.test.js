@@ -74,6 +74,32 @@ describe('WhatsAppAdapter', () => {
     });
   });
 
+  describe('hasMedia', () => {
+    test('should return true if message hasMedia is true', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.hasMedia({ hasMedia: true }), true);
+    });
+
+    test('should return false if message hasMedia is false or missing', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.hasMedia({ hasMedia: false }), false);
+      assert.strictEqual(adapter.hasMedia({}), false);
+    });
+  });
+
+  describe('hasQuotedMsg', () => {
+    test('should return true if message hasQuotedMsg is true', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.hasQuotedMsg({ hasQuotedMsg: true }), true);
+    });
+
+    test('should return false if message hasQuotedMsg is false or missing', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      assert.strictEqual(adapter.hasQuotedMsg({ hasQuotedMsg: false }), false);
+      assert.strictEqual(adapter.hasQuotedMsg({}), false);
+    });
+  });
+
   describe('isStatusMessage', () => {
     test('should return true for status messages', () => {
       const adapter = new WhatsAppAdapter({ client: mockClient });
