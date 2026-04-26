@@ -155,6 +155,7 @@ function App() {
   const [apiAuthenticated, setApiAuthenticated] = useState(false);
   const [inputApiKey, setInputApiKey] = useState(localStorage.getItem("chatfix_api_key") || "");
   const [authChecking, setAuthChecking] = useState(true);
+  const [authError, setAuthError] = useState("");
 
   const [sessionStatus, setSessionStatus] = useState("connecting");
   const [socketConnected, setSocketConnected] = useState(false);
@@ -254,9 +255,17 @@ function App() {
     if (!socketConnected) return "Socket desconectado";
     if (sessionStatus === "authenticated") return "Conectado";
     if (sessionStatus === "qr") return "Esperando escaneo QR";
-    if (sessionStatus === "auth_failure") return "Error de autenticación";
+    if (sessionStatus === "auth_failure") return "Error de autenticación de WhatsApp";
     if (sessionStatus === "disconnected") return "WhatsApp desconectado";
     return "Conectando sesión...";
+  }, [sessionStatus, socketConnected]);
+
+  const authScreenLabel = useMemo(() => {
+    if (!socketConnected) return "Esperando conexión con el servidor (WebSocket)...";
+    if (sessionStatus === "qr") return "Vincular dispositivo";
+    if (sessionStatus === "auth_failure") return "La sesión de WhatsApp fue rechazada. Por favor, reintente.";
+    if (sessionStatus === "disconnected") return "WhatsApp se ha desconectado.";
+    return "Conectando sesión de WhatsApp...";
   }, [sessionStatus, socketConnected]);
 
   const activityState = useMemo(() => {
@@ -487,6 +496,7 @@ function App() {
   useEffect(() => {
     const handleAuthError = () => {
       setApiAuthenticated(false);
+      setAuthError("La sesión expiró o la API Key es inválida.");
       localStorage.removeItem("chatfix_api_key");
     };
     const handleOnline = () => setIsOffline(false);
@@ -505,6 +515,7 @@ function App() {
 
   const checkAuth = async (key) => {
     setAuthChecking(true);
+    setAuthError("");
     try {
       const res = await originalFetch(`${API_URL}/api/check-auth`, {
         headers: { 'X-API-Key': key }
@@ -514,10 +525,12 @@ function App() {
         setApiAuthenticated(true);
       } else {
         setApiAuthenticated(false);
+        setAuthError("API Key incorrecta. Por favor, verificá tus credenciales.");
         localStorage.removeItem("chatfix_api_key");
       }
     } catch (e) {
       setApiAuthenticated(false);
+      setAuthError("Error de conexión al verificar la API Key.");
     }
     setAuthChecking(false);
   };
@@ -1292,15 +1305,20 @@ function App() {
           <div className="bg-blob blob-2"></div>
         </div>
         <main className="authScreen">
-        <section className="authCard">
+        <section className="authCard" aria-live="polite">
           <h1>ChatFix API</h1>
+          {authError && <div role="alert" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
           <p>Autenticación Requerida</p>
+          <label htmlFor="apiKeyInput" className="sr-only">API Key</label>
           <input 
+            id="apiKeyInput"
+            className="authInput"
             type="password" 
             value={inputApiKey} 
             onChange={(e) => setInputApiKey(e.target.value)}
             placeholder="Introduce tu API Key" 
-            style={{ width: '100%', padding: '10px', marginBottom: '15px', boxSizing: 'border-box', border: '1px solid #ddd', borderRadius: '4px' }}
+            aria-required="true"
+            aria-invalid={!!authError}
             onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
           />
           <button 
@@ -1325,20 +1343,39 @@ function App() {
           <div className="bg-blob blob-2"></div>
         </div>
         <main className="authScreen">
-        <section className="authCard">
+        <section className="authCard" aria-live="polite">
           <h1>ChatFix</h1>
-          <p>{connectionLabel}</p>
-          {qr ? (
-            <div className="qrBox">
-              <QRCode value={qr} size={230} />
+          <h2>{authScreenLabel}</h2>
+
+          {sessionStatus === "qr" && qr && socketConnected && (
+            <>
+              <p className="instructionText">Abre WhatsApp en tu teléfono, toca "Dispositivos vinculados" y escanea este código QR.</p>
+              <div className="qrBox">
+                <QRCode value={qr} size={230} />
+              </div>
+            </>
+          )}
+
+          {sessionStatus === "connecting" && socketConnected && (
+            <div className="loadingSpinnerContainer">
+              <div className="spinner" aria-hidden="true"></div>
+              <p className="helperText">Iniciando y sincronizando...</p>
             </div>
-          ) : (
+          )}
+
+          {!socketConnected && (
+             <div className="loadingSpinnerContainer">
+                <p className="helperText errorText">Reconectando con el servidor...</p>
+             </div>
+          )}
+
+          {(!qr && sessionStatus !== "connecting" && socketConnected) && (
             <button
               className="primary"
-              aria-label="Reintentar conexión"
+              aria-label="Reintentar conexión de WhatsApp"
               onClick={() => fetchChats(true)}
             >
-              Reintentar
+              Reintentar conexión
             </button>
           )}
         </section>
@@ -1354,8 +1391,8 @@ function App() {
         <div className="bg-blob blob-2"></div>
       </div>
       {isOffline && (
-        <div className="offlineBanner">
-          <span>⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.
+        <div className="offlineBanner" role="alert" aria-live="assertive">
+          <span aria-hidden="true">⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
@@ -1403,12 +1440,13 @@ function App() {
           </div>
         </header>
 
-        <div className="statusBar">
-          <span className={`dot ${socketConnected ? "ok" : "bad"}`} />
+        <div className="statusBar" role="status" aria-live="polite">
+          <span className={`dot ${socketConnected ? "ok" : "bad"}`} aria-hidden="true" />
+          <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
           <span>
             {connectionLabel} · WA: {backendStatus.whatsappStatus}
           </span>
-          {totalUnread > 0 ? <strong className="pendingCounter">{totalUnread} pendientes</strong> : null}
+          {totalUnread > 0 ? <strong className="pendingCounter" aria-label={`${totalUnread} mensajes pendientes`}>{totalUnread} pendientes</strong> : null}
         </div>
 
         <div className="searchWrap">

@@ -20,3 +20,5 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - **ChatFix-UX-Conversation-Flow**: Improved the UI logic for drafts and sending messages (`frontend/src/App.jsx`, `frontend/src/App.css`), reducing user friction and adding distinct states for AI operations.
 
 - [JAA] ChatFix-UX-Mobile-Polish: Mejorada la UX en pantallas móviles mediante App.css y App.jsx. Añadido `font-size: 16px` para evitar zoom en iOS, affordance táctil de `44px` para botones, transiciones `slideInLeftMobile` para navegación fluida, modales a pantalla completa, y simplificación visual en las cabeceras escondiendo texto con la nueva utilidad `.hideOnMobile` en botones y acciones.
+
+- **ChatFix-UX-Accessibility-Trust**: Integradas mejoras de accesibilidad estructural en frontend (`App.jsx`, `App.css`). Incorporados labels descriptivos explícitos para estados de conectividad QR y WebSocket. Incorporados estados de error dinámicos (`authError`) con directivas de ARIA (`role="alert"`, `aria-live`). La pantalla de autenticación cuenta ahora con utilidades `.sr-only` para legibilidad por screen readers y spinners animados accesibles.
