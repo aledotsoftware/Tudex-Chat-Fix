@@ -56,7 +56,10 @@ const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
 let rawPollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
-if (!Number.isFinite(rawPollInterval) || rawPollInterval < 1000) {
+if (process.env.STATUS_POLL_INTERVAL_MS !== undefined && (!Number.isFinite(rawPollInterval) || rawPollInterval < 1000)) {
+  console.warn(`⚠️ WARNING: Invalid STATUS_POLL_INTERVAL_MS ("${process.env.STATUS_POLL_INTERVAL_MS}"). Must be a number >= 1000. Falling back to 60000.`);
+  rawPollInterval = 60 * 1000;
+} else if (process.env.STATUS_POLL_INTERVAL_MS === undefined) {
   rawPollInterval = 60 * 1000;
 }
 const STATUS_POLL_INTERVAL_MS = rawPollInterval;
@@ -94,28 +97,6 @@ function validateStartupConfig() {
     }
   }
 
-  // Check URL values for LM_STUDIO_URL and CLOUDFLARE_AI_BASE_URL
-  if (process.env.LM_STUDIO_URL) {
-    try {
-      const parsed = new URL(process.env.LM_STUDIO_URL);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        console.warn(`⚠️ WARNING: Invalid protocol in LM_STUDIO_URL ("${process.env.LM_STUDIO_URL}"). Must be http or https. Falling back to default.`);
-      }
-    } catch (e) {
-      console.warn(`⚠️ WARNING: Malformed URL in LM_STUDIO_URL ("${process.env.LM_STUDIO_URL}"). Falling back to default.`);
-    }
-  }
-
-  if (process.env.CLOUDFLARE_AI_BASE_URL) {
-    try {
-      const parsed = new URL(process.env.CLOUDFLARE_AI_BASE_URL);
-      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-        console.warn(`⚠️ WARNING: Invalid protocol in CLOUDFLARE_AI_BASE_URL ("${process.env.CLOUDFLARE_AI_BASE_URL}"). Must be http or https. Falling back to default.`);
-      }
-    } catch (e) {
-      console.warn(`⚠️ WARNING: Malformed URL in CLOUDFLARE_AI_BASE_URL ("${process.env.CLOUDFLARE_AI_BASE_URL}"). Falling back to default.`);
-    }
-  }
 }
 
 // Invoke validation on startup
@@ -1823,13 +1804,13 @@ app.put('/api/ai/config', async (req, res) => {
         .replace(/\/+$/, '');
     }
     if (req.body.temperature !== undefined) {
-      nextConfig.temperature = safeNumber(req.body.temperature, aiConfig.temperature, 0, 2);
+      nextConfig.temperature = safeNumber(req.body.temperature, aiConfig.temperature, 0, 2, 'PUT_TEMPERATURE');
     }
     if (req.body.maxTokens !== undefined) {
-      nextConfig.maxTokens = safeNumber(req.body.maxTokens, aiConfig.maxTokens, 1, 8192);
+      nextConfig.maxTokens = safeNumber(req.body.maxTokens, aiConfig.maxTokens, 1, 8192, 'PUT_MAX_TOKENS');
     }
     if (req.body.timeoutMs !== undefined) {
-      nextConfig.timeoutMs = safeNumber(req.body.timeoutMs, aiConfig.timeoutMs, 1000, 60000);
+      nextConfig.timeoutMs = safeNumber(req.body.timeoutMs, aiConfig.timeoutMs, 1000, 60000, 'PUT_TIMEOUT_MS');
     }
 
     const saved = await saveAiConfig(nextConfig);
