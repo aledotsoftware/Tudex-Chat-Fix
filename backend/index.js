@@ -1017,13 +1017,13 @@ async function serializeMessage(message, chatId, context = {}) {
   };
 }
 
-async function upsertChat(waChat, index, context = {}) {
+async function upsertChat(chatData, index, context = {}) {
   try {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
-    const chatId = waChat?.id?._serialized || waChat?.id;
+    const chatId = chatData?.id?._serialized || chatData?.id;
     const conversationId = chatId;
-    const avatarUrl = await getChatAvatar(waChat, index || 0, context.provider);
+    const avatarUrl = await getChatAvatar(chatData, index || 0, context.provider);
     const now = new Date();
 
     await Chat.findOneAndUpdate(
@@ -1034,10 +1034,10 @@ async function upsertChat(waChat, index, context = {}) {
         accountId,
         conversationId,
         conversationKey: buildConversationKey(provider, accountId, conversationId),
-        name: waChat.name,
-        unreadCount: waChat.unreadCount,
-        timestamp: waChat.timestamp,
-        isGroup: Boolean(waChat.isGroup),
+        name: chatData?.name,
+        unreadCount: chatData?.unreadCount,
+        timestamp: chatData?.timestamp,
+        isGroup: Boolean(chatData?.isGroup),
         avatarUrl,
         lastSyncedAt: now
       },
@@ -1045,13 +1045,13 @@ async function upsertChat(waChat, index, context = {}) {
     );
     invalidateChatsCache(provider, accountId);
   } catch (err) {
-    console.error(`❌ Error upserting chat ${waChat.id?._serialized}:`, err.message);
+    console.error(`❌ Error upserting chat ${chatData?.id?._serialized || chatData?.id || 'unknown'}:`, err.message);
   }
 }
 
-async function upsertMessage(waMsg, chatId, extraData = {}, context = {}) {
+async function upsertMessage(messageData, chatId, extraData = {}, context = {}) {
   try {
-    const payload = await serializeMessage(waMsg, chatId, context);
+    const payload = await serializeMessage(messageData, chatId, context);
     const updateData = {
       ...payload,
       ...extraData
@@ -1073,7 +1073,7 @@ async function upsertMessage(waMsg, chatId, extraData = {}, context = {}) {
     invalidateChatsCache(payload.provider, payload.accountId);
     return payload;
   } catch (err) {
-    console.error(`❌ Error upserting message ${waMsg.id?._serialized}:`, err.message);
+    console.error(`❌ Error upserting message ${messageData?.id?._serialized || messageData?.id || 'unknown'}:`, err.message);
     return null;
   }
 }
@@ -2046,8 +2046,8 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 
     const adapter = resolveProviderAdapter(provider);
     if (adapter.isReady()) {
-      adapter.markRead({ accountId, conversationId: chatId }).catch(waErr => {
-        console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, waErr.message);
+      adapter.markRead({ accountId, conversationId: chatId }).catch(err => {
+        console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, err.message);
       });
     }
 
