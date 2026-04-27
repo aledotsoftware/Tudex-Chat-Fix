@@ -1387,7 +1387,8 @@ function App() {
     );
   }
 
-  if (sessionStatus !== "authenticated") {
+  const isBlockingSessionState = sessionStatus === "qr" || sessionStatus === "auth_failure";
+  if (isBlockingSessionState) {
     return (
       <>
         <div className="bg-blob-container" aria-hidden="true">
@@ -1399,19 +1400,37 @@ function App() {
           <h1 id="waAuthHeading">ChatFix</h1>
           <h2>{authScreenLabel}</h2>
 
-          {sessionStatus === "qr" && qr && socketConnected && (
+          {sessionStatus === "qr" && socketConnected && (
             <>
-              <div className="instructionList">
-                <p>Para usar WhatsApp en ChatFix:</p>
-                <ol>
-                  <li>Abre WhatsApp en tu teléfono</li>
-                  <li>Toca el menú (tres puntos) o "Configuración"</li>
-                  <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
-                  <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
-                </ol>
-              </div>
-              <div className="qrBox" role="img" aria-label="Código QR para vincular dispositivo">
-                <QRCode value={qr} size={230} />
+              {qr ? (
+                <>
+                  <div className="instructionList">
+                    <p>Para usar WhatsApp en ChatFix:</p>
+                    <ol>
+                      <li>Abre WhatsApp en tu teléfono</li>
+                      <li>Toca el menú (tres puntos) o "Configuración"</li>
+                      <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
+                      <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
+                    </ol>
+                  </div>
+                  <div className="qrBox" role="img" aria-label="Código QR para vincular dispositivo">
+                    <QRCode value={qr} size={230} />
+                  </div>
+                </>
+              ) : (
+                <div className="loadingSpinnerContainer">
+                  <div className="largeSpinner" aria-hidden="true"></div>
+                  <p className="helperText" aria-live="polite">Generando código QR...</p>
+                </div>
+              )}
+              <div className="authRecoveryOptions mt-4">
+                <button
+                  className="secondary fullWidth"
+                  aria-label="Cancelar y salir"
+                  onClick={handleLogout}
+                >
+                  Cancelar y salir
+                </button>
               </div>
             </>
           )}
@@ -1430,7 +1449,7 @@ function App() {
              </div>
           )}
 
-          {(!qr && sessionStatus !== "connecting" && socketConnected) && (
+          {(sessionStatus === "auth_failure" && socketConnected) && (
             <div className="authRecoveryOptions">
               <button
                 className="primary fullWidth"
@@ -1446,14 +1465,12 @@ function App() {
               >
                 Cerrar sesión
               </button>
-              {sessionStatus === "auth_failure" && (
-                <div className="notice error mt-2" role="alert" aria-live="assertive">
-                  <p className="helperText errorText">
-                    <strong>⚠️ Error de Autenticación de Proveedor</strong><br />
-                    Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono u origen.
-                  </p>
-                </div>
-              )}
+              <div className="notice error mt-2" role="alert" aria-live="assertive">
+                <p className="helperText errorText">
+                  <strong>⚠️ Error de Autenticación de Proveedor</strong><br />
+                  Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono u origen.
+                </p>
+              </div>
             </div>
           )}
         </section>
@@ -1483,6 +1500,16 @@ function App() {
       {!isOffline && !socketConnected && (
         <div className="warningBanner" role="alert" aria-live="polite">
           <span aria-hidden="true">⚡</span> Conexión al servidor inestable. Intentando reconectar...
+        </div>
+      )}
+      {!isOffline && socketConnected && sessionStatus === "disconnected" && (
+        <div className="warningBanner" role="alert" aria-live="polite">
+          <span aria-hidden="true">⚠️</span> WhatsApp desconectado. Revisa tu dispositivo.
+        </div>
+      )}
+      {!isOffline && socketConnected && sessionStatus === "connecting" && (
+        <div className="infoBanner" role="status" aria-live="polite">
+          <span aria-hidden="true">🔄</span> Sincronizando sesión de WhatsApp...
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
