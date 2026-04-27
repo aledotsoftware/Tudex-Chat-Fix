@@ -164,7 +164,7 @@ function App() {
   const [socketConnected, setSocketConnected] = useState(false);
   const [qr, setQr] = useState("");
   const [backendStatus, setBackendStatus] = useState({
-    whatsappStatus: "unknown",
+    providerStatus: "unknown",
     uptimeSec: 0,
     statusArchive: null
   });
@@ -766,7 +766,7 @@ function App() {
         if (!res.ok) return;
         const data = await res.json();
         setBackendStatus({
-          whatsappStatus: data.whatsappStatus || "unknown",
+          providerStatus: data.providerStatus || "unknown",
           uptimeSec: Number(data.uptimeSec || 0),
           statusArchive: data.statusArchive || null
         });
@@ -1513,7 +1513,7 @@ function App() {
           <span className={`dot ${socketConnected ? "ok" : "bad"}`} aria-hidden="true" />
           <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
           <span>
-            {connectionLabel} · WA: {backendStatus.whatsappStatus}
+            {connectionLabel} · Provider: {backendStatus.providerStatus}
           </span>
           {totalUnread > 0 ? <strong className="pendingCounter" aria-label={`${totalUnread} mensajes pendientes`}>{totalUnread} pendientes</strong> : null}
         </div>

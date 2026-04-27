@@ -1,76 +1,76 @@
-const { test, describe } = require('node:test');
+const { test, describe, beforeEach } = require('node:test');
 const assert = require('node:assert');
 const { ProviderRegistry } = require('./provider-registry');
+const { BaseAdapter } = require('./base-adapter');
 
 describe('ProviderRegistry', () => {
-  const createMockAdapter = (name) => ({
-    getProviderName: () => name,
-    isReady: () => true,
-    getStatus: () => 'ready'
+  let registry;
+
+  beforeEach(() => {
+    registry = new ProviderRegistry();
   });
 
   test('register() should add an adapter to the registry', () => {
-    const registry = new ProviderRegistry();
-    const adapter = createMockAdapter('whatsapp');
-
-    const result = registry.register(adapter);
-
-    assert.strictEqual(result, adapter);
-    assert.deepStrictEqual(registry.listProviders(), ['whatsapp']);
+    const adapter = new BaseAdapter('test-provider');
+    registry.register(adapter);
+    assert.strictEqual(registry.resolve('test-provider'), adapter);
   });
 
   test('resolve() should return the correct adapter for a valid key', () => {
-    const registry = new ProviderRegistry();
-    const adapter = createMockAdapter('whatsapp');
+    const adapter = new BaseAdapter('test-provider');
     registry.register(adapter);
-
-    const resolved = registry.resolve('whatsapp');
-
-    assert.strictEqual(resolved, adapter);
+    assert.strictEqual(registry.resolve('test-provider'), adapter);
   });
 
   test('resolve() should be case-insensitive and trim whitespace', () => {
-    const registry = new ProviderRegistry();
-    const adapter = createMockAdapter('whatsapp');
+    const adapter = new BaseAdapter('test-provider');
     registry.register(adapter);
-
-    assert.strictEqual(registry.resolve(' WhatsApp '), adapter);
-    assert.strictEqual(registry.resolve('WHATSAPP'), adapter);
+    assert.strictEqual(registry.resolve('  TEST-PROVIDER  '), adapter);
   });
 
   test('resolve() should throw an error for non-existent providers', () => {
-    const registry = new ProviderRegistry();
-
-    assert.throws(() => {
-      registry.resolve('telegram');
-    }, /Provider adapter not found: telegram/);
+    assert.throws(() => registry.resolve('non-existent'), /Provider adapter not found: non-existent/);
   });
 
   test('resolve() should throw an error for null, undefined, or empty input', () => {
-    const registry = new ProviderRegistry();
-
-    assert.throws(() => {
-      registry.resolve(null);
-    }, /Provider adapter not found: null/);
-
-    assert.throws(() => {
-      registry.resolve(undefined);
-    }, /Provider adapter not found: undefined/);
-
-    assert.throws(() => {
-      registry.resolve('');
-    }, /Provider adapter not found: /);
+    assert.throws(() => registry.resolve(null), /Provider adapter not found: null/);
+    assert.throws(() => registry.resolve(undefined), /Provider adapter not found: undefined/);
+    assert.throws(() => registry.resolve(''), /Provider adapter not found: /);
   });
 
   test('listProviders() should return all registered provider names', () => {
-    const registry = new ProviderRegistry();
-    registry.register(createMockAdapter('whatsapp'));
-    registry.register(createMockAdapter('telegram'));
+    registry.register(new BaseAdapter('provider-a'));
+    registry.register(new BaseAdapter('provider-b'));
+    assert.deepStrictEqual(registry.listProviders(), ['provider-a', 'provider-b']);
+  });
 
-    const providers = registry.listProviders();
+  test('initializeAll() should call initialize on all adapters', () => {
+    const adapter1 = new BaseAdapter('adapter1');
+    let called1 = false;
+    adapter1.initialize = () => { called1 = true; };
 
-    assert.strictEqual(providers.length, 2);
-    assert.ok(providers.includes('whatsapp'));
-    assert.ok(providers.includes('telegram'));
+    const adapter2 = new BaseAdapter('adapter2');
+    let called2 = false;
+    adapter2.initialize = () => { called2 = true; };
+
+    registry.register(adapter1);
+    registry.register(adapter2);
+
+    registry.initializeAll();
+
+    assert.strictEqual(called1, true);
+    assert.strictEqual(called2, true);
+  });
+
+  test('initializeProvider() should call initialize on specific adapter', () => {
+    const adapter1 = new BaseAdapter('adapter1');
+    let called1 = false;
+    adapter1.initialize = () => { called1 = true; };
+
+    registry.register(adapter1);
+
+    registry.initializeProvider('adapter1');
+
+    assert.strictEqual(called1, true);
   });
 });

@@ -1639,9 +1639,13 @@ function bindProviderEvents(adapter, accountId) {
   });
 }
 
-bindProviderEvents(waAdapter, DEFAULT_ACCOUNT_ID);
+// Bind events and initialize all registered providers
+for (const providerName of providerRegistry.listProviders()) {
+  const adapter = providerRegistry.resolve(providerName);
+  bindProviderEvents(adapter, DEFAULT_ACCOUNT_ID);
+}
 
-waAdapter.initialize();
+providerRegistry.initializeAll();
 
 setInterval(() => {
   runStatusArchiveSweep('poll').catch((error) => {
@@ -2139,11 +2143,11 @@ app.get('/api/status', async (_req, res) => {
   try {
     const defaultState = getProviderState(DEFAULT_PROVIDER);
     res.json({
-      whatsappStatus: defaultState.status,
+      providerStatus: defaultState.status,
       providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
       hasQr: Boolean(defaultState.lastQR),
-      lastWhatsappReadyAt: defaultState.lastReadyAt,
-      lastWhatsappDisconnectReason: defaultState.lastDisconnectReason,
+      lastProviderReadyAt: defaultState.lastReadyAt,
+      lastProviderDisconnectReason: defaultState.lastDisconnectReason,
       statusArchive: {
         lastRunAt: lastStatusArchiveRunAt,
         inFlight: statusArchivePollInFlight,
@@ -2211,12 +2215,12 @@ app.get('/api/health', async (_req, res) => {
     const mongoOk = mongoose.connection.readyState === 1;
     const aiConfigured = isAiConfigured(aiConfig);
     const defaultState = getProviderState(DEFAULT_PROVIDER);
-    const whatsappOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
+    const providerOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
     res.status(mongoOk ? 200 : 503).json({
       ok: mongoOk,
       services: {
         mongo: mongoOk ? 'up' : 'down',
-        whatsapp: whatsappOk ? defaultState.status : 'down',
+        provider: providerOk ? defaultState.status : 'down',
         ai: aiConfigured ? 'configured' : 'missing'
       },
       uptimeSec: Math.floor(process.uptime()),

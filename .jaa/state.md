@@ -9,6 +9,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 
 ## 📝 AGENT NOTES
+- **ChatFix-Provider-Bridge (Update)**: Generalizó la inicialización y el manejo de estado de los proveedores de mensajería. Se movieron las propiedades `_isReady` y `_status` al `BaseAdapter`, eliminando redundancias en `WhatsAppAdapter`. Se actualizó `ProviderRegistry` con `initializeAll()` para inicializar los adaptadores de forma dinámica, y se reemplazó el acoplamiento rígido de WhatsApp en `backend/index.js` mediante iteración genérica de proveedores. Adicionalmente, las respuestas de la API (`/api/status`, `/api/health`) y el estado del frontend (`App.jsx`) ahora usan el término agnóstico `providerStatus` en lugar de `whatsappStatus`, manteniendo intacto el flujo canónico multicanal.
 - **ChatFix-Provider-Bridge**: Desacopló el core (`backend/index.js`) de propiedades específicas de `whatsapp-web.js` agregando métodos abstractos (`hasMedia`, `hasQuotedMsg`) en `BaseAdapter` e implementándolos en `WhatsAppAdapter`. Esto mantiene el read-path rápido y la arquitectura canónica lista para nuevos proveedores sin errores de sintaxis.
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
