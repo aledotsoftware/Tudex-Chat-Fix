@@ -258,12 +258,12 @@ function App() {
   }, [chatSearch, statusArchiveItems]);
 
   const connectionLabel = useMemo(() => {
-    if (!socketConnected) return "Esperando red (WebSocket)...";
+    if (!socketConnected) return "Desconectado del servidor (WebSocket)";
     if (sessionStatus === "authenticated") return "Conectado a WhatsApp";
-    if (sessionStatus === "qr") return "Requiere escaneo de QR";
-    if (sessionStatus === "auth_failure") return "Error de sesión (Rechazado)";
+    if (sessionStatus === "qr") return "Requiere vinculación (QR)";
+    if (sessionStatus === "auth_failure") return "Sesión rechazada/inválida";
     if (sessionStatus === "disconnected") return "WhatsApp desconectado";
-    return "Sincronizando sesión...";
+    return "Sincronizando con proveedor...";
   }, [sessionStatus, socketConnected]);
 
   const dotClass = useMemo(() => {
@@ -491,11 +491,21 @@ function App() {
     });
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("chatfix_api_key");
+    setApiAuthenticated(false);
+    setSessionStatus("connecting");
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    clearCache().catch(() => {});
+  };
+
   useEffect(() => {
     const handleAuthError = () => {
-      setApiAuthenticated(false);
+      handleLogout();
       setAuthError("La sesión expiró o la API Key es inválida.");
-      localStorage.removeItem("chatfix_api_key");
     };
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
@@ -515,16 +525,6 @@ function App() {
     };
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("chatfix_api_key");
-    setApiAuthenticated(false);
-    setSessionStatus("connecting");
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-    }
-    clearCache().catch(() => {});
-  };
 
   const checkAuth = async (key) => {
     setAuthChecking(true);
@@ -1434,23 +1434,23 @@ function App() {
             <div className="authRecoveryOptions">
               <button
                 className="primary fullWidth"
-                aria-label="Reintentar conexión de WhatsApp"
+                aria-label="Reintentar conexión con el proveedor"
                 onClick={() => fetchChats(true)}
               >
                 Reintentar conexión
               </button>
               <button
                 className="secondary fullWidth mt-2"
-                aria-label="Cambiar API Key o Salir"
+                aria-label="Cerrar sesión y volver al inicio"
                 onClick={handleLogout}
               >
-                Cambiar API Key (Salir)
+                Cerrar sesión
               </button>
               {sessionStatus === "auth_failure" && (
                 <div className="notice error mt-2" role="alert" aria-live="assertive">
                   <p className="helperText errorText">
-                    <strong>⚠️ Error de Autenticación</strong><br />
-                    Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono.
+                    <strong>⚠️ Error de Autenticación de Proveedor</strong><br />
+                    Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono u origen.
                   </p>
                 </div>
               )}
