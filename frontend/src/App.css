@@ -870,7 +870,7 @@ button, textarea, input, select {
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  color: var(--text-muted);
+  color: var(--warning);
   margin-bottom: 6px;
   display: block;
   letter-spacing: 0.05em;
@@ -896,6 +896,18 @@ button, textarea, input, select {
   background: rgba(0, 0, 0, 0.2);
   color: var(--text-muted);
   border-style: dashed;
+}
+
+.composerInputWrapper.isCorrecting textarea {
+  border-color: var(--accent-primary);
+  background: rgba(0, 210, 255, 0.05);
+  animation: pulseCorrecting 1.5s infinite;
+}
+
+@keyframes pulseCorrecting {
+  0% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0.2); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 210, 255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 210, 255, 0); }
 }
 
 .composer textarea:focus {
@@ -1245,6 +1257,12 @@ button.fullWidth {
   border-radius: 999px;
   margin-right: 8px;
   border: 1px solid rgba(0, 210, 255, 0.2);
+  animation: pulseSync 2s infinite ease-in-out;
+}
+
+@keyframes pulseSync {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
 
 .syncSpinner {

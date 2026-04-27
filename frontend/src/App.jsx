@@ -1088,7 +1088,7 @@ function App() {
       setDraft("");
       setCorrectedDraft("");
       setReplyTarget(null);
-      showNotice(type === "corrected" || type === "correctedAndSending" ? "Sugerencia enviada." : "Mensaje enviado.", "success");
+      showNotice(type === "corrected" || type === "correctedAndSending" ? "✨ Mensaje mejorado por IA y enviado." : "📤 Mensaje original enviado.", "success");
       await fetchMessages(selectedChatId, { withLoader: false, background: true });
     } catch (error) {
       setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
@@ -1909,8 +1909,8 @@ function App() {
                 </div>
               ) : null}
 
-              <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""}`}>
-                {correctedDraft && <span className="composerOriginalLabel">Mensaje Original</span>}
+              <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
+                {correctedDraft && <span className="composerOriginalLabel">Borrador original (si editas, se descarta la sugerencia)</span>}
                 <textarea
                   ref={draftInputRef}
                   value={draft}
@@ -1937,9 +1937,9 @@ function App() {
                           setDraft(correctedDraft);
                           setCorrectedDraft("");
                         }}
-                        aria-label="Editar sugerencia en el cuadro principal"
+                        aria-label="Usar sugerencia en el cuadro principal para editar"
                       >
-                        ✏️ Editar
+                        ✏️ Usar y editar
                       </button>
                       <button
                         className="iconButton"
@@ -1965,7 +1965,7 @@ function App() {
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                       aria-busy={correctingAndSending}
                     >
-                      {correctingAndSending ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Mejorando y enviando...</span></> : <>🚀 <span className="hideOnMobile">Mejorar y enviar</span></>}
+                      {correctingAndSending ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Mejorando y enviando...</span></> : <>🚀 <span className="hideOnMobile">Corregir y enviar</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1974,7 +1974,7 @@ function App() {
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                       aria-busy={correcting}
                     >
-                      {correcting ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Mejorando...</span></> : <>✨ <span className="hideOnMobile">Previsualizar</span></>}
+                      {correcting ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Mejorando...</span></> : <>✨ <span className="hideOnMobile">Revisar redacción</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -1995,7 +1995,7 @@ function App() {
                       disabled={sending || correcting || correctingAndSending}
                       aria-busy={sendingType === "corrected"}
                     >
-                      {sendingType === "corrected" ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Enviando sugerencia...</span></> : <>✅ <span className="hideOnMobile">Enviar sugerencia</span></>}
+                      {sendingType === "corrected" ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Enviando sugerencia...</span></> : <>✨ <span className="hideOnMobile">Enviar versión IA</span></>}
                     </button>
                     <button
                       className="secondary"
@@ -2004,7 +2004,7 @@ function App() {
                       disabled={sending || correcting || correctingAndSending || !draft.trim()}
                       aria-busy={sendingType === "original"}
                     >
-                      {sendingType === "original" ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Enviando original...</span></> : <>📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span></>}
+                      {sendingType === "original" ? <><span className="buttonSpinner" aria-hidden="true" /> <span className="hideOnMobile">Enviando original...</span></> : <>📤 <span className="hideOnMobile">Enviar mi texto original</span></>}
                     </button>
                   </>
                 )}
