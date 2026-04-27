@@ -20,9 +20,9 @@ Se incorporaron campos canónicos en `Chat` y `Message`:
 
 Indices clave:
 - `Message(provider, accountId, conversationId, timestamp desc)`
-- `Message(provider, accountId, providerMessageId)` único sparse
+- `Message(provider, accountId, providerMessageId)` único
 - `Chat(provider, accountId, timestamp desc)`
-- `Chat(provider, accountId, conversationId)` único sparse
+- `Chat(provider, accountId, conversationId)` único
 
 ## Read Path (rápido)
 Endpoints:

@@ -191,11 +191,11 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatfix')
 
 const MessageSchema = new mongoose.Schema({
   id: { type: String, index: true },
-  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
-  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
-  conversationId: { type: String, index: true },
-  providerMessageId: { type: String, index: true },
-  conversationKey: { type: String, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true, required: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true, required: true },
+  conversationId: { type: String, index: true, required: true },
+  providerMessageId: { type: String, index: true, required: true },
+  conversationKey: { type: String, index: true, required: true },
   chatId: { type: String, index: true },
   from: String,
   to: String,
@@ -225,10 +225,10 @@ const Message = mongoose.model('Message', MessageSchema);
 
 const ChatSchema = new mongoose.Schema({
   id: { type: String, index: true },
-  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
-  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
-  conversationId: { type: String, index: true },
-  conversationKey: { type: String, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true, required: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true, required: true },
+  conversationId: { type: String, index: true, required: true },
+  conversationKey: { type: String, index: true, required: true },
   name: String,
   unreadCount: { type: Number, default: 0 },
   timestamp: Number,
@@ -242,10 +242,10 @@ ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: tru
 const Chat = mongoose.model('Chat', ChatSchema);
 
 const SyncStateSchema = new mongoose.Schema({
-  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
-  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
-  conversationId: { type: String, index: true },
-  kind: { type: String, enum: ['chats', 'messages'], index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true, required: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true, required: true },
+  conversationId: { type: String, index: true, required: true },
+  kind: { type: String, enum: ['chats', 'messages'], index: true, required: true },
   status: { type: String, enum: ['idle', 'queued', 'syncing', 'ok', 'error'], default: 'idle' },
   requestedLimit: Number,
   lastRequestedAt: Date,
@@ -258,8 +258,8 @@ const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
 const StatusArchiveSchema = new mongoose.Schema({
   id: { type: String, index: true },
-  provider: { type: String, default: DEFAULT_PROVIDER, index: true },
-  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true },
+  provider: { type: String, default: DEFAULT_PROVIDER, index: true, required: true },
+  accountId: { type: String, default: DEFAULT_ACCOUNT_ID, index: true, required: true },
   providerStatusMessageId: { type: String, required: true, index: true },
   statusOwnerId: { type: String, index: true },
   statusOwnerName: String,
@@ -2136,25 +2136,30 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 });
 
 app.get('/api/status', async (_req, res) => {
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
-  res.json({
-    whatsappStatus: defaultState.status,
-    providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
-    hasQr: Boolean(defaultState.lastQR),
-    lastWhatsappReadyAt: defaultState.lastReadyAt,
-    lastWhatsappDisconnectReason: defaultState.lastDisconnectReason,
-    statusArchive: {
-      lastRunAt: lastStatusArchiveRunAt,
-      inFlight: statusArchivePollInFlight,
-      stats: lastStatusArchiveStats
-    },
-    syncQueue: {
-      queued: syncQueue.length,
-      pendingKeys: syncPendingKeys.size,
-      inFlightKeys: syncInFlightKeys.size
-    },
-    uptimeSec: Math.floor(process.uptime())
-  });
+  try {
+    const defaultState = getProviderState(DEFAULT_PROVIDER);
+    res.json({
+      whatsappStatus: defaultState.status,
+      providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
+      hasQr: Boolean(defaultState.lastQR),
+      lastWhatsappReadyAt: defaultState.lastReadyAt,
+      lastWhatsappDisconnectReason: defaultState.lastDisconnectReason,
+      statusArchive: {
+        lastRunAt: lastStatusArchiveRunAt,
+        inFlight: statusArchivePollInFlight,
+        stats: lastStatusArchiveStats
+      },
+      syncQueue: {
+        queued: syncQueue.length,
+        pendingKeys: syncPendingKeys.size,
+        inFlightKeys: syncInFlightKeys.size
+      },
+      uptimeSec: Math.floor(process.uptime())
+    });
+  } catch (error) {
+    console.error('❌ Status endpoint error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch status' });
+  }
 });
 
 app.get('/api/status-archive', async (req, res) => {
@@ -2202,20 +2207,25 @@ app.post('/api/status-archive/sweep', async (req, res) => {
 });
 
 app.get('/api/health', async (_req, res) => {
-  const mongoOk = mongoose.connection.readyState === 1;
-  const aiConfigured = isAiConfigured(aiConfig);
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
-  const whatsappOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
-  res.status(mongoOk ? 200 : 503).json({
-    ok: mongoOk,
-    services: {
-      mongo: mongoOk ? 'up' : 'down',
-      whatsapp: whatsappOk ? defaultState.status : 'down',
-      ai: aiConfigured ? 'configured' : 'missing'
-    },
-    uptimeSec: Math.floor(process.uptime()),
-    timestamp: new Date().toISOString()
-  });
+  try {
+    const mongoOk = mongoose.connection.readyState === 1;
+    const aiConfigured = isAiConfigured(aiConfig);
+    const defaultState = getProviderState(DEFAULT_PROVIDER);
+    const whatsappOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
+    res.status(mongoOk ? 200 : 503).json({
+      ok: mongoOk,
+      services: {
+        mongo: mongoOk ? 'up' : 'down',
+        whatsapp: whatsappOk ? defaultState.status : 'down',
+        ai: aiConfigured ? 'configured' : 'missing'
+      },
+      uptimeSec: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('❌ Health endpoint error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch health' });
+  }
 });
 
 app.get('/api/sync/state', async (req, res) => {
