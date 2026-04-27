@@ -107,13 +107,6 @@ class WhatsAppAdapter extends BaseAdapter {
     this.client.initialize();
   }
 
-  isReady() {
-    return this._isReady;
-  }
-
-  getStatus() {
-    return this._status;
-  }
 
   async listChats() {
     return this.client.getChats();

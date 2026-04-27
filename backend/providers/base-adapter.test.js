@@ -19,14 +19,18 @@ describe('BaseAdapter', () => {
     assert.strictEqual(adapter.getProviderName(), 'test-provider');
   });
 
-  test('isReady() should throw not implemented error', () => {
+  test('isReady() should return the internal state', () => {
     const adapter = new BaseAdapter('test');
-    assert.throws(() => adapter.isReady(), /isReady\(\) not implemented for provider=test/);
+    assert.strictEqual(adapter.isReady(), false);
+    adapter._isReady = true;
+    assert.strictEqual(adapter.isReady(), true);
   });
 
-  test('getStatus() should throw not implemented error', () => {
+  test('getStatus() should return the internal status', () => {
     const adapter = new BaseAdapter('test');
-    assert.throws(() => adapter.getStatus(), /getStatus\(\) not implemented for provider=test/);
+    assert.strictEqual(adapter.getStatus(), 'initializing');
+    adapter._status = 'connected';
+    assert.strictEqual(adapter.getStatus(), 'connected');
   });
 
   test('listChats() should throw not implemented error', async () => {

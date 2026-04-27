@@ -7,6 +7,8 @@ class BaseAdapter extends EventEmitter {
     if (!this.provider) {
       throw new Error('Provider adapter requires a provider name');
     }
+    this._isReady = false;
+    this._status = 'initializing';
   }
 
   getProviderName() {
@@ -14,15 +16,15 @@ class BaseAdapter extends EventEmitter {
   }
 
   initialize() {
-    throw new Error(`initialize() not implemented for provider=${this.provider}`);
+    // default implementation is empty. override if needed.
   }
 
   isReady() {
-    throw new Error(`isReady() not implemented for provider=${this.provider}`);
+    return this._isReady;
   }
 
   getStatus() {
-    throw new Error(`getStatus() not implemented for provider=${this.provider}`);
+    return this._status;
   }
 
   async listChats(_ctx) {
