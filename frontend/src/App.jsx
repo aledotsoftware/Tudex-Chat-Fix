@@ -266,6 +266,13 @@ function App() {
     return "Sincronizando sesión...";
   }, [sessionStatus, socketConnected]);
 
+  const dotClass = useMemo(() => {
+    if (!socketConnected) return "bad";
+    if (sessionStatus === "authenticated") return "ok";
+    if (sessionStatus === "qr" || sessionStatus === "connecting") return "warning";
+    return "bad";
+  }, [sessionStatus, socketConnected]);
+
   const authScreenLabel = useMemo(() => {
     if (!socketConnected) return "Conectando al servidor...";
     if (sessionStatus === "qr") return "Vincular con WhatsApp";
@@ -507,6 +514,17 @@ function App() {
       window.removeEventListener("pwa_update_available", handlePwaUpdate);
     };
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("chatfix_api_key");
+    setApiAuthenticated(false);
+    setSessionStatus("connecting");
+    if (socketRef.current) {
+      socketRef.current.close();
+      socketRef.current = null;
+    }
+    clearCache().catch(() => {});
+  };
 
   const checkAuth = async (key) => {
     setAuthChecking(true);
@@ -1421,6 +1439,13 @@ function App() {
               >
                 Reintentar conexión
               </button>
+              <button
+                className="secondary fullWidth mt-2"
+                aria-label="Cambiar API Key o Salir"
+                onClick={handleLogout}
+              >
+                Cambiar API Key (Salir)
+              </button>
               {sessionStatus === "auth_failure" && (
                 <div className="notice error mt-2" role="alert" aria-live="assertive">
                   <p className="helperText errorText">
@@ -1512,7 +1537,7 @@ function App() {
         </header>
 
         <div className="statusBar" role="status" aria-live="polite">
-          <span className={`dot ${socketConnected ? "ok" : "bad"}`} aria-hidden="true" />
+          <span className={`dot ${dotClass}`} aria-hidden="true" />
           <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
           <span>
             {connectionLabel} · Provider: {backendStatus.providerStatus}
@@ -1611,6 +1636,7 @@ function App() {
         <footer className="sidebarFooter">
           <span>Ctrl+K buscar</span>
           <span>Alt+↑↓ navegar</span>
+          <button className="logoutBtn" onClick={handleLogout} aria-label="Cerrar sesión">Cerrar sesión</button>
         </footer>
       </aside>
 
