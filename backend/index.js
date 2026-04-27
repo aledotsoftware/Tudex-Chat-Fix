@@ -88,6 +88,10 @@ function validateStartupConfig() {
     console.warn('⚠️ WARNING: MODEL_NAME is not set or empty. Falling back to "llama-3.1-8b-instruct".');
   }
 
+  if (provider !== 'lmstudio' && provider !== 'cloudflare') {
+    console.warn(`⚠️ WARNING: Unsupported AI_PROVIDER "${process.env.AI_PROVIDER}". Falling back to "lmstudio".`);
+  }
+
   if (provider === 'cloudflare') {
     if (!process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_ACCOUNT_ID is missing or empty.');
