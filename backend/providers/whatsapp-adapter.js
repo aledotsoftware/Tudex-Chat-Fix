@@ -29,8 +29,6 @@ class WhatsAppAdapter extends BaseAdapter {
       });
     }
 
-    this._isReady = false;
-    this._status = 'initializing';
     this._authPath = options.dataPath || './.wwebjs_auth';
   }
 
