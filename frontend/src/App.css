@@ -27,7 +27,7 @@
   
   /* Borders */
   --border-light: rgba(255, 255, 255, 0.18);
-  --border-focus: rgba(0, 210, 255, 0.6);
+  --border-focus: #00d2ff;
 }
 
 * {
@@ -158,6 +158,8 @@ button, textarea, input, select {
 }
 
 .authInput:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.3);
   outline: none;
@@ -344,6 +346,7 @@ button, textarea, input, select {
 }
 
 .dot.ok { background: var(--success); color: var(--success); }
+.dot.warning { background: var(--warning); color: var(--warning); }
 .dot.bad { background: var(--error); color: var(--error); }
 
 .pendingCounter {
@@ -374,7 +377,8 @@ button, textarea, input, select {
 .searchWrap input:focus {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-primary);
-  outline: none;
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
   box-shadow: 0 0 15px var(--accent-glow);
 }
 
@@ -490,9 +494,27 @@ button, textarea, input, select {
   padding: 10px 14px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 10px;
   font-size: 11px;
   color: var(--text-muted);
+}
+
+.logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 82, 82, 0.3);
+  color: var(--error);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 28px;
+}
+
+.logoutBtn:hover, .logoutBtn:focus-visible {
+  background: rgba(255, 82, 82, 0.1);
+  border-color: var(--error);
 }
 
 /* Chat Panel Styling */
@@ -911,7 +933,8 @@ button, textarea, input, select {
 }
 
 .composer textarea:focus {
-  outline: none;
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
   background: rgba(255, 255, 255, 0.07);
   border-color: var(--accent-primary);
   box-shadow: 0 0 20px var(--accent-glow);
