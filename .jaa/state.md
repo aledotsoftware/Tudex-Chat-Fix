@@ -11,6 +11,6 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 ## 📝 AGENT NOTES
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
-- **ChatFix-UX-Conversation-Flow**: Mejorada la jerarquía visual de estados de envío y corrección de IA reemplazando los botones en estado de carga por un indicador central `.activityStateBadge`, y agregado soporte visual no intrusivo para la sincronización de chats en segundo plano.
+- **ChatFix-UX-Accessibility-Trust**: Accesibilidad operativa, manejo de errores de estado y focus de elementos mejorados en frontend. Se han removido outline anti-patterns y mejorado las etiquetas semánticas.
 
 ---

@@ -162,7 +162,7 @@ button, textarea, input, select {
   outline-offset: 2px;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.3);
-  outline: none;
+
 }
 
 .authInput[aria-invalid="true"] {
@@ -1065,9 +1065,10 @@ button:disabled {
 .modalCard input:focus,
 .modalCard select:focus,
 .modalCard textarea:focus {
-  border-color: var(--accent-primary);
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(0, 210, 255, 0.2);
+  border-color: var(--border-focus);
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.3);
 }
 
 .correctedPreview {
