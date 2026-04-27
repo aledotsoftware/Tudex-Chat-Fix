@@ -946,10 +946,12 @@ function App() {
       await setCachedMessages(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, chatId, safeMessages);
       if (selectedChatIdRef.current === chatId) {
         setMessages(prev => {
-          // Remove optimistic messages that were successfully sent (matched by body)
-          const optimisticIds = prev.filter(m => m.status === 'sending').map(m => m._uiId);
-          const filtered = prev.filter(m => !optimisticIds.includes(m._uiId));
-          return [...filtered, ...safeMessages.filter(sm => !filtered.some(f => messageId(f) === sm._uiId))].sort(
+          // Keep optimistic messages that haven't been confirmed yet by the backend
+          const pendingOptimistic = prev.filter(m =>
+            m.status === 'sending' &&
+            !safeMessages.some(sm => sm.body === m.body && sm.fromMe && sm.status !== 'sending')
+          );
+          return [...safeMessages, ...pendingOptimistic].sort(
             (a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0)
           );
         });
