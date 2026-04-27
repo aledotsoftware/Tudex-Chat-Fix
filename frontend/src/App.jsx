@@ -1938,7 +1938,7 @@ function App() {
               {syncingChat && (
                 <div className="activityStateBadge syncing" aria-live="polite">
                   <span className="syncSpinner" aria-hidden="true" style={{ width: '10px', height: '10px', borderWidth: '2px', marginRight: '4px' }} />
-                  <span>Sincronizando chat en segundo plano...</span>
+                  <span>Actualizando mensajes...</span>
                 </div>
               )}
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
@@ -1984,13 +1984,24 @@ function App() {
                     </div>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
+                  {!(sending || correcting || correctingAndSending) && (
+                    <div className="correctedActions">
+                      <button
+                        className="primary fullWidth"
+                        onClick={() => sendMessage(correctedDraft, "corrected")}
+                        aria-label="Enviar la sugerencia de IA"
+                      >
+                        ✨ Enviar versión IA
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : null}
 
 {(sending || correcting || correctingAndSending) ? (
                 <div className="activityStateBadge processing">
                   <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "Mejorando y enviando..." : correcting ? "Mejorando redacción..." : sendingType === 'corrected' ? "Enviando sugerencia..." : "Enviando mensaje original..."}</span>
+                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando sugerencia..." : "📤 Enviando mensaje original..."}</span>
                 </div>
               ) : (
                 <div className="composerActions">
@@ -2022,23 +2033,14 @@ function App() {
                       </button>
                     </>
                   ) : (
-                    <>
-                      <button
-                        className="primary"
-                        aria-label="Enviar la sugerencia de IA"
-                        onClick={() => sendMessage(correctedDraft, "corrected")}
-                      >
-                        ✨ <span className="hideOnMobile">Enviar versión IA</span>
-                      </button>
-                      <button
-                        className="secondary"
-                        aria-label="Enviar el texto original, descartando la sugerencia"
-                        onClick={() => sendMessage(draft, "original")}
-                        disabled={!draft.trim()}
-                      >
-                        📤 <span className="hideOnMobile">Enviar mi texto original</span>
-                      </button>
-                    </>
+                    <button
+                      className="secondary"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      onClick={() => sendMessage(draft, "original")}
+                      disabled={!draft.trim()}
+                    >
+                      📤 <span className="hideOnMobile">Enviar mi texto original</span>
+                    </button>
                   )}
                 </div>
               )}
