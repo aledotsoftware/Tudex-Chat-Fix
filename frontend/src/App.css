@@ -570,7 +570,7 @@ button, textarea, input, select {
 }
 
 .mobileBackBtn {
-  display: none;
+  display: none !important;
   width: 44px;
   min-width: 44px;
   height: 44px;
@@ -1389,6 +1389,7 @@ button.fullWidth {
     border-radius: 0;
     border: none;
     box-shadow: none;
+    will-change: transform, opacity;
   }
 
   .chatPanel {
@@ -1409,7 +1410,7 @@ button.fullWidth {
   }
 
   .mobileBackBtn {
-    display: inline-flex;
+    display: inline-flex !important;
   }
 
   .chatHeaderActions .secondary {
@@ -1711,10 +1712,12 @@ button.fullWidth {
 
   button {
     min-height: 44px;
+    min-width: 44px;
   }
 
   button.replyBtn {
     min-height: 44px;
+    min-width: 44px;
   }
 
   .iconButton,
