@@ -169,8 +169,15 @@ function App() {
     statusArchive: null
   });
 
-  const [notice, setNotice] = useState("");
-  const [noticeType, setNoticeType] = useState("info");
+  const [toasts, setToasts] = useState([]);
+
+  function showNotice(text, type = "info") {
+    const id = Date.now() + Math.random().toString(36);
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4500);
+  }
 
   const [loadingChats, setLoadingChats] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState({});
@@ -208,6 +215,7 @@ function App() {
   const [pendingIncomingCount, setPendingIncomingCount] = useState(0);
   const [draftsByChat, setDraftsByChat] = useState(() => { try { return JSON.parse(localStorage.getItem("chatfix_drafts") || "{}"); } catch (e) { return {}; } }); const draft = draftsByChat[selectedChatId] || ""; const setDraft = (val) => setDraftsByChat(prev => ({ ...prev, [selectedChatId]: val }));
   const [correctedDraft, setCorrectedDraft] = useState("");
+  const debouncedDraftRef = useRef(null);
   const [replyTarget, setReplyTarget] = useState(null);
   const [grammarInsights, setGrammarInsights] = useState({});
   const [replyQueue, setReplyQueue] = useState([]);
@@ -282,10 +290,7 @@ function App() {
   }, [sessionStatus, socketConnected]);
 
 
-  function showNotice(text, type = "info") {
-    setNotice(text);
-    setNoticeType(type);
-  }
+
 
   function isNearBottom(container) {
     if (!container) return true;
@@ -539,6 +544,7 @@ function App() {
       } else {
         setApiAuthenticated(false);
         setAuthError("API Key incorrecta. Por favor, verificá tus credenciales.");
+        showNotice("Autenticación fallida con la clave provista.", "error");
         localStorage.removeItem("chatfix_api_key");
         clearCache().catch(() => {});
       }
@@ -770,11 +776,7 @@ function App() {
     });
   }, [messages]);
 
-  useEffect(() => {
-    if (!notice) return;
-    const timer = setTimeout(() => setNotice(""), 4500);
-    return () => clearTimeout(timer);
-  }, [notice]);
+
 
   useEffect(() => {
     if (!apiAuthenticated) return;
@@ -1351,7 +1353,12 @@ function App() {
         <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
           {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
-          <p>Para continuar, necesitas proporcionar tu clave de acceso API.</p>
+
+          <div className="onboarding-wizard">
+            <p><strong>¡Bienvenido a ChatFix!</strong></p>
+            <p>Para proteger tus conversaciones y conectar de forma segura con tu servidor (LM Studio, Cloudflare, o WhatsApp), ingresa la clave de acceso API provista por tu administrador.</p>
+          </div>
+
           <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
           <div className="passwordInputWrapper">
             <input
@@ -1390,11 +1397,22 @@ function App() {
             ) : "Ingresar de forma segura"}
           </button>
         </section>
+
+      {toasts.length > 0 && (
+        <div className="toast-container" aria-live="polite">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast ${t.type}`}>
+              {t.text}
+            </div>
+          ))}
+        </div>
+      )}
       </main>
     </>
     );
   }
 
+  // Revert: As per UX Audit and the repo state, 'connecting' should NOT be a blocking UI state. The user needs to see the warning banner instead.
   const isBlockingSessionState = sessionStatus === "qr" || sessionStatus === "auth_failure";
   if (isBlockingSessionState) {
     return (
@@ -1809,7 +1827,13 @@ function App() {
               ref={messagesAreaRef}
               onScroll={handleMessagesScroll}
             >
-              {loadingMessages[selectedChatId] && messages.length === 0 ? <p className="helper">Cargando mensajes...</p> : null}
+              {loadingMessages[selectedChatId] && messages.length === 0 ? (
+                <>
+                  <div className="skeleton-msg"></div>
+                  <div className="skeleton-msg"></div>
+                  <div className="skeleton-msg"></div>
+                </>
+              ) : null}
               {!loadingMessages[selectedChatId] && syncingChat && messages.length === 0 ? <p className="helper">Sincronizando...</p> : null}
               {!loadingMessages[selectedChatId] && !syncingChat && messages.length === 0 ? (
                 <p className="helper">Este chat todavía no tiene mensajes visibles.</p>
@@ -1977,8 +2001,16 @@ function App() {
                   ref={draftInputRef}
                   value={draft}
                   onChange={(e) => {
-                    setDraft(e.target.value);
+                    const val = e.target.value;
+                    setDraft(val);
                     if (correctedDraft) setCorrectedDraft("");
+
+                    if (debouncedDraftRef.current) clearTimeout(debouncedDraftRef.current);
+                    if (val.trim().length > 5) {
+                      debouncedDraftRef.current = setTimeout(() => {
+                        // Live correction trigger could go here (if requested to auto-correct)
+                      }, 1000);
+                    }
                   }}
                   onKeyDown={handleDraftKeyDown}
                   placeholder="Escribí un mensaje... (Enter: mejorar y enviar | Ctrl+Enter: enviar original sin revisar)"
@@ -2075,7 +2107,7 @@ function App() {
                 </div>
               )}
 
-              {notice ? <p className={`notice ${noticeType}`} role="status" aria-live="polite">{notice}</p> : null}
+
             </footer>
           </>
         )}
@@ -2326,6 +2358,16 @@ function App() {
           </div>
         </section>
       ) : null}
+
+      {toasts.length > 0 && (
+        <div className="toast-container" aria-live="polite">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast ${t.type}`}>
+              {t.text}
+            </div>
+          ))}
+        </div>
+      )}
       </main>
     </>
   );

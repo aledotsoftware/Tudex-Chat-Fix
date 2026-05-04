@@ -1858,3 +1858,100 @@ select {
     min-width: 44px;
   }
 }
+
+/* Toasts */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-left: 4px solid var(--accent-primary);
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 14px;
+  animation: slideInToast 0.3s ease-out forwards;
+  max-width: 320px;
+  word-wrap: break-word;
+}
+
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--error); }
+.toast.warning { border-left-color: var(--warning); }
+.toast.info { border-left-color: var(--accent-primary); }
+
+@keyframes slideInToast {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (max-width: 920px) {
+  .toast-container {
+    bottom: unset;
+    top: 24px;
+    right: 16px;
+    left: 16px;
+  }
+  .toast {
+    max-width: 100%;
+  }
+  @keyframes slideInToast {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+/* Skeletons */
+.skeleton-msg {
+  height: 48px;
+  background: var(--bg-card);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  animation: skeletonPulse 1.5s infinite ease-in-out;
+  opacity: 0.7;
+}
+.skeleton-msg:nth-child(even) {
+  margin-left: auto;
+  width: 60%;
+  background: rgba(0, 210, 255, 0.1);
+}
+.skeleton-msg:nth-child(odd) {
+  margin-right: auto;
+  width: 70%;
+}
+
+@keyframes skeletonPulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+  100% { opacity: 0.5; }
+}
+
+/* Onboarding Setup Wizard */
+.onboarding-wizard {
+  background: rgba(0, 210, 255, 0.05);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+.onboarding-wizard p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.onboarding-wizard p:last-child {
+  margin-bottom: 0;
+}
