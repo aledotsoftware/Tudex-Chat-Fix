@@ -61,34 +61,11 @@ class WhatsAppAdapter extends BaseAdapter {
   initialize() {
     this._cleanChromiumLocks();
 
-    this.client.on('qr', (qr) => {
-      this._status = 'qr';
-      this._isReady = false;
-      this.emit('qr', qr);
-    });
-
-    this.client.on('ready', () => {
-      this._status = 'authenticated';
-      this._isReady = true;
-      this.emit('ready');
-    });
-
-    this.client.on('authenticated', () => {
-      this._status = 'authenticated';
-      this.emit('authenticated');
-    });
-
-    this.client.on('auth_failure', (msg) => {
-      this._status = 'auth_failure';
-      this._isReady = false;
-      this.emit('auth_failure', msg);
-    });
-
-    this.client.on('disconnected', (reason) => {
-      this._status = 'disconnected';
-      this._isReady = false;
-      this.emit('disconnected', reason);
-    });
+    this.client.on('qr', (qr) => this.emit('qr', qr));
+    this.client.on('ready', () => this.emit('ready'));
+    this.client.on('authenticated', () => this.emit('authenticated'));
+    this.client.on('auth_failure', (msg) => this.emit('auth_failure', msg));
+    this.client.on('disconnected', (reason) => this.emit('disconnected', reason));
 
     this.client.on('message_revoke_everyone', (after, before) => {
       this.emit('message_revoke_everyone', after, before);
