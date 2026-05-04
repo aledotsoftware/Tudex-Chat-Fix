@@ -410,9 +410,11 @@ button, textarea, input, select {
   transform: scale(0.98);
 }
 
-.chatItem:hover {
-  background: rgba(255, 255, 255, 0.06);
-  transform: translateX(2px);
+@media (hover: hover) {
+  .chatItem:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(2px);
+  }
 }
 
 .chatItem.active {
@@ -1442,6 +1444,8 @@ button.fullWidth {
   .headerActions button {
     flex: 1;
     padding: 8px 12px;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .waApp {
@@ -1824,7 +1828,8 @@ button.fullWidth {
   }
 
   .composerActions button {
-    min-width: 0;
+    min-width: 44px;
+    min-height: 44px;
     flex: 1 1 calc(50% - 6px);
   }
 
