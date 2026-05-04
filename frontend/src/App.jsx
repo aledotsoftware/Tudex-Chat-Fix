@@ -1124,10 +1124,15 @@ function App() {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       if (!sending && !correcting && !correctingAndSending && (draft.trim() || correctedDraft)) {
-        if (correctedDraft) {
-          sendMessage(correctedDraft, "corrected");
-        } else if (draft.trim()) {
-          correctAndSend();
+        if (event.ctrlKey || event.metaKey) {
+          // Force send original
+          sendMessage(draft, "original");
+        } else {
+          if (correctedDraft) {
+            sendMessage(correctedDraft, "corrected");
+          } else if (draft.trim()) {
+            correctAndSend();
+          }
         }
       }
     }
@@ -1981,7 +1986,7 @@ function App() {
                     if (correctedDraft) setCorrectedDraft("");
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar, Shift+Enter: salto)"
+                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar, Ctrl+Enter: enviar original, Shift+Enter: salto)"
                   rows={3}
                   aria-label="Mensaje"
                   disabled={sending || correcting || correctingAndSending}
@@ -2029,9 +2034,9 @@ function App() {
               ) : null}
 
 {(sending || correcting || correctingAndSending) ? (
-                <div className="activityStateBadge processing">
+                <div className={`activityStateBadge ${(correcting || correctingAndSending) ? "processing" : "sending"}`}>
                   <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando sugerencia..." : "📤 Enviando mensaje original..."}</span>
+                  <span>{correctingAndSending ? "✨ Mejorando y preparando envío..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
                 </div>
               ) : (
                 <div className="composerActions">

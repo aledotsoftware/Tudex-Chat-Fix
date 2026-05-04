@@ -1,0 +1,131 @@
+              {replyTarget ? (
+                <div className="replyTarget">
+                  <div>
+                    <p className="replyTargetLabel">
+                      Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
+                    </p>
+                    <p className="replyTargetText">{replyTarget.text}</p>
+                  </div>
+                  <button
+                    className="secondary"
+                    aria-label="Cancelar respuesta"
+                    onClick={() => setReplyTarget(null)}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              ) : null}
+
+              {syncingChat && (
+                <div className="activityStateBadge syncing" aria-live="polite">
+                  <span className="syncSpinner" aria-hidden="true" style={{ width: '10px', height: '10px', borderWidth: '2px', marginRight: '4px' }} />
+                  <span>Actualizando mensajes...</span>
+                </div>
+              )}
+              <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
+                {correctedDraft && <span className="composerOriginalLabel">Borrador original (si editas, se descarta la sugerencia)</span>}
+                <textarea
+                  ref={draftInputRef}
+                  value={draft}
+                  onChange={(e) => {
+                    setDraft(e.target.value);
+                    if (correctedDraft) setCorrectedDraft("");
+                  }}
+                  onKeyDown={handleDraftKeyDown}
+                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar, Shift+Enter: salto)"
+                  rows={3}
+                  aria-label="Mensaje"
+                  disabled={sending || correcting || correctingAndSending}
+                />
+              </div>
+
+              {correctedDraft ? (
+                <div className="correctedPreview">
+                  <div className="correctedHeader">
+                    <p className="correctedLabel">✨ Sugerencia de IA lista para enviar</p>
+                    <div className="correctedHeaderActions">
+                      <button
+                        className="secondary small"
+                        onClick={() => {
+                          setDraft(correctedDraft);
+                          setCorrectedDraft("");
+                        }}
+                        aria-label="Usar sugerencia en el cuadro principal para editar"
+                      >
+                        ✏️ Usar y editar
+                      </button>
+                      <button
+                        className="iconButton"
+                        onClick={() => setCorrectedDraft("")}
+                        aria-label="Descartar sugerencia"
+                        title="Descartar"
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  </div>
+                  <p className="correctedText">{correctedDraft}</p>
+                  {!(sending || correcting || correctingAndSending) && (
+                    <div className="correctedActions">
+                      <button
+                        className="primary fullWidth"
+                        onClick={() => sendMessage(correctedDraft, "corrected")}
+                        aria-label="Enviar la sugerencia de IA"
+                      >
+                        ✨ Enviar versión IA
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+
+{(sending || correcting || correctingAndSending) ? (
+                <div className="activityStateBadge processing">
+                  <span className="spinner" aria-hidden="true" />
+                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando sugerencia..." : "📤 Enviando mensaje original..."}</span>
+                </div>
+              ) : (
+                <div className="composerActions">
+                  {!correctedDraft ? (
+                    <>
+                      <button
+                        className="primary"
+                        aria-label="Mejorar redacción con IA y enviar"
+                        onClick={correctAndSend}
+                        disabled={!draft.trim()}
+                      >
+                        🚀 <span className="hideOnMobile">Corregir y enviar</span>
+                      </button>
+                      <button
+                        className="secondary"
+                        aria-label="Previsualizar corrección de IA sin enviar"
+                        onClick={correctDraft}
+                        disabled={!draft.trim()}
+                      >
+                        ✨ <span className="hideOnMobile">Revisar redacción</span>
+                      </button>
+                      <button
+                        className="secondary"
+                        aria-label="Enviar mensaje original sin revisar"
+                        onClick={() => sendMessage(draft, "original")}
+                        disabled={!draft.trim()}
+                      >
+                        📤 <span className="hideOnMobile">Enviar original</span>
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="secondary"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      onClick={() => sendMessage(draft, "original")}
+                      disabled={!draft.trim()}
+                    >
+                      📤 <span className="hideOnMobile">Enviar mi texto original</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {notice ? <p className={`notice ${noticeType}`} role="status" aria-live="polite">{notice}</p> : null}
+            </footer>
+          </>
