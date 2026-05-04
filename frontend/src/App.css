@@ -889,13 +889,18 @@ button, textarea, input, select {
 }
 
 .composerOriginalLabel {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--warning);
-  margin-bottom: 6px;
-  display: block;
-  letter-spacing: 0.05em;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.8;
+}
+.composerOriginalLabel::before {
+  content: "📝";
+  font-size: 14px;
 }
 
 .composer textarea {
@@ -914,10 +919,19 @@ button, textarea, input, select {
 }
 
 .composerInputWrapper.hasCorrection textarea {
-  border-color: rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
-  color: var(--text-muted);
+  border-color: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.3);
+  color: rgba(255, 255, 255, 0.4);
   border-style: dashed;
+  font-size: 14px;
+}
+
+.composerInputWrapper.hasCorrection textarea:focus {
+  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.2);
+  border-color: var(--warning);
+  outline: 3px solid rgba(255, 202, 40, 0.3);
+  box-shadow: none;
 }
 
 .composerInputWrapper.isCorrecting textarea {
@@ -950,6 +964,16 @@ button, textarea, input, select {
 .composerActions button {
   flex: 1;
   min-width: 140px;
+}
+
+.plainSendBtn {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--text-muted) !important;
+}
+.plainSendBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
 }
 
 .jumpToLatest {
@@ -1073,12 +1097,13 @@ button:disabled {
 
 .correctedPreview {
   margin-top: 16px;
-  background: linear-gradient(145deg, rgba(0, 210, 255, 0.05), rgba(0, 210, 255, 0.02));
-  border: 1px dashed var(--accent-primary);
+  background: linear-gradient(145deg, rgba(0, 210, 255, 0.08), rgba(0, 210, 255, 0.03));
+  border: 1px solid var(--accent-primary);
   border-radius: 16px;
   padding: 16px;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  box-shadow: 0 4px 20px rgba(0, 210, 255, 0.1);
 }
 
 @keyframes slideIn {
