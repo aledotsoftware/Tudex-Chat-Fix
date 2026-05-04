@@ -1197,6 +1197,7 @@ button.fullWidth {
   color: var(--success);
   border: 1px solid rgba(0, 230, 118, 0.3);
   box-shadow: 0 4px 12px rgba(0, 230, 118, 0.15);
+  animation: slideIn 0.3s ease, pulseIcon 2s infinite;
 }
 
 .activityStateBadge.syncing {
