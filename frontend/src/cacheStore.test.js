@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { getCachedChats } from './cacheStore.js';
+import { getCachedChats, getCachedMessages, setCachedChats, setCachedMessages, clearCache } from './cacheStore.js';
 
 describe('cacheStore error recovery', () => {
   test('getCachedChats returns empty array when indexedDB.open fails', async () => {
@@ -21,6 +21,14 @@ describe('cacheStore error recovery', () => {
     try {
       const result = await getCachedChats('whatsapp', 'test-account');
       assert.deepStrictEqual(result, [], 'Should return empty array on failure');
+
+      const msgs = await getCachedMessages('whatsapp', 'test-account', 'chat1');
+      assert.deepStrictEqual(msgs, [], 'Should return empty array on failure');
+
+      // Should handle silent catch for sets and clear
+      await setCachedChats('whatsapp', 'test-account', []);
+      await setCachedMessages('whatsapp', 'test-account', 'chat1', []);
+      await clearCache();
     } finally {
       // Cleanup global mock
       delete global.window;
