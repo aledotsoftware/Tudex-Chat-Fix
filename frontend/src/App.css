@@ -604,6 +604,7 @@ button, textarea, input, select {
 }
 
 .messagesArea {
+  overscroll-behavior-y: contain;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -1438,8 +1439,9 @@ button.fullWidth {
   }
 
   .waApp.chatOpen .chatPanel {
+    display: flex !important;
     animation: slideInMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-    display: flex;
+
   }
 
   .waApp.chatOpen .sidebar {
@@ -1463,6 +1465,7 @@ button.fullWidth {
   }
 
   .messagesArea {
+    overscroll-behavior-y: contain;
     padding: 14px 12px 8px;
   }
 
@@ -1750,6 +1753,7 @@ button.fullWidth {
     margin: 0;
     animation: slideUpMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
     overflow-y: auto;
+    will-change: transform, opacity;
   }
 
   .modalOverlay {
@@ -1770,6 +1774,7 @@ button.fullWidth {
     min-width: 44px;
   }
 
+  .logoutBtn,
   .iconButton,
   .passwordToggleBtn {
     min-height: 44px;
@@ -1820,4 +1825,12 @@ input[type="email"],
 textarea,
 select {
   font-size: 16px;
+}
+
+/* Asegurar targets tactiles adicionales */
+@media (max-width: 920px) {
+  .logoutBtn {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
