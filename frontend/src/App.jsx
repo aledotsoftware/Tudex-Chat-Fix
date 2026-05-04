@@ -1970,14 +1970,9 @@ function App() {
                 </div>
               ) : null}
 
-              {syncingChat && (
-                <div className="activityStateBadge syncing" aria-live="polite">
-                  <span className="syncSpinner" aria-hidden="true" style={{ width: '10px', height: '10px', borderWidth: '2px', marginRight: '4px' }} />
-                  <span>Actualizando mensajes...</span>
-                </div>
-              )}
+              {/* Removed redundant syncingChat badge here to prevent layout shift; it's already in the header */}
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
-                {correctedDraft && <span className="composerOriginalLabel">Borrador original (si editas, se descarta la sugerencia)</span>}
+                {correctedDraft && <span className="composerOriginalLabel">Borrador original (editá para descartar sugerencia)</span>}
                 <textarea
                   ref={draftInputRef}
                   value={draft}
@@ -1986,7 +1981,7 @@ function App() {
                     if (correctedDraft) setCorrectedDraft("");
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar, Ctrl+Enter: enviar original, Shift+Enter: salto)"
+                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar | Ctrl+Enter: enviar original sin revisar)"
                   rows={3}
                   aria-label="Mensaje"
                   disabled={sending || correcting || correctingAndSending}
@@ -2033,7 +2028,7 @@ function App() {
                 </div>
               ) : null}
 
-{(sending || correcting || correctingAndSending) ? (
+              {(sending || correcting || correctingAndSending) ? (
                 <div className={`activityStateBadge ${(correcting || correctingAndSending) ? "processing" : "sending"}`}>
                   <span className="spinner" aria-hidden="true" />
                   <span>{correctingAndSending ? "✨ Mejorando y preparando envío..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
@@ -2059,7 +2054,7 @@ function App() {
                         ✨ <span className="hideOnMobile">Revisar redacción</span>
                       </button>
                       <button
-                        className="secondary"
+                        className="secondary plainSendBtn"
                         aria-label="Enviar mensaje original sin revisar"
                         onClick={() => sendMessage(draft, "original")}
                         disabled={!draft.trim()}
@@ -2069,12 +2064,12 @@ function App() {
                     </>
                   ) : (
                     <button
-                      className="secondary"
+                      className="secondary plainSendBtn fullWidth"
                       aria-label="Enviar el texto original, descartando la sugerencia"
                       onClick={() => sendMessage(draft, "original")}
                       disabled={!draft.trim()}
                     >
-                      📤 <span className="hideOnMobile">Enviar mi texto original</span>
+                      📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span>
                     </button>
                   )}
                 </div>
