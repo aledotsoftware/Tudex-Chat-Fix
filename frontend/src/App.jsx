@@ -1996,7 +1996,7 @@ function App() {
 
               {/* Removed redundant syncingChat badge here to prevent layout shift; it's already in the header */}
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
-                {correctedDraft && <span className="composerOriginalLabel">Borrador original (editá para descartar sugerencia)</span>}
+                {correctedDraft && <span className="composerOriginalLabel">Tu borrador original (editá para descartar la sugerencia)</span>}
                 <textarea
                   ref={draftInputRef}
                   value={draft}
@@ -2013,7 +2013,7 @@ function App() {
                     }
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder="Escribí un mensaje... (Enter: mejorar y enviar | Ctrl+Enter: enviar original sin revisar)"
+                  placeholder={correctedDraft ? "Escribí un mensaje... (Enter: enviar versión IA | Ctrl+Enter: enviar original)" : "Escribí un mensaje... (Enter: mejorar y enviar | Ctrl+Enter: enviar original sin revisar)"}
                   rows={3}
                   aria-label="Mensaje"
                   disabled={sending || correcting || correctingAndSending}
@@ -2046,17 +2046,6 @@ function App() {
                     </div>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
-                  {!(sending || correcting || correctingAndSending) && (
-                    <div className="correctedActions">
-                      <button
-                        className="primary fullWidth"
-                        onClick={() => sendMessage(correctedDraft, "corrected")}
-                        aria-label="Enviar la sugerencia de IA"
-                      >
-                        ✨ Enviar versión IA
-                      </button>
-                    </div>
-                  )}
                 </div>
               ) : null}
 
@@ -2095,14 +2084,23 @@ function App() {
                       </button>
                     </>
                   ) : (
-                    <button
-                      className="secondary plainSendBtn fullWidth"
-                      aria-label="Enviar el texto original, descartando la sugerencia"
-                      onClick={() => sendMessage(draft, "original")}
-                      disabled={!draft.trim()}
-                    >
-                      📤 <span className="hideOnMobile">Ignorar sugerencia y enviar original</span>
-                    </button>
+                    <>
+                      <button
+                        className="primary"
+                        aria-label="Enviar la sugerencia de IA"
+                        onClick={() => sendMessage(correctedDraft, "corrected")}
+                      >
+                        ✨ Enviar versión IA
+                      </button>
+                      <button
+                        className="secondary plainSendBtn"
+                        aria-label="Enviar el texto original, descartando la sugerencia"
+                        onClick={() => sendMessage(draft, "original")}
+                        disabled={!draft.trim()}
+                      >
+                        📤 <span className="hideOnMobile">Ignorar IA y enviar original</span>
+                      </button>
+                    </>
                   )}
                 </div>
               )}
