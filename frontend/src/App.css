@@ -1176,12 +1176,6 @@ button:disabled {
   border-left: 3px solid var(--accent-primary);
 }
 
-.correctedActions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-}
-
 button.fullWidth {
   width: 100%;
 }
