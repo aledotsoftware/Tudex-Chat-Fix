@@ -1712,15 +1712,20 @@ app.post('/api/correct', async (req, res) => {
 });
 
 app.get('/api/ai/config', async (_req, res) => {
-  const configResponse = {
-    ...aiConfig,
-    provider: getAiProvider(aiConfig),
-    aiBaseUrl: getAiBaseUrl(aiConfig)
-  };
-  if (configResponse.cloudflareApiToken) {
-    configResponse.cloudflareApiToken = '********';
+  try {
+    const configResponse = {
+      ...aiConfig,
+      provider: getAiProvider(aiConfig),
+      aiBaseUrl: getAiBaseUrl(aiConfig)
+    };
+    if (configResponse.cloudflareApiToken) {
+      configResponse.cloudflareApiToken = '********';
+    }
+    res.json(configResponse);
+  } catch (error) {
+    console.error('❌ Fetch AI config error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch AI configuration' });
   }
-  res.json(configResponse);
 });
 
 app.put('/api/ai/config', async (req, res) => {
