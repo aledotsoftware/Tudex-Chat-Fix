@@ -9,6 +9,30 @@ class BaseAdapter extends EventEmitter {
     }
     this._isReady = false;
     this._status = 'initializing';
+
+    this._bindDefaultEvents();
+  }
+
+  _bindDefaultEvents() {
+    this.on('qr', () => {
+      this._status = 'qr';
+      this._isReady = false;
+    });
+    this.on('ready', () => {
+      this._status = 'authenticated';
+      this._isReady = true;
+    });
+    this.on('authenticated', () => {
+      this._status = 'authenticated';
+    });
+    this.on('auth_failure', () => {
+      this._status = 'auth_failure';
+      this._isReady = false;
+    });
+    this.on('disconnected', () => {
+      this._status = 'disconnected';
+      this._isReady = false;
+    });
   }
 
   getProviderName() {
