@@ -1444,7 +1444,7 @@ function App() {
                   </div>
                 </>
               ) : (
-                <div className="loadingSpinnerContainer">
+                <div className="loadingSpinnerContainer" aria-busy="true">
                   <div className="largeSpinner" aria-hidden="true"></div>
                   <p className="helperText" aria-live="polite">Generando código QR...</p>
                 </div>
@@ -1462,14 +1462,14 @@ function App() {
           )}
 
           {sessionStatus === "connecting" && socketConnected && (
-            <div className="loadingSpinnerContainer">
+            <div className="loadingSpinnerContainer" aria-busy="true">
               <div className="largeSpinner" aria-hidden="true"></div>
               <p className="helperText" aria-live="polite">Sincronizando mensajes y contactos...</p>
             </div>
           )}
 
           {!socketConnected && (
-             <div className="loadingSpinnerContainer" aria-live="polite">
+             <div className="loadingSpinnerContainer" aria-live="assertive" aria-busy="true">
                 <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
                 <p className="helperText errorText" role="alert">Reconectando con el servidor...</p>
              </div>
