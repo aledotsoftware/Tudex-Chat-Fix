@@ -161,8 +161,7 @@ button, textarea, input, select {
   outline: 3px solid var(--border-focus);
   outline-offset: 2px;
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.3);
-
+  box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
 .authInput[aria-invalid="true"] {
@@ -1069,7 +1068,7 @@ button:disabled {
   border-color: var(--border-focus);
   outline: 3px solid var(--border-focus);
   outline-offset: 2px;
-  box-shadow: 0 0 0 4px rgba(0, 210, 255, 0.3);
+  box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
 .correctedPreview {

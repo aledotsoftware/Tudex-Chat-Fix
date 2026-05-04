@@ -276,7 +276,7 @@ function App() {
   const authScreenLabel = useMemo(() => {
     if (!socketConnected) return "Conectando al servidor...";
     if (sessionStatus === "qr") return "Vincular con WhatsApp";
-    if (sessionStatus === "auth_failure") return "La sesión fue rechazada o expiró. Por favor, reinicia la conexión.";
+    if (sessionStatus === "auth_failure") return "No se pudo iniciar sesión. Por favor, asegúrate de que el dispositivo siga vinculado.";
     if (sessionStatus === "disconnected") return "WhatsApp se ha desconectado. Intenta reconectar.";
     return "Iniciando sesión de WhatsApp...";
   }, [sessionStatus, socketConnected]);
@@ -1348,9 +1348,9 @@ function App() {
           <div className="bg-blob blob-2"></div>
         </div>
         <main className="authScreen">
-        <section className="authCard" aria-live="polite" aria-labelledby="apiKeyHeading">
+        <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
-          {authError && <div id="apiKeyError" role="alert" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
+          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
           <p>Para continuar, necesitas proporcionar tu clave de acceso API.</p>
           <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
           <div className="passwordInputWrapper">
@@ -1451,9 +1451,9 @@ function App() {
           )}
 
           {!socketConnected && (
-             <div className="loadingSpinnerContainer">
+             <div className="loadingSpinnerContainer" aria-live="polite">
                 <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
-                <p className="helperText errorText" role="alert">Buscando conexión con el servidor...</p>
+                <p className="helperText errorText" role="alert">Reconectando con el servidor...</p>
              </div>
           )}
 
@@ -1507,17 +1507,17 @@ function App() {
       )}
       {!isOffline && !socketConnected && (
         <div className="warningBanner" role="alert" aria-live="polite">
-          <span aria-hidden="true">⚡</span> Conexión al servidor inestable. Intentando reconectar...
+          <span aria-hidden="true">⚡</span> Reconectando con el servidor...
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
         <div className="warningBanner" role="alert" aria-live="polite">
-          <span aria-hidden="true">⚠️</span> WhatsApp desconectado. Revisa tu dispositivo.
+          <span aria-hidden="true">⚠️</span> WhatsApp desconectado. Revisa la conexión en tu teléfono.
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "connecting" && (
         <div className="infoBanner" role="status" aria-live="polite">
-          <span aria-hidden="true">🔄</span> Sincronizando sesión de WhatsApp...
+          <span aria-hidden="true">🔄</span> Estableciendo conexión con WhatsApp...
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
