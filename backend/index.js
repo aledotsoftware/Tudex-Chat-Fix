@@ -12,6 +12,40 @@ const { ProviderRegistry } = require('./providers/provider-registry');
 const { WhatsAppAdapter } = require('./providers/whatsapp-adapter');
 require('dotenv').config();
 
+function safeUrl(urlStr, defaultUrl = '', varName = 'URL') {
+  if (!urlStr) return defaultUrl;
+  try {
+    const parsed = new URL(urlStr);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      if (varName) console.warn(`⚠️ WARNING: Invalid protocol in ${varName} ("${urlStr}"). Must be http or https. Falling back to default.`);
+      return defaultUrl;
+    }
+    return urlStr;
+  } catch (e) {
+    if (varName) console.warn(`⚠️ WARNING: Malformed URL in ${varName} ("${urlStr}"). Falling back to default.`);
+    return defaultUrl;
+  }
+}
+
+function safeNumber(val, defaultVal, min, max, varName = 'Number') {
+  if (val === undefined || val === null || val === '') return defaultVal;
+  const num = Number(val);
+  if (!Number.isFinite(num)) {
+    if (varName) console.warn(`⚠️ WARNING: Non-numeric value in ${varName} ("${val}"). Falling back to ${defaultVal}.`);
+    return defaultVal;
+  }
+  if (min !== undefined && num < min) {
+    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is less than minimum (${min}). Clamping to ${min}.`);
+    return min;
+  }
+  if (max !== undefined && num > max) {
+    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is greater than maximum (${max}). Clamping to ${max}.`);
+    return max;
+  }
+  return num;
+}
+
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -44,25 +78,18 @@ const syncPendingKeys = new Set();
 const syncInFlightKeys = new Set();
 const syncStateMemory = new Map();
 let syncWorkerRunning = false;
-const AVATAR_TTL_MS = Number(process.env.AVATAR_TTL_MS || 10 * 60 * 1000);
-const AVATAR_FETCH_LIMIT = Number(process.env.AVATAR_FETCH_LIMIT || 40);
-const AVATAR_FETCH_TIMEOUT_MS = Number(process.env.AVATAR_FETCH_TIMEOUT_MS || 7000);
-const CHATS_CACHE_TTL_MS = Number(process.env.CHATS_CACHE_TTL_MS || 5000);
-const MESSAGES_CACHE_TTL_MS = Number(process.env.MESSAGES_CACHE_TTL_MS || 5000);
+const AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
+const AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
+const AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS');
+const CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS');
+const MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS');
 const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
-let rawPollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
-if (process.env.STATUS_POLL_INTERVAL_MS !== undefined && (!Number.isFinite(rawPollInterval) || rawPollInterval < 1000)) {
-  console.warn(`⚠️ WARNING: Invalid STATUS_POLL_INTERVAL_MS ("${process.env.STATUS_POLL_INTERVAL_MS}"). Must be a number >= 1000. Falling back to 60000.`);
-  rawPollInterval = 60 * 1000;
-} else if (process.env.STATUS_POLL_INTERVAL_MS === undefined) {
-  rawPollInterval = 60 * 1000;
-}
-const STATUS_POLL_INTERVAL_MS = rawPollInterval;
+const STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
 let aiErrorLogState = {
   signature: '',
   count: 0,
@@ -98,6 +125,10 @@ function validateStartupConfig() {
     }
     if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
+    }
+  } else if (provider === 'lmstudio') {
+    if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
+      console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
     }
   }
 
@@ -295,39 +326,6 @@ const AiSettingsSchema = new mongoose.Schema({
 }, { timestamps: true });
 const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
-
-function safeUrl(urlStr, defaultUrl = '', varName = 'URL') {
-  if (!urlStr) return defaultUrl;
-  try {
-    const parsed = new URL(urlStr);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      if (varName) console.warn(`⚠️ WARNING: Invalid protocol in ${varName} ("${urlStr}"). Must be http or https. Falling back to default.`);
-      return defaultUrl;
-    }
-    return urlStr;
-  } catch (e) {
-    if (varName) console.warn(`⚠️ WARNING: Malformed URL in ${varName} ("${urlStr}"). Falling back to default.`);
-    return defaultUrl;
-  }
-}
-
-function safeNumber(val, defaultVal, min, max, varName = 'Number') {
-  if (val === undefined || val === null || val === '') return defaultVal;
-  const num = Number(val);
-  if (!Number.isFinite(num)) {
-    if (varName) console.warn(`⚠️ WARNING: Non-numeric value in ${varName} ("${val}"). Falling back to ${defaultVal}.`);
-    return defaultVal;
-  }
-  if (min !== undefined && num < min) {
-    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is less than minimum (${min}). Clamping to ${min}.`);
-    return min;
-  }
-  if (max !== undefined && num > max) {
-    if (varName) console.warn(`⚠️ WARNING: Value in ${varName} (${num}) is greater than maximum (${max}). Clamping to ${max}.`);
-    return max;
-  }
-  return num;
-}
 
 const DEFAULT_AI_CONFIG = {
   provider: (process.env.AI_PROVIDER || 'lmstudio').toLowerCase(),
