@@ -940,7 +940,10 @@ function App() {
         }
       }
 
-      if (!navigator.onLine) return;
+      if (!navigator.onLine) {
+        if (withLoader) setLoadingMessages(prev => ({ ...prev, [chatId]: false }));
+        return;
+      }
 
       const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(chatId)}/messages`);
       url.searchParams.set("provider", DEFAULT_PROVIDER);
