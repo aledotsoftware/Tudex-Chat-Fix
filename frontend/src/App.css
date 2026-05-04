@@ -51,7 +51,7 @@ button, textarea, input, select {
 
 :focus-visible {
   outline: 3px solid var(--border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 /* Background Animation Elements */
@@ -166,6 +166,11 @@ button, textarea, input, select {
 
 .authInput[aria-invalid="true"] {
   border-color: var(--error);
+}
+
+.authInput[aria-invalid="true"]:focus-visible {
+  outline-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error);
 }
 
 .instructionText {
@@ -513,7 +518,15 @@ button, textarea, input, select {
   min-height: 28px;
 }
 
-.logoutBtn:hover, .logoutBtn:focus-visible {
+@media (hover: hover) {
+  .logoutBtn:hover {
+
+  background: rgba(255, 82, 82, 0.1);
+  border-color: var(--error);
+
+  }
+}
+.logoutBtn:focus-visible {
   background: rgba(255, 82, 82, 0.1);
   border-color: var(--error);
 }
@@ -659,9 +672,11 @@ button, textarea, input, select {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.bubble:hover {
+@media (hover: hover) {
+  .bubble:hover {
   transform: translateY(-1px);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+}
 }
 
 .bubble p {
@@ -722,7 +737,13 @@ button, textarea, input, select {
   transition: opacity 0.16s ease, transform 0.16s ease;
 }
 
-.bubble:hover .bubbleActions,
+@media (hover: hover) {
+  .bubble:hover .bubbleActions {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  }
+}
 .bubble:focus-within .bubbleActions {
   opacity: 1;
   transform: translateY(0);
@@ -932,7 +953,8 @@ button, textarea, input, select {
   color: var(--text-primary);
   background: rgba(0, 0, 0, 0.2);
   border-color: var(--warning);
-  outline: 3px solid rgba(255, 202, 40, 0.3);
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
   box-shadow: none;
 }
 
@@ -973,9 +995,11 @@ button, textarea, input, select {
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   color: var(--text-muted) !important;
 }
-.plainSendBtn:hover:not(:disabled) {
+@media (hover: hover) {
+  .plainSendBtn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.05) !important;
   color: var(--text-primary) !important;
+}
 }
 
 .jumpToLatest {
@@ -1028,14 +1052,16 @@ button.primary {
   box-shadow: 0 4px 12px var(--accent-glow);
 }
 
-button.primary:hover:not(:disabled) {
+@media (hover: hover) {
+  button.primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px var(--accent-glow);
+}
 }
 
 button:focus-visible {
   outline: 3px solid var(--border-focus);
-  outline-offset: 3px;
+  outline-offset: 2px;
 }
 
 button.secondary {
@@ -1044,8 +1070,10 @@ button.secondary {
   border: 1px solid var(--border-light);
 }
 
-button.secondary:hover:not(:disabled) {
+@media (hover: hover) {
+  button.secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.12);
+}
 }
 
 button:disabled {
@@ -1172,9 +1200,11 @@ button.fullWidth {
   transition: background 0.2s, transform 0.2s;
 }
 
-.iconButton:hover {
+@media (hover: hover) {
+  .iconButton:hover {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(1.1);
+}
 }
 
 button.small {
@@ -1571,8 +1601,10 @@ button.fullWidth {
   min-height: 44px;
 }
 
-.passwordToggleBtn:hover {
+@media (hover: hover) {
+  .passwordToggleBtn:hover {
   transform: translateY(-50%) scale(1.1);
+}
 }
 
 /* Revoked Messages */
