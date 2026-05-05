@@ -1506,6 +1506,8 @@ button.fullWidth {
 
   .mobileBackBtn {
     display: inline-flex !important;
+    min-height: 44px;
+    min-width: 44px;
   }
 
   .chatHeaderActions .secondary {
