@@ -1,4 +1,11 @@
-1. **Separar estados de envío e IA:** En `App.jsx`, modificar la función `correctAndSend` para que desactive `correctingAndSending` ANTES de llamar a `sendMessage`. Esto permite que el texto del badge cambie de "✨ Mejorando y preparando envío..." a "✨ Enviando versión IA...", reflejando correctamente el estado `sending`.
-2. **Centralizar acciones de IA:** Modificar el renderizado de la zona `.composerActions` en `App.jsx` cuando `correctedDraft` es verdadero. Eliminar el botón "✏️ Usar y editar" de `.correctedHeaderActions` y agregarlo al grupo de `.composerActions` (junto a "✨ Enviar versión IA" y "📤 Ignorar IA y enviar original") para centralizar las decisiones del usuario.
-3. **Pre-commit:** Completar las instrucciones pre commit.
-4. **Submit:** Enviar el código.
+1. **Update docker-compose.yml**
+   - Change `API_KEY: ${API_KEY:-tu_contraseña_super_segura_aqui}` to `API_KEY: ${API_KEY-tu_contraseña_super_segura_aqui}` to correctly allow an explicit empty string to disable authentication as documented.
+2. **Update .jaa/state.md**
+   - Ensure the state file correctly reflects the completion of ChatFix-AI-Ops, specifically the fixes around `docker-compose.yml` for API_KEY logic.
+3. **Add requested validations in backend/index.js**
+   - The code reviewer correctly identified that I did not add the validation for `PUT /api/ai/config` endpoints to throw 400 Bad Request error if an invalid URL is provided. I'll re-add this logic.
+   - Also, I need to make sure `AI_TIMEOUT_MS` and other timeouts are using `safeNumber` properly and that the application handles AI configuration parameters cleanly with logs on invalid data.
+4. **Pre commit checks**
+   - Run pre commit instructions to ensure proper testing, verification, review, and reflection are done.
+5. **Submit**
+   - Submit the branch with a descriptive commit message.
