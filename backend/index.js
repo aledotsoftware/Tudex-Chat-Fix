@@ -17,7 +17,7 @@ function safeUrl(urlStr, defaultUrl = '', varName = 'URL') {
   try {
     const parsed = new URL(urlStr);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      if (varName) console.warn(`⚠️ WARNING: Invalid protocol in ${varName} ("${urlStr}"). Must be http or https. Falling back to default.`);
+      if (varName) console.warn(`⚠️ WARNING: Invalid protocol in ${varName} ("${urlStr}"). Must be http: or https:. Falling back to default.`);
       return defaultUrl;
     }
     return urlStr;
