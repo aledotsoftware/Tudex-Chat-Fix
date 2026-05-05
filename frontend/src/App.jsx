@@ -1044,10 +1044,14 @@ function App() {
       if (!corrected) throw new Error("La IA devolvió texto vacío.");
 
       setCorrectedDraft(corrected);
+
+      // Stop correcting spinner before triggering sending to allow the UI
+      // to transition cleanly to the "Enviando versión IA..." state.
+      setCorrectingAndSending(false);
+
       await sendMessage(corrected, "correctedAndSending");
     } catch (error) {
       showNotice(error.message, "error");
-    } finally {
       setCorrectingAndSending(false);
     }
   }
@@ -2026,16 +2030,6 @@ function App() {
                     <p className="correctedLabel">✨ Sugerencia de IA lista para enviar</p>
                     <div className="correctedHeaderActions">
                       <button
-                        className="secondary small"
-                        onClick={() => {
-                          setDraft(correctedDraft);
-                          setCorrectedDraft("");
-                        }}
-                        aria-label="Usar sugerencia en el cuadro principal para editar"
-                      >
-                        ✏️ Usar y editar
-                      </button>
-                      <button
                         className="iconButton"
                         onClick={() => setCorrectedDraft("")}
                         aria-label="Descartar sugerencia"
@@ -2091,6 +2085,16 @@ function App() {
                         onClick={() => sendMessage(correctedDraft, "corrected")}
                       >
                         ✨ Enviar versión IA
+                      </button>
+                      <button
+                        className="secondary"
+                        onClick={() => {
+                          setDraft(correctedDraft);
+                          setCorrectedDraft("");
+                        }}
+                        aria-label="Usar sugerencia en el cuadro principal para editar"
+                      >
+                        ✏️ <span className="hideOnMobile">Usar y editar</span>
                       </button>
                       <button
                         className="secondary plainSendBtn"
