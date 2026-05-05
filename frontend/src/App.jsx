@@ -1375,11 +1375,15 @@ function App() {
               aria-required="true"
               aria-invalid={!!authError}
               aria-describedby={authError ? "apiKeyError" : undefined}
+              spellCheck="false"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
             />
             <button
               type="button"
-              className="passwordToggleBtn"
+              className="passwordToggleBtn" aria-pressed={showApiKey}
               onClick={() => setShowApiKey(!showApiKey)}
               aria-label={showApiKey ? "Ocultar API Key" : "Mostrar API Key"}
             >
@@ -1448,9 +1452,9 @@ function App() {
                   </div>
                 </>
               ) : (
-                <div className="loadingSpinnerContainer" aria-busy="true">
+                <div className="loadingSpinnerContainer" aria-busy="true" aria-live="polite">
                   <div className="largeSpinner" aria-hidden="true"></div>
-                  <p className="helperText" aria-live="polite">Generando código QR...</p>
+                  <p className="helperText">Generando código QR...</p>
                 </div>
               )}
               <div className="authRecoveryOptions mt-4">
@@ -1466,16 +1470,16 @@ function App() {
           )}
 
           {sessionStatus === "connecting" && socketConnected && (
-            <div className="loadingSpinnerContainer" aria-busy="true">
+            <div className="loadingSpinnerContainer" aria-busy="true" aria-live="polite">
               <div className="largeSpinner" aria-hidden="true"></div>
-              <p className="helperText" aria-live="polite">Sincronizando mensajes y contactos...</p>
+              <p className="helperText">Sincronizando mensajes y contactos...</p>
             </div>
           )}
 
           {!socketConnected && (
-             <div className="loadingSpinnerContainer" aria-live="assertive" aria-busy="true">
+             <div className="loadingSpinnerContainer" aria-busy="true" aria-live="assertive">
                 <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
-                <p className="helperText errorText" role="alert">Reconectando con el servidor...</p>
+                <p className="helperText errorText">Reconectando con el servidor...</p>
              </div>
           )}
 
@@ -2209,6 +2213,10 @@ function App() {
                 <input
                   id="lmStudioBaseUrl"
                   value={aiConfig.lmStudioBaseUrl}
+                  spellCheck="false"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, lmStudioBaseUrl: e.target.value }))
                   }
@@ -2220,6 +2228,10 @@ function App() {
                 <input
                   id="cfAccountId"
                   value={aiConfig.cloudflareAccountId}
+                  spellCheck="false"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))
                   }
@@ -2231,13 +2243,17 @@ function App() {
                     id="cfApiToken"
                     type={showCloudflareToken ? "text" : "password"}
                     value={aiConfig.cloudflareApiToken}
+                    spellCheck="false"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
                     onChange={(e) =>
                       setAiConfig((prev) => ({ ...prev, cloudflareApiToken: e.target.value }))
                     }
                   />
                   <button
                     type="button"
-                    className="passwordToggleBtn"
+                    className="passwordToggleBtn" aria-pressed={showCloudflareToken}
                     onClick={() => setShowCloudflareToken(!showCloudflareToken)}
                     aria-label={showCloudflareToken ? "Ocultar Cloudflare Token" : "Mostrar Cloudflare Token"}
                   >
@@ -2249,6 +2265,10 @@ function App() {
                 <input
                   id="cfBaseUrl"
                   value={aiConfig.cloudflareBaseUrl}
+                  spellCheck="false"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="none"
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareBaseUrl: e.target.value }))
                   }
@@ -2274,6 +2294,10 @@ function App() {
             <input
               id="aiModelInput"
               value={aiConfig.modelName}
+              spellCheck="false"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             />
 
