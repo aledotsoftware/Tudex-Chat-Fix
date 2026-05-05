@@ -2044,6 +2044,34 @@ function App() {
                     </div>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
+
+                  <div className="correctedActions">
+                    <button
+                      className="primary sendCorrectedBtn"
+                      aria-label="Enviar la sugerencia de IA"
+                      onClick={() => sendMessage(correctedDraft, "corrected")}
+                    >
+                      ✨ Enviar versión IA
+                    </button>
+                    <button
+                      className="secondary useCorrectedBtn"
+                      onClick={() => {
+                        setDraft(correctedDraft);
+                        setCorrectedDraft("");
+                      }}
+                      aria-label="Usar sugerencia en el cuadro principal para editar"
+                    >
+                      ✏️ <span className="hideOnMobile">Usar y editar</span>
+                    </button>
+                    <button
+                      className="secondary plainSendBtn"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      onClick={() => sendMessage(draft, "original")}
+                      disabled={!draft.trim()}
+                    >
+                      📤 <span className="hideOnMobile">Ignorar IA y enviar original</span>
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
@@ -2081,35 +2109,7 @@ function App() {
                         📤 <span className="hideOnMobile">Enviar original</span>
                       </button>
                     </>
-                  ) : (
-                    <>
-                      <button
-                        className="primary"
-                        aria-label="Enviar la sugerencia de IA"
-                        onClick={() => sendMessage(correctedDraft, "corrected")}
-                      >
-                        ✨ Enviar versión IA
-                      </button>
-                      <button
-                        className="secondary"
-                        onClick={() => {
-                          setDraft(correctedDraft);
-                          setCorrectedDraft("");
-                        }}
-                        aria-label="Usar sugerencia en el cuadro principal para editar"
-                      >
-                        ✏️ <span className="hideOnMobile">Usar y editar</span>
-                      </button>
-                      <button
-                        className="secondary plainSendBtn"
-                        aria-label="Enviar el texto original, descartando la sugerencia"
-                        onClick={() => sendMessage(draft, "original")}
-                        disabled={!draft.trim()}
-                      >
-                        📤 <span className="hideOnMobile">Ignorar IA y enviar original</span>
-                      </button>
-                    </>
-                  )}
+                  ) : null}
                 </div>
               )}
 

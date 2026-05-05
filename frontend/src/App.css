@@ -1141,6 +1141,31 @@ button:disabled {
   to { opacity: 1; transform: translateY(0); }
 }
 
+
+.correctedActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.correctedActions button {
+  flex: 1;
+  min-width: 120px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.sendCorrectedBtn {
+  background: var(--accent-primary);
+  color: var(--background);
+}
+
+.useCorrectedBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
 .correctedHeader {
   display: flex;
   justify-content: space-between;
@@ -1240,7 +1265,7 @@ button.fullWidth {
   color: #e1bee7;
   border: 1px solid rgba(186, 104, 200, 0.3);
   box-shadow: 0 4px 12px rgba(186, 104, 200, 0.15);
-  animation: slideIn 0.3s ease, pulseIcon 2s infinite;
+  animation: slideIn 0.3s ease, pulseProcessing 2s infinite;
 }
 
 .activityStateBadge.sending {
@@ -1248,7 +1273,7 @@ button.fullWidth {
   color: var(--success);
   border: 1px solid rgba(0, 230, 118, 0.3);
   box-shadow: 0 4px 12px rgba(0, 230, 118, 0.15);
-  animation: slideIn 0.3s ease, pulseIcon 2s infinite;
+  animation: slideIn 0.3s ease, pulseSending 2s infinite;
 }
 
 .activityStateBadge.syncing {
@@ -1300,6 +1325,19 @@ button.fullWidth {
 @keyframes bounceRight {
   from { transform: translateX(0); }
   to { transform: translateX(3px); }
+}
+
+
+@keyframes pulseProcessing {
+  0% { box-shadow: 0 0 0 0 rgba(186, 104, 200, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(186, 104, 200, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(186, 104, 200, 0); }
+}
+
+@keyframes pulseSending {
+  0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+  70% { box-shadow: 0 0 0 6px rgba(0, 230, 118, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
 }
 
 @keyframes pulseIcon {
