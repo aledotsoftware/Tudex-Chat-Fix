@@ -26,3 +26,4 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 
 - **ChatFix-AI-Ops**: [VERIFIED] Se verificaron todas las validaciones operativas y de seguridad (API_KEY, timeouts, variables de IA). Entorno totalmente seguro y resiliente.
 Removed layout-shifting syncingChat badge from the composer and refined UX styling for better visual hierarchy
+- **ChatFix-Provider-Bridge**: Bridge adapter revisado y verificado. Se confirma el diseño multi-canal agnóstico, el paso de las pruebas unitarias y la adherencia al contrato base sin fugas de implementaciones específicas (waChat, waMsg).
