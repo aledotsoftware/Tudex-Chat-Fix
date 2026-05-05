@@ -267,10 +267,10 @@ function App() {
 
   const connectionLabel = useMemo(() => {
     if (!socketConnected) return "Desconectado del servidor (WebSocket)";
-    if (sessionStatus === "authenticated") return "Conectado a WhatsApp";
+    if (sessionStatus === "authenticated") return "Conectado al proveedor";
     if (sessionStatus === "qr") return "Requiere vinculación (QR)";
     if (sessionStatus === "auth_failure") return "Sesión rechazada/inválida";
-    if (sessionStatus === "disconnected") return "WhatsApp desconectado";
+    if (sessionStatus === "disconnected") return "Proveedor desconectado";
     return "Sincronizando con proveedor...";
   }, [sessionStatus, socketConnected]);
 
@@ -283,10 +283,10 @@ function App() {
 
   const authScreenLabel = useMemo(() => {
     if (!socketConnected) return "Conectando al servidor...";
-    if (sessionStatus === "qr") return "Vincular con WhatsApp";
+    if (sessionStatus === "qr") return "Vincular proveedor";
     if (sessionStatus === "auth_failure") return "No se pudo iniciar sesión. Por favor, asegúrate de que el dispositivo siga vinculado.";
-    if (sessionStatus === "disconnected") return "WhatsApp se ha desconectado. Intenta reconectar.";
-    return "Iniciando sesión de WhatsApp...";
+    if (sessionStatus === "disconnected") return "El proveedor se ha desconectado. Intenta reconectar.";
+    return "Iniciando sesión con el proveedor...";
   }, [sessionStatus, socketConnected]);
 
 
@@ -613,11 +613,11 @@ function App() {
     });
     socket.on("auth_failure", () => {
       setSessionStatus("auth_failure");
-      showNotice("Fallo de autenticación de WhatsApp.", "error");
+      showNotice("Fallo de autenticación del proveedor.", "error");
     });
     socket.on("disconnected", () => {
       setSessionStatus("disconnected");
-      showNotice("La sesión de WhatsApp se desconectó.", "error");
+      showNotice("La sesión del proveedor se desconectó.", "error");
     });
     socket.on("new_message", mergeLiveMessage);
     socket.on("message_updated", (updated) => {
@@ -1360,7 +1360,7 @@ function App() {
 
           <div className="onboarding-wizard">
             <p><strong>¡Bienvenido a ChatFix!</strong></p>
-            <p>Para proteger tus conversaciones y conectar de forma segura con tu servidor (LM Studio, Cloudflare, o WhatsApp), ingresa la clave de acceso API provista por tu administrador.</p>
+            <p>Para proteger tus conversaciones y conectar de forma segura con tu servidor (LM Studio, Cloudflare, o el proveedor), ingresa la clave de acceso API provista por tu administrador.</p>
           </div>
 
           <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
@@ -1439,9 +1439,9 @@ function App() {
               {qr ? (
                 <>
                   <div className="instructionList">
-                    <p>Para usar WhatsApp en ChatFix:</p>
+                    <p>Para usar el proveedor en ChatFix:</p>
                     <ol>
-                      <li>Abre WhatsApp en tu teléfono</li>
+                      <li>Abre la aplicación del proveedor en tu teléfono</li>
                       <li>Toca el menú (tres puntos) o "Configuración"</li>
                       <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
                       <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
@@ -1538,12 +1538,12 @@ function App() {
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
         <div className="warningBanner" role="alert" aria-live="polite">
-          <span aria-hidden="true">⚠️</span> WhatsApp desconectado. Revisa la conexión en tu teléfono.
+          <span aria-hidden="true">⚠️</span> Proveedor desconectado. Revisa la conexión en tu teléfono.
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "connecting" && (
         <div className="infoBanner" role="status" aria-live="polite">
-          <span aria-hidden="true">🔄</span> Estableciendo conexión con WhatsApp...
+          <span aria-hidden="true">🔄</span> Estableciendo conexión con el proveedor...
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
