@@ -1271,6 +1271,15 @@ button.fullWidth {
   box-sizing: border-box;
 }
 
+
+.activityStateBadge.processingAndSending {
+  background: rgba(186, 104, 200, 0.15);
+  color: #f3e5f5;
+  border: 1px solid rgba(186, 104, 200, 0.5);
+  box-shadow: 0 4px 15px rgba(186, 104, 200, 0.25);
+  animation: slideIn 0.3s ease, pulseProcessing 1s infinite;
+}
+
 .activityStateBadge.processing {
   background: rgba(186, 104, 200, 0.1);
   color: #e1bee7;
