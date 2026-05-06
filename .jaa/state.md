@@ -25,3 +25,9 @@
 * Se validó que el adaptador `WhatsAppAdapter` no dependa de variables globales de WhatsApp (como `waChat` o `waMsg`) y no realice mutaciones directas de variables de estado (ej. `state.status` manuales).
 * Se verificó que todos los componentes clave delegan operaciones (`send`, `read`, etc.) limpiamente a través de métodos polimórficos de la instancia de la clase `BaseAdapter`.
 * Los eventos del adaptador se gestionan correctamente mediante `_bindDefaultEvents()`. Todo responde y notifica al cliente PWA con la información de estado en la nueva estructura sin romper el camino rápido o la latencia.
+
+## Objective Completed: UX Flujo Conversacional
+
+* Aclaradas las etiquetas de la interfaz en `App.jsx` para reducir la ambigüedad en la redacción (ej. "Corregir y enviar" -> "Mejorar y enviar", "Ignorar IA y enviar original" -> "Descartar IA y enviar original").
+* Se hizo más explícita la etiqueta del borrador original para dejar claro que editarlo descartará la sugerencia actual de la IA.
+* Mejorada la jerarquía visual de los estados de actividad introduciendo un nuevo modificador de badge CSS `.processingAndSending` en `App.css`. Este badge utiliza una velocidad de pulso más rápida (`1s` frente a `2s`) y un estilo elevado para priorizar visualmente la inminencia de la acción combinada frente a la simple corrección en segundo plano.
