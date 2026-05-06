@@ -1,18 +1,11 @@
 # JAA Agent State
 
-## Objective Completed: Provider Bridge & Messaging State Sync
-The `getProviderState` logic in `backend/index.js` was refactored to use dynamic property getters for `status` and `isReady`, delegating the single source of truth directly to the associated provider adapter.
+## Objective Completed: UX Mobile, Layout y Microinteracciones
 
-Manual state assignment for `status` and `isReady` inside `bindProviderEvents` was safely removed to avoid state drift and logic duplication.
+* Refactored `.waApp` mobile transitions to use CSS `transform`, `opacity`, and `visibility` instead of `display` toggling with keyframe animations. This ensures hardware-accelerated, buttery smooth 60fps sliding between `.sidebar` and `.chatPanel`.
+* Improved tactile feedback (microinteracciones) globally across the PWA by adding aggressive, fast `:active` states (`transform: scale(...)`) to `button`, `.chatItem`, and `.iconButton` components to mimic native mobile touch behavior.
+* Handled Playwright visual verification of the mobile layout using `frontend_verification_complete`.
 
-The core methods within `backend/index.js` (`listChats`, `fetchMessages`, and `markRead`) were updated to correctly pass the canonical context properties (`provider`, `accountId`) to adapters, fully adhering to the generic provider contract for future integrations.
+## Global Project Context Note
 
-## Files Modified
-- `backend/index.js`
-
-## Objective Completed: Conversation Flow and Clarity
-Moved the background chat syncing badge into the composer `activityStateBadge` to maintain visual hierarchy. Clarified AI and original text sending actions by shifting the "Ignore AI and send original" button into the main `.composerActions` when a corrected draft is available, explicitly separating it from the `.correctedActions` that are visually bound to the AI suggestion box. This removes friction and ambiguity from the UI.
-
-## Files Modified
-- `frontend/src/App.jsx`
-- `frontend/src/App.css`
+* Frontend `.waApp` mobile layout no longer uses `display: none` / `flex` swapping on chat panel state changes. It now uses `translateX(100%)` and `visibility: hidden` vs `translateX(0)` and `visibility: visible` over an `overflow: hidden` relative flex container.
