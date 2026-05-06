@@ -412,7 +412,8 @@ button, textarea, input, select {
 
 .chatItem:active {
   background: rgba(255, 255, 255, 0.1);
-  transform: scale(0.98);
+  transform: scale(0.98) !important;
+  transition: transform 0.05s ease !important;
 }
 
 @media (hover: hover) {
@@ -1046,6 +1047,11 @@ button {
   gap: 8px;
 }
 
+button:active:not(:disabled) {
+  transform: scale(0.96) !important;
+  transition: transform 0.05s ease !important;
+}
+
 button.primary {
   background: var(--accent-gradient);
   color: white;
@@ -1217,6 +1223,11 @@ button.fullWidth {
   border-radius: 50%;
   color: var(--text-secondary);
   transition: background 0.2s, transform 0.2s;
+}
+
+.iconButton:active {
+  transform: scale(0.92) !important;
+  transition: transform 0.05s ease !important;
 }
 
 @media (hover: hover) {
@@ -1457,11 +1468,6 @@ button.fullWidth {
 }
 
 /* Animations and Responsive */
-@keyframes slideInMobile {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
 @media (max-width: 920px) {
   .modalCard {
     padding: 20px;
@@ -1494,7 +1500,9 @@ button.fullWidth {
   }
 
   .waApp {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow: hidden;
+    position: relative;
     padding: 0;
     gap: 0;
   }
@@ -1505,24 +1513,40 @@ button.fullWidth {
     border: none;
     box-shadow: none;
     will-change: transform, opacity;
-  }
-
-  .chatPanel {
-    display: none;
-  }
-
-  .waApp.chatOpen .chatPanel {
-    display: flex !important;
-    animation: slideInMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-
-  }
-
-  .waApp.chatOpen .sidebar {
-    display: none;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.3s;
   }
 
   .sidebar {
+    width: 100%;
+    flex-shrink: 0;
     border-right: none;
+  }
+
+  .chatPanel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateX(100%);
+    visibility: hidden;
+    pointer-events: none;
+    background: rgba(4, 8, 11, 0.98);
+    z-index: 10;
+    display: flex !important;
+  }
+
+  .waApp.chatOpen .chatPanel {
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .waApp.chatOpen .sidebar {
+    transform: translateX(-30%);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .mobileBackBtn {
@@ -1843,10 +1867,6 @@ button.fullWidth {
     padding: 0;
   }
 
-  .waApp:not(.chatOpen) .sidebar {
-    animation: slideInLeftMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-
   button {
     min-height: 44px;
     min-width: 44px;
@@ -1864,11 +1884,6 @@ button.fullWidth {
     min-width: 44px;
     padding: 10px;
   }
-}
-
-@keyframes slideInLeftMobile {
-  from { transform: translateX(-100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
 }
 
 @keyframes slideUpMobile {
