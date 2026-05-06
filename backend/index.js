@@ -59,13 +59,39 @@ const providerStates = new Map();
 function getProviderState(provider) {
   const key = String(provider || '').trim().toLowerCase();
   if (!providerStates.has(key)) {
-    providerStates.set(key, {
-      status: 'connecting',
-      isReady: false,
+    const stateObj = {
       lastQR: null,
       lastReadyAt: null,
       lastDisconnectReason: null
+    };
+
+    Object.defineProperty(stateObj, 'status', {
+      get() {
+        try {
+          return resolveProviderAdapter(key).getStatus();
+        } catch {
+          return 'connecting';
+        }
+      },
+      set() {},
+      enumerable: true,
+      configurable: true
     });
+
+    Object.defineProperty(stateObj, 'isReady', {
+      get() {
+        try {
+          return resolveProviderAdapter(key).isReady();
+        } catch {
+          return false;
+        }
+      },
+      set() {},
+      enumerable: true,
+      configurable: true
+    });
+
+    providerStates.set(key, stateObj);
   }
   return providerStates.get(key);
 }
@@ -1258,7 +1284,7 @@ async function syncAllChats(context = {}) {
   if (!adapter.isReady()) return;
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
-    const chats = await adapter.listChats({ accountId });
+    const chats = await adapter.listChats({ provider, accountId });
     if (!chats || chats.length === 0) return;
 
     // Concurrently upsert chats to parallelize avatar fetching and DB writes
@@ -1281,6 +1307,7 @@ async function syncChatMessages(chatId, limit = 50, context = {}) {
 
   try {
     const messages = await adapter.fetchMessages({
+      provider,
       accountId,
       conversationId: chatId,
       limit
@@ -1542,8 +1569,6 @@ function bindProviderEvents(adapter, accountId) {
     console.log('📡 QR Received - Emitting to frontend...');
     const state = getProviderState(providerName);
     state.lastQR = qr;
-    state.status = 'qr';
-    state.isReady = false;
     state.lastDisconnectReason = null;
     io.emit('qr', qr);
   });
@@ -1552,8 +1577,6 @@ function bindProviderEvents(adapter, accountId) {
     console.log(`✅ Client is ready for provider: ${providerName}!`);
     const state = getProviderState(providerName);
     state.lastQR = null;
-    state.status = 'authenticated';
-    state.isReady = true;
     state.lastReadyAt = new Date().toISOString();
     state.lastDisconnectReason = null;
     io.emit('ready', { status: 'authenticated' });
@@ -1576,17 +1599,12 @@ function bindProviderEvents(adapter, accountId) {
 
   adapter.on('auth_failure', msg => {
     console.error(`AUTHENTICATION FAILURE for provider: ${providerName}`, msg);
-    const state = getProviderState(providerName);
-    state.isReady = false;
-    state.status = 'auth_failure';
     io.emit('auth_failure', msg);
   });
 
   adapter.on('disconnected', (reason) => {
     console.log(`Client was logged out for provider: ${providerName}`, reason);
     const state = getProviderState(providerName);
-    state.isReady = false;
-    state.status = 'disconnected';
     state.lastDisconnectReason = String(reason || 'unknown');
     io.emit('disconnected', reason);
   });
@@ -2049,7 +2067,7 @@ app.post('/api/chats/:chatId/read', async (req, res) => {
 
     const adapter = resolveProviderAdapter(provider);
     if (adapter.isReady()) {
-      adapter.markRead({ accountId, conversationId: chatId }).catch(err => {
+      adapter.markRead({ provider, accountId, conversationId: chatId }).catch(err => {
         console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, err.message);
       });
     }

@@ -1,33 +1,11 @@
-# JAA Global System State
+# JAA Agent State
 
-Este archivo contiene el estado compartido entre todos los repositorios gestionados por JAA.
-Los agentes pueden leer este estado para entender el contexto de otros proyectos.
+## Objective Completed: Provider Bridge & Messaging State Sync
+The `getProviderState` logic in `backend/index.js` was refactored to use dynamic property getters for `status` and `isReady`, delegating the single source of truth directly to the associated provider adapter.
 
-## 🚀 ACTIVE MILESTONES
-- [JAA] Implementación de Jerarquía de Contexto (.jaa.md global) - **COMPLETADO**
-- [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
-- [GENERAL] Estandarización de agentes para todos los repositorios.
+Manual state assignment for `status` and `isReady` inside `bindProviderEvents` was safely removed to avoid state drift and logic duplication.
 
-## 📝 AGENT NOTES
-- **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
-- **ErrorGuardian**: Monitoreando logs de error en producción.
-- **ChatFix-UX-Accessibility-Trust**: Accesibilidad operativa consolidada en Frontend. Se previno el autocorrect y autocapitalize en inputs técnicos (API Keys, Tokens) para evitar interferencia del teclado móvil. Se resolvieron conflictos de `aria-live` en los componentes `.loadingSpinnerContainer`, moviendo los atributos de ARIA a los contenedores externos y usando `aria-live="polite"` y `assertive` sin superposición de roles `alert` en los hijos. Se mejoró la visibilidad y el contraste de los `buttonSpinner` con fondos oscuros. Se implementó `aria-pressed` en los botones de "mostrar/ocultar contraseña".
-- **ChatFix-Frontend-PWA**: PWA y Cache Local operando robustamente. Se comprobó la lógica de hidratación en la inicialización (sin saltos visuales), control seguro de estado y banners dinámicos offline/warning. Mejoras introducidas en robustez de IndexedDB: las escrituras y la purga ahora están empaquetadas en try-catch previniendo fallas letales en read/write loops, asegurando fallbacks elegantes sin afectar UI. Además, se limpió la terminología hardcodeada de "WhatsApp" en el Frontend a una abstracción multi-proveedor.
+The core methods within `backend/index.js` (`listChats`, `fetchMessages`, and `markRead`) were updated to correctly pass the canonical context properties (`provider`, `accountId`) to adapters, fully adhering to the generic provider contract for future integrations.
 
----
-- **ChatFix-Provider-Bridge**: Abstracted provider initialization state lifecycle inside `BaseAdapter` via `_bindDefaultEvents()` and simplified `WhatsAppAdapter` by removing its redundant state handling responsibilities. Providers now seamlessly interact and emit events to accurately handle core system connection states.
-- **ChatFix-Provider-Bridge**: Validated the multicanal provider bridge integration. Confirmed that `backend/index.js` properly utilizes the generic `adapter` abstraction alongside `ProviderRegistry` instead of legacy provider-specific terms like `waChat` and `waMsg`. The abstraction correctly resolves variables, keeping the `DEFAULT_PROVIDER=whatsapp` working without coupling to its internal structure. Test suites assert all core abstraction functionality across `WhatsAppAdapter` and `BaseAdapter`.
-- **ChatFix-Backend-Core**: Mejoras en la robustez de persistencia canónica. Se reforzaron los esquemas de Mongoose requiriendo los campos `provider`, `accountId`, `conversationId`, y `providerMessageId` y se removieron configuraciones `sparse: true` propensas a errores. Validada la lógica de fallback en índices compuestos sin bloquear read-path. Eliminados scripts temporales sueltos y reforzado manejo de errores en endpoints como \`GET /api/ai/config\` con bloques \`try-catch\`.
-- **ChatFix-Provider-Bridge**: Se verificó y validó la integración del contrato de adaptador (\`BaseAdapter\`, \`WhatsAppAdapter\`, \`ProviderRegistry\`). El puente maneja correctamente la capa abstracta para \`_isReady\` y \`_status\` y abstrae la lógica del proveedor (\`waChat\`, \`waMsg\`) mediante variables genéricas, consolidando la extensibilidad para futuros proveedores multicanal y respetando la configuración \`DEFAULT_PROVIDER=whatsapp\`.
-- **ChatFix-UX-Conversation-Flow**: Se mejoró el flujo conversacional y la claridad de uso al integrar sugerencias de IA. Rediseño del composer y sus controles, mejorando la jerarquía visual de los estados (correcting, sending, syncing). Se insertó el botón de '✨ Enviar versión IA' directamente dentro de la previsualización de la sugerencia para reducir fricción. Separación visual clara entre enviar texto original y el texto corregido.
-
-- **ChatFix-UX-Conversation-Flow**: Se mejoró la jerarquía visual de los estados de acción al enviar mensajes (diferenciando 'processing' de 'sending' con feedback visual específico). Además, se añadió soporte para saltar la revisión IA enviando el texto original directamente con Ctrl+Enter o Cmd+Enter.
-- **ChatFix-UX-Mobile-Polish**: Optimizaciones implementadas para la PWA en layout y usabilidad móvil. Añadido `user-scalable=no` en `index.html` para evitar auto-zoom indeseado en dispositivos iOS/Android. Refinadas las transiciones `.chatPanel` mediante `will-change` e `important` rules bajo media queries móviles para evitar solapamientos invisibles de DOM, asegurando áreas de toque mínimas de 44x44px. También implementado `overscroll-behavior-y: contain` para el contenedor de mensajes, previniendo rebote elástico a nivel de PWA.
-
-- **ChatFix-AI-Ops**: [VERIFIED] Se verificaron todas las validaciones operativas y de seguridad (API_KEY, timeouts, variables de IA). Entorno totalmente seguro y resiliente. Se arregló docker-compose para permitir deshabilitar la autenticación con un string vacío.
-- **ChatFix-Provider-Bridge**: Bridge adapter revisado y verificado. Se confirma el diseño multi-canal agnóstico, el paso de las pruebas unitarias y la adherencia al contrato base sin fugas de implementaciones específicas (waChat, waMsg).
-- **ChatFix-UX-Conversation-Flow**: Removed layout-shifting syncingChat badge from the composer, refined UX styling for better visual hierarchy between `correcting` and `sending` states with distinct pulse animations in `App.css`, and localized the final sending decision UI by placing action buttons inside `.correctedPreview` directly, avoiding separation across `App.jsx`.
-- **ChatFix-UX-Accessibility-Trust**: Accesibilidad operativa revisada. Se confirmó la presencia de atributos clave como `aria-pressed`, control de `role="alert"`, y que no existen anulaciones dañinas de foco (`outline: none` o `outline: 0`). Las reglas para evitar zoom automático en dispositivos móviles y auto-correctores en inputs técnicos operan correctamente. La desconexión mediante `handleLogout` funciona borrando el caché, clave API y cerrando el socket, devolviendo una pizarra limpia y confiable para la UX.
-- **ChatFix-Orchestrator**: [VERIFIED] Se verificó y validó la arquitectura centralizada del sistema. El contrato `items + syncState` entre el backend y frontend se mantiene robusto e íntegro sin inconsistencias. El flujo de sincronización secuencial y el modelo canónico multi-proveedor funcionan correctamente. Se coordinaron las configuraciones operativas sin introducir dependencias innecesarias o inconsistencias en la documentación.
-- **ChatFix-Provider-Bridge**: Bridge adapter revisado y verificado. Se confirma el diseño multi-canal agnóstico, el paso de las pruebas unitarias y la adherencia al contrato base sin fugas de implementaciones específicas (waChat, waMsg).
-- **ChatFix-Orchestrator**: Evaluated adapter dispatch and explicitly bound `provider`, `accountId`, and `conversationId` canonical context to `adapter.sendMessage` calls inside `backend/index.js` for the multi-provider abstraction model. Passed test suites and verified that the frontend parsing handles `items` + `syncState` without unexpected gaps, solidifying the operational flow.
+## Files Modified
+- `backend/index.js`
