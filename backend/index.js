@@ -2091,6 +2091,9 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 
     // Delegate the entire send logic to the provider adapter
     const sendResult = await adapter.sendMessage({
+      provider,
+      accountId,
+      conversationId: chatId,
       chatId,
       text,
       replyToMessageId,
