@@ -1804,12 +1804,6 @@ function App() {
                 </div>
               </div>
               <div className="chatHeaderActions">
-                {syncingChat && (
-                  <div className="syncStatusBadge" aria-live="polite">
-                    <span className="syncSpinner" aria-hidden="true" />
-                    <span className="hideOnMobile">Sincronizando</span>
-                  </div>
-                )}
                 <button
                   className="secondary"
                   aria-label="Ver recursos del contacto"
@@ -2063,24 +2057,27 @@ function App() {
                     >
                       ✏️ <span className="hideOnMobile">Usar y editar</span>
                     </button>
-                    <button
-                      className="secondary plainSendBtn"
-                      aria-label="Enviar el texto original, descartando la sugerencia"
-                      onClick={() => sendMessage(draft, "original")}
-                      disabled={!draft.trim()}
-                    >
-                      📤 <span className="hideOnMobile">Ignorar IA y enviar original</span>
-                    </button>
                   </div>
                 </div>
               ) : null}
 
-              {(sending || correcting || correctingAndSending) ? (
-                <div className={`activityStateBadge ${(correcting || correctingAndSending) ? "processing" : "sending"}`}>
-                  <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "✨ Mejorando y preparando envío..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
+              {(sending || correcting || correctingAndSending || syncingChat) ? (
+                <div className={`activityStateBadge ${(correcting || correctingAndSending) ? "processing" : sending ? "sending" : "syncing"}`}>
+                  {(syncingChat && !sending && !correcting && !correctingAndSending) ? (
+                    <>
+                      <span className="syncSpinner" aria-hidden="true" />
+                      <span>Sincronizando chat en segundo plano...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="spinner" aria-hidden="true" />
+                      <span>{correctingAndSending ? "✨ Mejorando y preparando envío..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
+                    </>
+                  )}
                 </div>
-              ) : (
+              ) : null}
+
+              {!(sending || correcting || correctingAndSending) ? (
                 <div className="composerActions">
                   {!correctedDraft ? (
                     <>
@@ -2109,9 +2106,18 @@ function App() {
                         📤 <span className="hideOnMobile">Enviar original</span>
                       </button>
                     </>
-                  ) : null}
+                  ) : (
+                    <button
+                      className="secondary plainSendBtn"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      onClick={() => sendMessage(draft, "original")}
+                      disabled={!draft.trim()}
+                    >
+                      📤 <span className="hideOnMobile">Ignorar IA y enviar original</span>
+                    </button>
+                  )}
                 </div>
-              )}
+              ) : null}
 
 
             </footer>

@@ -9,3 +9,10 @@ The core methods within `backend/index.js` (`listChats`, `fetchMessages`, and `m
 
 ## Files Modified
 - `backend/index.js`
+
+## Objective Completed: Conversation Flow and Clarity
+Moved the background chat syncing badge into the composer `activityStateBadge` to maintain visual hierarchy. Clarified AI and original text sending actions by shifting the "Ignore AI and send original" button into the main `.composerActions` when a corrected draft is available, explicitly separating it from the `.correctedActions` that are visually bound to the AI suggestion box. This removes friction and ambiguity from the UI.
+
+## Files Modified
+- `frontend/src/App.jsx`
+- `frontend/src/App.css`
