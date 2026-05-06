@@ -258,7 +258,7 @@ button, textarea, input, select {
 }
 
 .errorText {
-  color: var(--error);
+  color: #ffbaba;
 }
 
 .sr-only {
@@ -1599,7 +1599,7 @@ button.fullWidth {
 }
 .notice.error {
   background: rgba(255, 82, 82, 0.2);
-  color: var(--error);
+  color: #ffbaba;
   border-left-color: var(--error);
 }
 .notice.warning {

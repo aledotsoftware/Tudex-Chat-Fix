@@ -1363,47 +1363,48 @@ function App() {
             <p>Para proteger tus conversaciones y conectar de forma segura con tu servidor (LM Studio, Cloudflare, o el proveedor), ingresa la clave de acceso API provista por tu administrador.</p>
           </div>
 
-          <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
-          <div className="passwordInputWrapper">
-            <input
-              id="apiKeyInput"
-              className="authInput"
-              type={showApiKey ? "text" : "password"}
-              value={inputApiKey}
-              onChange={(e) => setInputApiKey(e.target.value)}
-              placeholder="Introduce tu API Key"
-              aria-required="true"
-              aria-invalid={!!authError}
-              aria-describedby={authError ? "apiKeyError" : undefined}
-              spellCheck="false"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="none"
-              onKeyDown={(e) => e.key === 'Enter' && checkAuth(inputApiKey)}
-            />
+          <form onSubmit={(e) => { e.preventDefault(); checkAuth(inputApiKey); }}>
+            <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
+            <div className="passwordInputWrapper">
+              <input
+                id="apiKeyInput"
+                className="authInput"
+                type={showApiKey ? "text" : "password"}
+                value={inputApiKey}
+                onChange={(e) => setInputApiKey(e.target.value)}
+                placeholder="Introduce tu API Key"
+                aria-required="true"
+                aria-invalid={!!authError}
+                aria-describedby={authError ? "apiKeyError" : undefined}
+                spellCheck="false"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="none"
+              />
+              <button
+                type="button"
+                className="passwordToggleBtn" aria-pressed={showApiKey}
+                onClick={() => setShowApiKey(!showApiKey)}
+                aria-label={showApiKey ? "Ocultar API Key" : "Mostrar API Key"}
+              >
+                {showApiKey ? "🙈" : "👁️"}
+              </button>
+            </div>
             <button
-              type="button"
-              className="passwordToggleBtn" aria-pressed={showApiKey}
-              onClick={() => setShowApiKey(!showApiKey)}
-              aria-label={showApiKey ? "Ocultar API Key" : "Mostrar API Key"}
+              type="submit"
+              className="primary fullWidth"
+              aria-label="Ingresar al panel de control"
+              disabled={authChecking || !inputApiKey}
+              aria-busy={authChecking}
             >
-              {showApiKey ? "🙈" : "👁️"}
+              {authChecking ? (
+                <>
+                  <span className="buttonSpinner" aria-hidden="true" />
+                  <span>Comprobando...</span>
+                </>
+              ) : "Ingresar de forma segura"}
             </button>
-          </div>
-          <button 
-            className="primary fullWidth"
-            aria-label="Ingresar al panel de control"
-            onClick={() => checkAuth(inputApiKey)} 
-            disabled={authChecking || !inputApiKey}
-            aria-busy={authChecking}
-          >
-            {authChecking ? (
-              <>
-                <span className="buttonSpinner" aria-hidden="true" />
-                <span>Comprobando...</span>
-              </>
-            ) : "Ingresar de forma segura"}
-          </button>
+          </form>
         </section>
 
       {toasts.length > 0 && (
@@ -1532,12 +1533,12 @@ function App() {
         </div>
       )}
       {!isOffline && !socketConnected && (
-        <div className="warningBanner" role="alert" aria-live="polite">
+        <div className="warningBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true">⚡</span> Reconectando con el servidor...
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
-        <div className="warningBanner" role="alert" aria-live="polite">
+        <div className="warningBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true">⚠️</span> Proveedor desconectado. Revisa la conexión en tu teléfono.
         </div>
       )}
@@ -1597,7 +1598,7 @@ function App() {
           </div>
         </header>
 
-        <div className="statusBar" role="status" aria-live="polite">
+        <div className="statusBar" role="status" aria-live="polite" aria-atomic="true">
           <span className={`dot ${dotClass}`} aria-hidden="true" />
           <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
           <span>
