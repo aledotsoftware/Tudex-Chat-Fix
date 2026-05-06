@@ -18,3 +18,10 @@
 
 * Se habilitó la autenticación para las conexiones de WebSockets (`socket.io`) verificando que el cliente envíe un token válido (`API_KEY`) al conectarse.
 * Se incluyó la lógica de normalización canónica (agregando campos `provider` y `accountId` faltantes) para los documentos de las colecciones `SyncState` y `StatusArchive` dentro de la función de migración inicial `ensureCanonicalProviderFields`.
+
+## Objective Completed: Bridge de Proveedor y Estado de Mensajeria
+
+* Se verificó la exitosa transición y normalización a la arquitectura canónica (campos `provider` y `accountId`) dentro del enrutado en `backend/index.js` para los adaptadores.
+* Se validó que el adaptador `WhatsAppAdapter` no dependa de variables globales de WhatsApp (como `waChat` o `waMsg`) y no realice mutaciones directas de variables de estado (ej. `state.status` manuales).
+* Se verificó que todos los componentes clave delegan operaciones (`send`, `read`, etc.) limpiamente a través de métodos polimórficos de la instancia de la clase `BaseAdapter`.
+* Los eventos del adaptador se gestionan correctamente mediante `_bindDefaultEvents()`. Todo responde y notifica al cliente PWA con la información de estado en la nueva estructura sin romper el camino rápido o la latencia.
