@@ -1375,33 +1375,16 @@ button.fullWidth {
   padding: 2px 7px;
 }
 
-.syncStatusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--accent-primary);
-  background: rgba(0, 210, 255, 0.1);
-  padding: 6px 12px;
-  border-radius: 999px;
-  margin-right: 8px;
-  border: 1px solid rgba(0, 210, 255, 0.2);
-  animation: pulseSync 2s infinite ease-in-out;
-}
-
-@keyframes pulseSync {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
-}
-
 .syncSpinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid rgba(0, 210, 255, 0.3);
-  border-top-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 8px;
 }
 
 .statusArchiveArea {
