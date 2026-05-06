@@ -188,7 +188,6 @@ const authenticateApiKey = (req, res, next) => {
   next();
 };
 
-/*
 io.use((socket, next) => {
   if (!API_KEY) return next();
   const token = socket.handshake.auth.token;
@@ -199,7 +198,6 @@ io.use((socket, next) => {
   }
   next();
 });
-*/
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
@@ -643,9 +641,43 @@ async function ensureCanonicalProviderFields() {
     ]
   );
 
-  if (chatResult.modifiedCount > 0 || messageResult.modifiedCount > 0) {
+  const syncStateResult = await SyncState.updateMany(
+    {
+      $or: [
+        { provider: { $exists: false } },
+        { accountId: { $exists: false } }
+      ]
+    },
+    [
+      {
+        $set: {
+          provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] }
+        }
+      }
+    ]
+  );
+
+  const statusArchiveResult = await StatusArchive.updateMany(
+    {
+      $or: [
+        { provider: { $exists: false } },
+        { accountId: { $exists: false } }
+      ]
+    },
+    [
+      {
+        $set: {
+          provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
+          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] }
+        }
+      }
+    ]
+  );
+
+  if (chatResult.modifiedCount > 0 || messageResult.modifiedCount > 0 || syncStateResult.modifiedCount > 0 || statusArchiveResult.modifiedCount > 0) {
     console.log(
-      `🧩 Canonical field migration complete chats=${chatResult.modifiedCount} messages=${messageResult.modifiedCount}`
+      `🧩 Canonical field migration complete chats=${chatResult.modifiedCount} messages=${messageResult.modifiedCount} syncStates=${syncStateResult.modifiedCount} statusArchives=${statusArchiveResult.modifiedCount}`
     );
   }
 }
