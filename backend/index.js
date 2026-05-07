@@ -1001,7 +1001,9 @@ async function buildMediaPayload(message, provider) {
 
     return payload;
   } catch (error) {
-    console.warn(`⚠️ Media download skipped for message ${message.id?._serialized || 'unknown'}:`, error.message);
+    const adapter = resolveProviderAdapter(normalizeProvider(provider));
+    const msgCtx = adapter.extractMessageContext(message);
+    console.warn(`⚠️ Media download skipped for message ${msgCtx.providerMessageId || 'unknown'}:`, error.message);
   }
 
   return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
@@ -1018,9 +1020,10 @@ async function buildReplyPayload(message, provider) {
 
   try {
     const quoted = await adapter.getQuotedMessage(message);
+    const quotedCtx = adapter.extractMessageContext(quoted);
     return {
-      replyToMessageId: quoted?.id?._serialized || quoted?.id || null,
-      replyToText: quoted?.body || '[Mensaje citado]'
+      replyToMessageId: quotedCtx.providerMessageId || null,
+      replyToText: quotedCtx.body || '[Mensaje citado]'
     };
   } catch (error) {
     return {
@@ -1032,8 +1035,10 @@ async function buildReplyPayload(message, provider) {
 
 async function serializeMessage(message, chatId, context = {}) {
   const provider = normalizeProvider(context.provider);
+  const adapter = resolveProviderAdapter(provider);
   const accountId = normalizeAccountId(context.accountId);
-  const providerMessageId = message?.id?._serialized || message?.id || `${message?.timestamp}-${Math.random()}`;
+  const msgContext = adapter.extractMessageContext(message);
+  const providerMessageId = msgContext.providerMessageId || `${msgContext.timestamp}-${Math.random()}`;
   const canonicalMessageId =
     provider === DEFAULT_PROVIDER
       ? providerMessageId
@@ -1053,26 +1058,28 @@ async function serializeMessage(message, chatId, context = {}) {
     providerMessageId,
     conversationKey: buildConversationKey(provider, accountId, conversationId),
     chatId,
-    body: message?.body || '',
-    timestamp: message?.timestamp || Math.floor(Date.now() / 1000),
-    fromMe: Boolean(message?.fromMe),
-    from: message?.from,
-    to: message?.to,
+    body: msgContext.body,
+    timestamp: msgContext.timestamp,
+    fromMe: msgContext.fromMe,
+    from: msgContext.from,
+    to: msgContext.to,
     mediaType: mediaPayload.mediaType,
     imageDataUrl: mediaPayload.imageDataUrl,
     mediaUrl: mediaPayload.mediaUrl,
     mimeType: mediaPayload.mimeType,
     replyToMessageId: replyPayload.replyToMessageId,
     replyToText: replyPayload.replyToText,
-    mentionedIds: Array.isArray(message?.mentionedIds) ? message.mentionedIds : []
+    mentionedIds: msgContext.mentionedIds
   };
 }
 
 async function upsertChat(chatData, index, context = {}) {
   try {
     const provider = normalizeProvider(context.provider);
+    const adapter = resolveProviderAdapter(provider);
     const accountId = normalizeAccountId(context.accountId);
-    const chatId = chatData?.id?._serialized || chatData?.id;
+    const chatContext = adapter.extractChatContext(chatData);
+    const chatId = chatContext.chatId;
     const conversationId = chatId;
     const avatarUrl = await getChatAvatar(chatData, index || 0, context.provider);
     const now = new Date();
@@ -1085,10 +1092,10 @@ async function upsertChat(chatData, index, context = {}) {
         accountId,
         conversationId,
         conversationKey: buildConversationKey(provider, accountId, conversationId),
-        name: chatData?.name,
-        unreadCount: chatData?.unreadCount,
-        timestamp: chatData?.timestamp,
-        isGroup: Boolean(chatData?.isGroup),
+        name: chatContext.name,
+        unreadCount: chatContext.unreadCount,
+        timestamp: chatContext.timestamp,
+        isGroup: chatContext.isGroup,
         avatarUrl,
         lastSyncedAt: now
       },
@@ -1096,7 +1103,8 @@ async function upsertChat(chatData, index, context = {}) {
     );
     invalidateChatsCache(provider, accountId);
   } catch (err) {
-    console.error(`❌ Error upserting chat ${chatData?.id?._serialized || chatData?.id || 'unknown'}:`, err.message);
+    const chatCtx = resolveProviderAdapter(normalizeProvider(context.provider)).extractChatContext(chatData);
+    console.error(`❌ Error upserting chat ${chatCtx.chatId || 'unknown'}:`, err.message);
   }
 }
 
@@ -1124,7 +1132,10 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
     invalidateChatsCache(payload.provider, payload.accountId);
     return payload;
   } catch (err) {
-    console.error(`❌ Error upserting message ${messageData?.id?._serialized || messageData?.id || 'unknown'}:`, err.message);
+    const provider = normalizeProvider(context.provider);
+    const adapter = resolveProviderAdapter(provider);
+    const msgCtx = adapter.extractMessageContext(messageData);
+    console.error(`❌ Error upserting message ${msgCtx.providerMessageId || 'unknown'}:`, err.message);
     return null;
   }
 }
@@ -1133,7 +1144,6 @@ function normalizeStatusDescriptor(entry = {}) {
   const providerStatusMessageId =
     entry.providerStatusMessageId ||
     entry.messageId ||
-    entry.id?._serialized ||
     entry.id;
   const statusOwnerId =
     entry.statusOwnerId ||
@@ -1528,7 +1538,8 @@ async function toImageDataUrl(url) {
 }
 
 async function getChatAvatar(chat, index, provider) {
-  const chatId = chat?.id?._serialized || chat?.id;
+  const adapter = resolveProviderAdapter(provider);
+  const chatId = adapter.extractChatContext(chat).chatId;
   if (!chatId) return null;
 
   const cached = avatarCache.get(chatId);
@@ -1572,8 +1583,9 @@ providerRegistry.register(waAdapter);
 
 async function handleMessageRevoke(after, before, context = {}) {
   const provider = normalizeProvider(context.provider);
+  const adapter = resolveProviderAdapter(provider);
   const accountId = normalizeAccountId(context.accountId);
-  const msgId = (before || after)?.id?._serialized || (before || after)?.id;
+  const msgId = adapter.extractMessageContext(before || after).providerMessageId;
   if (!msgId) return;
 
   console.log(`🗑️ Message revoked: ${msgId}`);

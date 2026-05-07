@@ -190,6 +190,28 @@ class WhatsAppAdapter extends BaseAdapter {
     return message.fromMe ? message.to : message.from;
   }
 
+  extractMessageContext(message) {
+    return {
+      providerMessageId: message?.id?._serialized || message?.id || null,
+      body: message?.body || '',
+      timestamp: message?.timestamp || Math.floor(Date.now() / 1000),
+      fromMe: Boolean(message?.fromMe),
+      from: message?.from || null,
+      to: message?.to || null,
+      mentionedIds: Array.isArray(message?.mentionedIds) ? message.mentionedIds : []
+    };
+  }
+
+  extractChatContext(chat) {
+    return {
+      chatId: chat?.id?._serialized || chat?.id || null,
+      name: chat?.name || null,
+      unreadCount: chat?.unreadCount || 0,
+      timestamp: chat?.timestamp || Math.floor(Date.now() / 1000),
+      isGroup: Boolean(chat?.isGroup)
+    };
+  }
+
   extractStatusDescriptor(message) {
     return {
       providerStatusMessageId: message?.id?._serialized || message?.id || null,

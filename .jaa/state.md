@@ -47,6 +47,11 @@
 * Audited Mongoose models (`Chat`, `Message`, `SyncState`, `StatusArchive`) indicating that deduplication keys operate robustly using deterministic identifiers preventing database inflation.
 * Re-ran full backend validation testing via `npm test` achieving `100% pass rate` validating structural integrity of `WhatsAppAdapter`, `BaseAdapter`, and `ProviderRegistry`.
 ## Objective Completed: Bridge de Proveedor y Estado de Mensajeria (Refactor extractStatusDescriptor)
+## Objective Completed: Bridge de Proveedor y Estado de Mensajeria (Refactor extractMessage/ChatContext)
+
+* Added `extractMessageContext` and `extractChatContext` to `BaseAdapter` and implemented them in `WhatsAppAdapter`.
+* Completely replaced remaining direct access of WhatsApp-specific object properties (`._serialized`, `.fromMe`, `.body`, etc.) in `backend/index.js` with polymorphic adapter context extraction methods.
+* Verified full unit test coverage and pass rate for adapter extraction logic.
 
 * Abstracted WhatsApp-specific status message parsing from `index.js` into the `BaseAdapter` interface via the new `extractStatusDescriptor()` method.
 * Implemented `extractStatusDescriptor()` in `WhatsAppAdapter` to handle extracting fields like `_serialized`, `author`, and `caption`.
