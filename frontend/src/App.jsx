@@ -14,8 +14,14 @@ const runtimeHost =
 const runtimeProtocol =
   typeof window !== "undefined" ? window.location.protocol : "http:";
 
-// Smart API Resolution: localhost uses :3001, any other domain prepends api-
-const isLocal = runtimeHost === "localhost" || runtimeHost === "127.0.0.1" || runtimeHost.startsWith("192.168.");
+// Smart API Resolution: localhost and private IPs use :3005, any other domain prepends api-
+const isLocal = runtimeHost === "localhost" ||
+                runtimeHost === "127.0.0.1" ||
+                runtimeHost.startsWith("192.168.") ||
+                runtimeHost.startsWith("10.") ||
+                runtimeHost.startsWith("172.") ||
+                runtimeHost.endsWith(".local");
+
 const defaultApiUrl = isLocal
   ? `${runtimeProtocol}//${runtimeHost}:3005`
   : `https://api-${runtimeHost.replace(/^api-/, "")}`;
