@@ -5,7 +5,7 @@ const STORE_NAME = "kv";
 const CHATS_PREFIX = "chats";
 const MESSAGES_PREFIX = "messages";
 
-function getStorageKey(prefix, provider, accountId, conversationId = "") {
+export function getStorageKey(prefix, provider, accountId, conversationId = "") {
   return `${prefix}:${provider}:${accountId}:${conversationId}`;
 }
 

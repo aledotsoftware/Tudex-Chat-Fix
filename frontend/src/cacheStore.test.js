@@ -1,6 +1,30 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { getCachedChats, getCachedMessages, setCachedChats, setCachedMessages, clearCache } from './cacheStore.js';
+import { getCachedChats, getCachedMessages, setCachedChats, setCachedMessages, clearCache, getStorageKey } from './cacheStore.js';
+
+describe('getStorageKey', () => {
+  test('concatenates all parts with colons', () => {
+    const key = getStorageKey('prefix', 'provider', 'account', 'chat123');
+    assert.strictEqual(key, 'prefix:provider:account:chat123');
+  });
+
+  test('uses empty string as default conversationId', () => {
+    const key = getStorageKey('prefix', 'provider', 'account');
+    assert.strictEqual(key, 'prefix:provider:account:');
+  });
+
+  test('handles empty strings for all parts', () => {
+    const key = getStorageKey('', '', '', '');
+    assert.strictEqual(key, ':::');
+  });
+
+  test('stringifies non-string inputs', () => {
+    // @ts-ignore - testing runtime behavior for non-string inputs
+    assert.strictEqual(getStorageKey(1, 2, 3, 4), '1:2:3:4');
+    // @ts-ignore
+    assert.strictEqual(getStorageKey(null, undefined, true, {}), 'null:undefined:true:[object Object]');
+  });
+});
 
 describe('cacheStore error recovery', () => {
   test('getCachedChats returns empty array when indexedDB.open fails', async () => {
