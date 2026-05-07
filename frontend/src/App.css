@@ -1045,6 +1045,7 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  touch-action: manipulation;
 }
 
 button:active:not(:disabled) {
