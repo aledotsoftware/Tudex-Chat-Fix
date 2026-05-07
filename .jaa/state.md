@@ -51,3 +51,8 @@
 * Abstracted WhatsApp-specific status message parsing from `index.js` into the `BaseAdapter` interface via the new `extractStatusDescriptor()` method.
 * Implemented `extractStatusDescriptor()` in `WhatsAppAdapter` to handle extracting fields like `_serialized`, `author`, and `caption`.
 * Updated `message_create` event listener in `backend/index.js` to rely exclusively on `adapter.extractStatusDescriptor(msg)` instead of hardcoded WhatsApp properties, fully decoupling the backend core from WhatsApp's message structure for the status archiving feature.
+## 🚀 ACTIVE MILESTONES
+- [JAA] Implementación de Jerarquía de Contexto (.jaa.md global) - **COMPLETADO**
+- [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
+- [Tudex-Chat-Fix] Mobile UX Polish (Transiciones, Targets, Hover) - **COMPLETADO**
+- [GENERAL] Estandarización de agentes para todos los repositorios.
