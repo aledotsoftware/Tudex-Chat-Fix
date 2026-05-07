@@ -1,0 +1,44 @@
+diff --git a/src/util/Injected/Utils.js b/src/util/Injected/Utils.js
+index 540078a9d07b3df07ccd51b030556a72af4cf650..3ff0727d0d6e4da4913095771f6d4b359277a96d 100644
+--- a/src/util/Injected/Utils.js
++++ b/src/util/Injected/Utils.js
+@@ -1106,11 +1106,15 @@ exports.LoadUtils = () => {
+     };
+
+     window.WWebJS.arrayBufferToBase64 = (arrayBuffer) => {
+-        let binary = '';
+         const bytes = new Uint8Array(arrayBuffer);
+         const len = bytes.byteLength;
+-        for (let i = 0; i < len; i++) {
+-            binary += String.fromCharCode(bytes[i]);
++        const chunk_size = 0x8000;
++        let binary = '';
++        for (let i = 0; i < len; i += chunk_size) {
++            binary += String.fromCharCode.apply(
++                null,
++                bytes.subarray(i, i + chunk_size),
++            );
+         }
+         return window.btoa(binary);
+     };
+@@ -1136,14 +1140,12 @@ exports.LoadUtils = () => {
+     };
+
+     window.WWebJS.generateHash = async (length) => {
+-        var result = '';
+-        var characters =
+-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+-        var charactersLength = characters.length;
+-        for (var i = 0; i < length; i++) {
+-            result += characters.charAt(
+-                Math.floor(Math.random() * charactersLength),
+-            );
++        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
++        const randomValues = new Uint8Array(length);
++        crypto.getRandomValues(randomValues);
++        let result = '';
++        for (let i = 0; i < length; i++) {
++            result += characters[randomValues[i] % characters.length];
+         }
+         return result;
+     };
