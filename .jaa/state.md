@@ -66,3 +66,7 @@
 * Added missing query parameters (`provider`, `accountId`) to `fetchStatus`, `fetchStatusArchive`, and `fetchResources`.
 * Ensured canonical context fields are systematically sent for these endpoints from the PWA, upholding the JAA centralized messaging architecture contract.
 * Ran successful `npm run build` and `npm test` verifying syntax, functionality, and tests pass for all adapters.
+
+## Objective Completed: Fix Status and Health API Multi-Provider Compatibility
+
+* Updated `/api/status` and `/api/health` in `backend/index.js` to correctly accept a dynamic route channel segment (e.g. `/:channelCode`) and utilize `parseProviderContext(req)` to extract the correct provider context rather than hardcoding `DEFAULT_PROVIDER`, fulfilling the canonical multi-provider requirement.

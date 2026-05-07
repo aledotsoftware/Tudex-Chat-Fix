@@ -2209,15 +2209,16 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
   }
 });
 
-app.get('/api/status', async (_req, res) => {
+app.get(['/api/status', '/api/status/:channelCode'], async (req, res) => {
   try {
-    const defaultState = getProviderState(DEFAULT_PROVIDER);
+    const { provider } = parseProviderContext(req);
+    const providerState = getProviderState(provider);
     res.json({
-      providerStatus: defaultState.status,
+      providerStatus: providerState.status,
       providers: providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER],
-      hasQr: Boolean(defaultState.lastQR),
-      lastProviderReadyAt: defaultState.lastReadyAt,
-      lastProviderDisconnectReason: defaultState.lastDisconnectReason,
+      hasQr: Boolean(providerState.lastQR),
+      lastProviderReadyAt: providerState.lastReadyAt,
+      lastProviderDisconnectReason: providerState.lastDisconnectReason,
       statusArchive: {
         lastRunAt: lastStatusArchiveRunAt,
         inFlight: statusArchivePollInFlight,
@@ -2280,12 +2281,13 @@ app.post('/api/status-archive/sweep', async (req, res) => {
   }
 });
 
-app.get('/api/health', async (_req, res) => {
+app.get(['/api/health', '/api/health/:channelCode'], async (req, res) => {
   try {
     const mongoOk = mongoose.connection.readyState === 1;
     const aiConfigured = isAiConfigured(aiConfig);
-    const defaultState = getProviderState(DEFAULT_PROVIDER);
-    const providerOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
+    const { provider } = parseProviderContext(req);
+    const providerState = getProviderState(provider);
+    const providerOk = providerState.status === 'authenticated' || providerState.status === 'qr';
     res.status(mongoOk ? 200 : 503).json({
       ok: mongoOk,
       services: {
