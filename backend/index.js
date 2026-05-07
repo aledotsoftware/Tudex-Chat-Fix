@@ -10,6 +10,7 @@ const path = require('path');
 const crypto = require('crypto');
 const { ProviderRegistry } = require('./providers/provider-registry');
 const { WhatsAppAdapter } = require('./providers/whatsapp-adapter');
+const { parsePositiveInt } = require('./utils');
 require('dotenv').config();
 
 function safeUrl(urlStr, defaultUrl = '', varName = 'URL') {
@@ -1484,11 +1485,6 @@ function enqueueSyncTask(taskInput) {
   setImmediate(startSyncWorker);
 }
 
-function parsePositiveInt(value, fallback, max) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
-  return Math.min(Math.floor(parsed), max);
-}
 
 function sanitizeTextInput(value) {
   return String(value || '')
