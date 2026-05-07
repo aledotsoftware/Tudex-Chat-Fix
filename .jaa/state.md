@@ -46,3 +46,8 @@
 * Confirmed database normalization via `ensureCanonicalProviderFields()` accurately scopes up missing fields into canonical formats resolving old data into new data paradigms (`provider, accountId, conversationId`).
 * Audited Mongoose models (`Chat`, `Message`, `SyncState`, `StatusArchive`) indicating that deduplication keys operate robustly using deterministic identifiers preventing database inflation.
 * Re-ran full backend validation testing via `npm test` achieving `100% pass rate` validating structural integrity of `WhatsAppAdapter`, `BaseAdapter`, and `ProviderRegistry`.
+## Objective Completed: Bridge de Proveedor y Estado de Mensajeria (Refactor extractStatusDescriptor)
+
+* Abstracted WhatsApp-specific status message parsing from `index.js` into the `BaseAdapter` interface via the new `extractStatusDescriptor()` method.
+* Implemented `extractStatusDescriptor()` in `WhatsAppAdapter` to handle extracting fields like `_serialized`, `author`, and `caption`.
+* Updated `message_create` event listener in `backend/index.js` to rely exclusively on `adapter.extractStatusDescriptor(msg)` instead of hardcoded WhatsApp properties, fully decoupling the backend core from WhatsApp's message structure for the status archiving feature.

@@ -62,4 +62,9 @@ describe('BaseAdapter', () => {
     const adapter = new BaseAdapter('test');
     assert.throws(() => adapter.getChatIdFromMessage({}), /getChatIdFromMessage\(\) not implemented for provider=test/);
   });
+
+  test('extractStatusDescriptor() should throw not implemented error', () => {
+    const adapter = new BaseAdapter('test');
+    assert.throws(() => adapter.extractStatusDescriptor({}), /extractStatusDescriptor\(\) not implemented for provider=test/);
+  });
 });

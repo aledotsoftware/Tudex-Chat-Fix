@@ -190,6 +190,17 @@ class WhatsAppAdapter extends BaseAdapter {
     return message.fromMe ? message.to : message.from;
   }
 
+  extractStatusDescriptor(message) {
+    return {
+      providerStatusMessageId: message?.id?._serialized || message?.id || null,
+      statusOwnerId: message?.author || message?.from || null,
+      description: message?.caption || message?.body || '',
+      caption: message?.caption || '',
+      mediaType: message?.type || null,
+      timestamp: message?.timestamp || Math.floor(Date.now() / 1000)
+    };
+  }
+
   async getChatAvatarUrl(chat) {
     if (!chat) return null;
     try {

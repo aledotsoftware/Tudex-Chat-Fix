@@ -1651,15 +1651,10 @@ function bindProviderEvents(adapter, accountId) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
         await adapter.markStatusRead();
-        await archiveStatusFromDescriptor({
-          providerStatusMessageId: msg.id?._serialized || msg.id,
-          statusOwnerId: msg.author || msg.from,
-          description: msg.caption || msg.body || '',
-          caption: msg.caption || '',
-          mediaType: msg.type,
-          timestamp: msg.timestamp || Math.floor(Date.now() / 1000)
-        }, 'event', { provider: providerName, accountId });
-        console.log(`👁️ Status auto-visto [${msg.type}] de: ${msg.author || msg.from}`);
+
+        const descriptor = adapter.extractStatusDescriptor(msg);
+        await archiveStatusFromDescriptor(descriptor, 'event', { provider: providerName, accountId });
+        console.log(`👁️ Status auto-visto [${descriptor.mediaType}] de: ${descriptor.statusOwnerId}`);
       } catch (e) {
         console.error('⚠️ Error al auto-ver status:', e.message);
       }
