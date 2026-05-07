@@ -1280,9 +1280,22 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
 
   try {
     const descriptors = await fetchCurrentStatusDescriptors();
+
+    const ids = descriptors.map(d => normalizeStatusDescriptor(d).providerStatusMessageId).filter(Boolean);
+    const existingStatuses = await StatusArchive.find({
+      provider,
+      accountId,
+      providerStatusMessageId: { $in: ids }
+    }, { providerStatusMessageId: 1 }).lean();
+    const existingIds = new Set(existingStatuses.map(s => s.providerStatusMessageId));
+
     const results = await Promise.allSettled(
       descriptors.map(async (descriptor) => {
         stats.checked += 1;
+        const normalized = normalizeStatusDescriptor(descriptor);
+        if (normalized.providerStatusMessageId && existingIds.has(normalized.providerStatusMessageId)) {
+          return { archived: false, reason: 'duplicate' };
+        }
         return await archiveStatusFromDescriptor(descriptor, source, { provider, accountId });
       })
     );
