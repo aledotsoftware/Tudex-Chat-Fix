@@ -7,6 +7,11 @@
 * Añadido `aria-atomic="true"` en la barra de estado general (`.statusBar`) para forzar la lectura completa y coherente del contexto de estado.
 * Eliminado el spinner bloqueante innecesario de `connecting` en la carga del provider ya que ese estado es solo informativo.
 * Aclarado el contraste de los textos de error de validación visual `.errorText` para superar estandáres en fondos oscuros.
+* Mejorada la accesibilidad de los modales (Configuración IA y Recursos) agregando `role="dialog"`, `aria-modal="true"` y `aria-labelledby`.
+* Añadida navegación por teclado global usando la tecla `Escape` para cerrar modales activos y cancelar la respuesta en curso.
+* Ocultados explícitamente los emojis decorativos en los botones (`aria-hidden="true"`) para evitar ruido redundante en lectores de pantalla.
+* Se añadió `aria-current="page"` en la lista de chats para indicar claramente el chat activo al foco del lector de pantalla.
+* Los Toasts globales ahora usan roles ARIA semánticos y dinámicos (`role="alert"` para errores, `role="status"` para informativos) para garantizar su correcta priorización y lectura.
 
 ## Global Project Context Note
 
