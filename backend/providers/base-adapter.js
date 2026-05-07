@@ -111,6 +111,14 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`getChatIdFromMessage() not implemented for provider=${this.provider}`);
   }
 
+  extractMessageContext(message) {
+    throw new Error(`extractMessageContext() not implemented for provider=${this.provider}`);
+  }
+
+  extractChatContext(chat) {
+    throw new Error(`extractChatContext() not implemented for provider=${this.provider}`);
+  }
+
   extractStatusDescriptor(message) {
     throw new Error(`extractStatusDescriptor() not implemented for provider=${this.provider}`);
   }
