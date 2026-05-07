@@ -1,0 +1,48 @@
+diff --git a/src/util/Injected/Utils.js b/src/util/Injected/Utils.js
+index 540078a9d07b3df07ccd51b030556a72af4cf650..86db3efdefb8279fbc135929b0f5aa9c33a48f92 100644
+--- a/src/util/Injected/Utils.js
++++ b/src/util/Injected/Utils.js
+@@ -1551,13 +1551,21 @@ exports.LoadUtils = () => {
+         };
+
+         try {
+-            for (const participant of participantArgs) {
+-                response = await window
+-                    .require('WASmaxGroupsMembershipRequestsActionRPC')
+-                    .sendMembershipRequestsActionRPC({
+-                        iqTo: groupJid,
+-                        [toApprove ? 'approveArgs' : 'rejectArgs']: participant,
+-                    });
++            const responses = await Promise.all(
++                participantArgs.map((participant) =>
++                    window
++                        .require('WASmaxGroupsMembershipRequestsActionRPC')
++                        .sendMembershipRequestsActionRPC({
++                            iqTo: groupJid,
++                            [toApprove ? 'approveArgs' : 'rejectArgs']:
++                                participant,
++                        }),
++                ),
++            );
++
++            for (let i = 0; i < responses.length; i++) {
++                const response = responses[i];
++                const participant = participantArgs[i];
+
+                 if (
+                     response.name === 'MembershipRequestsActionResponseSuccess'
+@@ -1602,14 +1610,6 @@ exports.LoadUtils = () => {
+                         message: 'ServerStatusCodeError',
+                     });
+                 }
+-
+-                sleep &&
+-                    participantArgs.length > 1 &&
+-                    participantArgs.indexOf(participant) !==
+-                        participantArgs.length - 1 &&
+-                    (await new Promise((resolve) =>
+-                        setTimeout(resolve, _getSleepTime(sleep)),
+-                    ));
+             }
+             return result;
+         } catch (ignoredError) {
