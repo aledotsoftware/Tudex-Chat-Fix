@@ -36,7 +36,7 @@ services:
       STATUS_POLL_INTERVAL_MS: ${STATUS_POLL_INTERVAL_MS:-60000}
       AI_SYSTEM_PROMPT: ${AI_SYSTEM_PROMPT:-"Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>."}
       AI_USER_PROMPT_TEMPLATE: ${AI_USER_PROMPT_TEMPLATE:-"Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}"}
-      API_KEY: ${API_KEY-tu_contraseña_super_segura_aqui}
+      API_KEY: ${API_KEY:-}
       CHATS_CACHE_TTL_MS: ${CHATS_CACHE_TTL_MS:-5000}
       MESSAGES_CACHE_TTL_MS: ${MESSAGES_CACHE_TTL_MS:-5000}
       AVATAR_TTL_MS: ${AVATAR_TTL_MS:-600000}
@@ -47,7 +47,7 @@ services:
     volumes:
       - whatsapp_auth:/app/.wwebjs_auth
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -H \"X-API-Key: $${API_KEY:-tu_contraseña_super_segura_aqui}\" http://localhost:3005/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f -H \"X-API-Key: $${API_KEY:-}\" http://localhost:3005/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
