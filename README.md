@@ -87,7 +87,7 @@ En Docker Compose ya se inyectan:
 - `AI_TIMEOUT_MS=15000` Configuración de timeout para la IA en milisegundos.
 - `AI_SYSTEM_PROMPT` Define el rol y comportamiento esperado de la IA.
 - `AI_USER_PROMPT_TEMPLATE` Formato en el que se envía el mensaje original a la IA.
-- `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción. Se puede configurar como un string vacío para **deshabilitar la autenticación**, aunque esto registrará un warning por seguridad.
+- `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción. Se puede configurar como un string vacío (o omitir por completo) para **deshabilitar la autenticación**, lo que registrará un warning de seguridad.
 - `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas.
 - Variables de caché (`CHATS_CACHE_TTL_MS`, `MESSAGES_CACHE_TTL_MS`, `AVATAR_TTL_MS`, `AVATAR_FETCH_LIMIT`, `AVATAR_FETCH_TIMEOUT_MS`) para controlar los tiempos de expiración y límites de la caché local del backend. Todas estas variables están protegidas mediante validación estricta y se limitan a rangos seguros.
 - `DEFAULT_ACCOUNT_ID` para especificar el ID de cuenta de proveedor predeterminado (por defecto es `default`).

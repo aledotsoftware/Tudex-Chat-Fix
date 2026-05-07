@@ -165,12 +165,12 @@ function validateStartupConfig() {
 validateStartupConfig();
 
 // API Key authentication middleware
-const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : 'tu_contraseña_super_segura_aqui';
+const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
 
-if (API_KEY === 'tu_contraseña_super_segura_aqui' || (API_KEY.length > 0 && API_KEY.length < 8)) {
-  console.warn('⚠️ WARNING: API_KEY is missing, default, or too short. This is insecure for production environments. Minimum length is 8 characters.');
+if (API_KEY.length > 0 && API_KEY.length < 8) {
+  console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
 } else if (API_KEY.length === 0) {
-  console.warn('⚠️ WARNING: API_KEY is empty. Authentication is DISABLED. This is highly insecure for production environments.');
+  console.warn('⚠️ WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
 }
 
 const authenticateApiKey = (req, res, next) => {
