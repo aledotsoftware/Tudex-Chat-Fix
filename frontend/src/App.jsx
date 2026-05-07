@@ -788,7 +788,10 @@ function App() {
     if (!apiAuthenticated) return;
     const fetchStatus = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/status`);
+        const url = new URL(`${API_URL}/api/status`);
+        url.searchParams.set("provider", DEFAULT_PROVIDER);
+        url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+        const res = await fetch(url.toString());
         if (!res.ok) return;
         const data = await res.json();
         setBackendStatus({
@@ -810,7 +813,11 @@ function App() {
     if (!navigator.onLine) return;
     if (!background) setLoadingStatusArchive(true);
     try {
-      const res = await fetch(`${API_URL}/api/status-archive?limit=120`);
+      const url = new URL(`${API_URL}/api/status-archive`);
+      url.searchParams.set("provider", DEFAULT_PROVIDER);
+      url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+      url.searchParams.set("limit", "120");
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error("No se pudieron cargar los estados archivados.");
       const data = await res.json();
       setStatusArchiveItems(Array.isArray(data.items) ? data.items : []);
@@ -830,7 +837,10 @@ function App() {
     setLoadingResources(true);
     setShowResources(true);
     try {
-      const res = await fetch(`${API_URL}/api/chats/${encodeURIComponent(selectedChatId)}/resources`);
+      const url = new URL(`${API_URL}/api/chats/${encodeURIComponent(selectedChatId)}/resources`);
+      url.searchParams.set("provider", DEFAULT_PROVIDER);
+      url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error("No se pudieron cargar los recursos.");
       const data = await res.json();
       setResources(data);

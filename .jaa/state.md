@@ -61,3 +61,8 @@
 - [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
 - [Tudex-Chat-Fix] Mobile UX Polish (Transiciones, Targets, Hover) - **COMPLETADO**
 - [GENERAL] Estandarización de agentes para todos los repositorios.
+## Objective Completed: Orchestrator Canonical Front-End Fixes
+* Reviewed frontend `App.jsx` API fetch functions.
+* Added missing query parameters (`provider`, `accountId`) to `fetchStatus`, `fetchStatusArchive`, and `fetchResources`.
+* Ensured canonical context fields are systematically sent for these endpoints from the PWA, upholding the JAA centralized messaging architecture contract.
+* Ran successful `npm run build` and `npm test` verifying syntax, functionality, and tests pass for all adapters.
