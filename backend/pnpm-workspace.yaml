@@ -1,0 +1,2 @@
+patchedDependencies:
+  whatsapp-web.js: patches/whatsapp-web.js.patch

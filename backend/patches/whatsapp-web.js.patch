@@ -1,0 +1,17 @@
+diff --git a/src/Client.js b/src/Client.js
+index 800109ebf7720d5f0f29091518a8a25f7fd8e381..f26750914b3b1f19558f95a1fe5e678a77c9e6ea 100644
+--- a/src/Client.js
++++ b/src/Client.js
+@@ -2190,11 +2190,7 @@ class Client extends EventEmitter {
+             }
+             return [];
+         }, contactId);
+-        const chats = [];
+-        for (const group of commonGroups) {
+-            chats.push(group.id);
+-        }
+-        return chats;
++        return commonGroups.map(group => group.id);
+     }
+
+     /**
