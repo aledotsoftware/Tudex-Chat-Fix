@@ -126,6 +126,28 @@ describe('WhatsAppAdapter', () => {
     });
   });
 
+  describe('extractStatusDescriptor', () => {
+    test('should extract status descriptor fields correctly', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const mockMessage = {
+        id: { _serialized: 'msg123' },
+        author: 'author@c.us',
+        caption: 'Test Status',
+        type: 'image',
+        timestamp: 1620000000
+      };
+      const descriptor = adapter.extractStatusDescriptor(mockMessage);
+      assert.deepStrictEqual(descriptor, {
+        providerStatusMessageId: 'msg123',
+        statusOwnerId: 'author@c.us',
+        description: 'Test Status',
+        caption: 'Test Status',
+        mediaType: 'image',
+        timestamp: 1620000000
+      });
+    });
+  });
+
   describe('markRead', () => {
     test('should delegate to chat.sendSeen if chat exists', async () => {
       mockChat.seenSent = false;
