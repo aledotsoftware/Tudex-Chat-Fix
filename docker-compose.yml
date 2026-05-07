@@ -47,7 +47,7 @@ services:
     volumes:
       - whatsapp_auth:/app/.wwebjs_auth
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3005/api/health"]
+      test: ["CMD-SHELL", "curl -f -H \"X-API-Key: $${API_KEY:-tu_contraseña_super_segura_aqui}\" http://localhost:3005/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

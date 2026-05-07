@@ -32,3 +32,9 @@
 * Se hizo más explícita la etiqueta del borrador original para dejar claro que editarlo descartará la sugerencia actual de la IA.
 * Mejorada la jerarquía visual de los estados de actividad introduciendo un nuevo modificador de badge CSS `.processingAndSending` en `App.css`. Este badge utiliza una velocidad de pulso más rápida (`1s` frente a `2s`) y un estilo elevado para priorizar visualmente la inminencia de la acción combinada frente a la simple corrección en segundo plano.
 * Añadido `touch-action: manipulation` a todos los elementos `button` en `App.css` para eliminar el retraso de 300ms de zoom en dispositivos móviles, mejorando la respuesta percibida.
+
+## Objective Completed: Orchestrator Architecture Coordination
+
+* Validated that the backend properly enforces the canonical messaging architecture (provider, accountId, conversationId).
+* Updated `docker-compose.yml` to use `CMD-SHELL` for the backend health check to correctly pass the `X-API-Key` header with the configured `${API_KEY}`, ensuring compatibility with the authentication middleware on `/api/health`.
+* Checked `frontend/src/App.jsx` API fetch implementations and confirmed they set canonical context values in payloads for multi-provider operations without breaking the read-path logic and caching expectations.
