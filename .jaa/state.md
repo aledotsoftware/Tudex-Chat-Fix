@@ -31,3 +31,4 @@
 * Aclaradas las etiquetas de la interfaz en `App.jsx` para reducir la ambigüedad en la redacción (ej. "Corregir y enviar" -> "Mejorar y enviar", "Ignorar IA y enviar original" -> "Descartar IA y enviar original").
 * Se hizo más explícita la etiqueta del borrador original para dejar claro que editarlo descartará la sugerencia actual de la IA.
 * Mejorada la jerarquía visual de los estados de actividad introduciendo un nuevo modificador de badge CSS `.processingAndSending` en `App.css`. Este badge utiliza una velocidad de pulso más rápida (`1s` frente a `2s`) y un estilo elevado para priorizar visualmente la inminencia de la acción combinada frente a la simple corrección en segundo plano.
+* Añadido `touch-action: manipulation` a todos los elementos `button` en `App.css` para eliminar el retraso de 300ms de zoom en dispositivos móviles, mejorando la respuesta percibida.
