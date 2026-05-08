@@ -88,3 +88,8 @@
 * Updated the Express routes (`/api/chats`, `/api/chats/:chatId/messages`, `/api/chats/:chatId/resources`, `/api/chats/:chatId/read`, `/api/status-archive`, `/api/status-archive/sweep`, `/api/sync/state`) in `backend/index.js` to handle dynamic `/:channelCode` channel overrides, enabling URL-based multi-provider context mapping without changing core frontend logic.
 * Updated frontend payload validation logic: confirmed canonical query variables map safely without conflicting with backend parameter precedence rules.
 * Updated remaining raw Socket.io global initial emissions in `io.on('connection')` inside `backend/index.js` to bundle canonical states containing `accountId: DEFAULT_ACCOUNT_ID` ensuring frontend sockets properly sync their states upon refresh.
+## Objective Completed: Orchestrator Architecture Coordination (Global Endpoints)
+
+* Refactored global backend endpoints (`/api/check-auth`, `/api/correct`, `/api/ai/*`) to remove dynamic channel routing (`/:channelCode`) and canonical provider context extraction.
+* Ensured these routes operate globally without depending on messaging channel parameters, aligning with the architectural mandate that global services (like AI and Health checks) should remain independent of specific provider channels.
+* Verified the corresponding API calls on the frontend to ensure no breaking changes were introduced, running test suites in both components successfully.

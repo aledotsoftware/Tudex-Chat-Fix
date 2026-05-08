@@ -233,8 +233,7 @@ app.get('/', (req, res) => {
 });
 
 // Healthcheck/Auth verify endpoint
-app.get(['/api/check-auth', '/api/check-auth/:channelCode'], (req, res) => {
-  if (req.params.channelCode) req.query.provider = req.params.channelCode;
+app.get('/api/check-auth', (req, res) => {
   res.json({ success: true, message: 'Authenticated' });
 });
 
@@ -1734,9 +1733,8 @@ function ensureProviderReady(res, provider) {
 }
 
 // AI API endpoint
-app.post(['/api/correct', '/api/correct/:channelCode'], async (req, res) => {
+app.post('/api/correct', async (req, res) => {
   try {
-    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const text = sanitizeTextInput(req.body?.text);
     if (!text) return res.status(400).json({ error: 'No text provided' });
     if (text.length > 2500) {
@@ -1775,9 +1773,8 @@ app.post(['/api/correct', '/api/correct/:channelCode'], async (req, res) => {
   }
 });
 
-app.get(['/api/ai/config', '/api/ai/config/:channelCode'], async (_req, res) => {
+app.get('/api/ai/config', async (_req, res) => {
   try {
-    if (_req.params.channelCode) _req.query.provider = _req.params.channelCode;
     const configResponse = {
       ...aiConfig,
       provider: getAiProvider(aiConfig),
@@ -1793,9 +1790,8 @@ app.get(['/api/ai/config', '/api/ai/config/:channelCode'], async (_req, res) => 
   }
 });
 
-app.put(['/api/ai/config', '/api/ai/config/:channelCode'], async (req, res) => {
+app.put('/api/ai/config', async (req, res) => {
   try {
-    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const nextConfig = {
       ...aiConfig
     };
@@ -1870,9 +1866,8 @@ app.put(['/api/ai/config', '/api/ai/config/:channelCode'], async (req, res) => {
   }
 });
 
-app.get(['/api/ai/health', '/api/ai/health/:channelCode'], async (_req, res) => {
+app.get('/api/ai/health', async (_req, res) => {
   try {
-    if (_req.params.channelCode) _req.query.provider = _req.params.channelCode;
     const models = await getAvailableModels(_req.query.refresh === '1');
     const provider = getAiProvider(aiConfig);
     const payload = {
@@ -1916,9 +1911,8 @@ app.get(['/api/ai/health', '/api/ai/health/:channelCode'], async (_req, res) => 
   }
 });
 
-app.get(['/api/ai/models', '/api/ai/models/:channelCode'], async (_req, res) => {
+app.get('/api/ai/models', async (_req, res) => {
   try {
-    if (_req.params.channelCode) _req.query.provider = _req.params.channelCode;
     const models = await getAvailableModels(_req.query.refresh === '1');
     res.json({
       ok: true,
