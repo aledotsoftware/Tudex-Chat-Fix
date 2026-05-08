@@ -72,3 +72,10 @@
 * Replaced the hardcoded usage of `DEFAULT_PROVIDER` in `getProviderState` with the extracted dynamic `provider` variable.
 * Added support for `/:channelCode` route parameters to match identical behavior in the `/api/send` endpoint.
 * Verified that tests still pass completely.
+## Objective Completed: Orchestrator Architecture Coordination (Provider Isolation)
+
+* Removed hardcoded dependencies on `DEFAULT_PROVIDER` in core background systems.
+* Refactored `io.on('connection')` in `backend/index.js` to initialize the frontend client Socket.IO connections with the correct multi-provider `qr` and `ready` states.
+* Refactored `fetchCurrentStatusDescriptors(provider)` to resolve the active provider adapter dynamically, avoiding hardcoding `whatsapp` and enabling full multi-channel state fetching.
+* Refactored the `setInterval` background `runStatusArchiveSweep` loop to iterate dynamically over all available adapters via `providerRegistry.listProviders()` instead of only scraping the default provider.
+* Secured WebSockets events (`qr`, `ready`, `auth_failure`, `disconnected`) on the frontend (`frontend/src/App.jsx`) to filter out and ignore events whose `provider` payload does not match the active `DEFAULT_PROVIDER` to ensure isolated session states.
