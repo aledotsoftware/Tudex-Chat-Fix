@@ -205,9 +205,9 @@ io.on('connection', (socket) => {
   for (const providerName of providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER]) {
     const state = getProviderState(providerName);
     if (state.status === 'qr' && state.lastQR) {
-      socket.emit('qr', state.lastQR);
+      socket.emit('qr', { qr: state.lastQR, provider: providerName, accountId: DEFAULT_ACCOUNT_ID });
     } else if (state.status === 'authenticated') {
-      socket.emit('ready', { status: 'authenticated', provider: providerName });
+      socket.emit('ready', { status: 'authenticated', provider: providerName, accountId: DEFAULT_ACCOUNT_ID });
     }
   }
 });
@@ -1637,7 +1637,7 @@ function bindProviderEvents(adapter, accountId) {
       accountId: accountId,
       reason: 'provider_ready'
     });
-    runStatusArchiveSweep('poll').catch((error) => {
+    runStatusArchiveSweep('poll', { provider: providerName, accountId }).catch((error) => {
       console.error('⚠️ Initial status archive sweep failed:', error.message);
     });
   });
@@ -1927,10 +1927,12 @@ app.get('/api/ai/models', async (_req, res) => {
 });
 
 // Get chats - helps the frontend list who we can talk to
-app.get('/api/chats', async (req, res) => {
+app.get(['/api/chats', '/api/chats/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const cacheKey = chatsCacheKey(provider, accountId);
+
     const l1Cached = getL1CachedValue(l1ChatsCache, cacheKey);
 
     if (l1Cached) {
@@ -1972,8 +1974,9 @@ app.get('/api/chats', async (req, res) => {
   }
 });
 
-app.get('/api/chats/:chatId/messages', async (req, res) => {
+app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const chatId = req.params.chatId;
     const limit = parsePositiveInt(req.query.limit, 80, 200);
     const { provider, accountId } = parseProviderContext(req);
@@ -2042,8 +2045,9 @@ app.get('/api/chats/:chatId/messages', async (req, res) => {
   }
 });
 
-app.get('/api/chats/:chatId/resources', async (req, res) => {
+app.get(['/api/chats/:chatId/resources', '/api/chats/:chatId/resources/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { chatId } = req.params;
     const { provider, accountId } = parseProviderContext(req);
 
@@ -2095,8 +2099,9 @@ app.get('/api/chats/:chatId/resources', async (req, res) => {
   }
 });
 
-app.post('/api/chats/:chatId/read', async (req, res) => {
+app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { chatId } = req.params;
     const { provider, accountId } = parseProviderContext(req);
     if (!chatId) {
@@ -2242,8 +2247,9 @@ app.get(['/api/status', '/api/status/:channelCode'], async (req, res) => {
   }
 });
 
-app.get('/api/status-archive', async (req, res) => {
+app.get(['/api/status-archive', '/api/status-archive/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const limit = parsePositiveInt(req.query.limit, 100, 500);
     const ownerId = String(req.query.ownerId || '').trim();
@@ -2276,8 +2282,9 @@ app.get('/api/status-archive', async (req, res) => {
   }
 });
 
-app.post('/api/status-archive/sweep', async (req, res) => {
+app.post(['/api/status-archive/sweep', '/api/status-archive/sweep/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const stats = await runStatusArchiveSweep('poll', { provider, accountId });
     res.json({ success: true, stats });
@@ -2310,8 +2317,9 @@ app.get(['/api/health', '/api/health/:channelCode'], async (req, res) => {
   }
 });
 
-app.get('/api/sync/state', async (req, res) => {
+app.get(['/api/sync/state', '/api/sync/state/:channelCode'], async (req, res) => {
   try {
+    if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const kind = req.query.kind === 'messages' ? 'messages' : 'chats';
     const conversationId = String(req.query.conversationId || (kind === 'messages' ? '' : '__all__')).trim();

@@ -34,6 +34,8 @@ const MOBILE_BREAKPOINT_PX = 920;
 const DEFAULT_PROVIDER = "whatsapp";
 const DEFAULT_ACCOUNT_ID = "default";
 
+// We will extract these dynamic parameters where applicable if needed.
+
 function parseApiItemsPayload(payload) {
   if (Array.isArray(payload)) {
     return {
