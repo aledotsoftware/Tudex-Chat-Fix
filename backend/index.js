@@ -1604,7 +1604,7 @@ async function handleMessageRevoke(after, before, context = {}) {
     );
 
     if (updated) {
-      io.emit('message_updated', updated);
+      io.emit('message_updated', { ...updated, provider: context.provider, accountId: context.accountId });
     }
   } catch (err) {
     console.error(`❌ Error handling revoke for ${msgId}:`, err.message);
@@ -1619,7 +1619,7 @@ function bindProviderEvents(adapter, accountId) {
     const state = getProviderState(providerName);
     state.lastQR = qr;
     state.lastDisconnectReason = null;
-    io.emit('qr', qr);
+    io.emit('qr', { qr, provider: providerName, accountId });
   });
 
   adapter.on('ready', () => {
@@ -1628,7 +1628,7 @@ function bindProviderEvents(adapter, accountId) {
     state.lastQR = null;
     state.lastReadyAt = new Date().toISOString();
     state.lastDisconnectReason = null;
-    io.emit('ready', { status: 'authenticated' });
+    io.emit('ready', { status: 'authenticated', provider: providerName, accountId });
 
     // Start background sync (async queue, read-path safe)
     enqueueSyncTask({
@@ -1648,14 +1648,14 @@ function bindProviderEvents(adapter, accountId) {
 
   adapter.on('auth_failure', msg => {
     console.error(`AUTHENTICATION FAILURE for provider: ${providerName}`, msg);
-    io.emit('auth_failure', msg);
+    io.emit('auth_failure', { msg, provider: providerName, accountId });
   });
 
   adapter.on('disconnected', (reason) => {
     console.log(`Client was logged out for provider: ${providerName}`, reason);
     const state = getProviderState(providerName);
     state.lastDisconnectReason = String(reason || 'unknown');
-    io.emit('disconnected', reason);
+    io.emit('disconnected', { reason, provider: providerName, accountId });
   });
 
   adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
@@ -1688,7 +1688,7 @@ function bindProviderEvents(adapter, accountId) {
       { provider: providerName, accountId }
     );
     if (payload) {
-      io.emit('new_message', payload);
+      io.emit('new_message', { ...payload, provider: providerName, accountId });
     }
 
     // Also update chat timestamp/unread in cache

@@ -611,15 +611,17 @@ function App() {
     });
     socket.on("qr", (payload) => {
       const eventProvider = payload?.provider || DEFAULT_PROVIDER;
-      if (eventProvider !== DEFAULT_PROVIDER) {
+      const eventAccountId = payload?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
         return;
       }
-      setQr(payload?.qr || payload); // payload can be the string itself backward compat
+      setQr(payload?.qr || (typeof payload === 'string' ? payload : "")); // payload can be the string itself backward compat
       setSessionStatus("qr");
     });
     socket.on("ready", (payload) => {
       const eventProvider = payload?.provider || DEFAULT_PROVIDER;
-      if (eventProvider !== DEFAULT_PROVIDER) {
+      const eventAccountId = payload?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
         return;
       }
       setQr("");
@@ -627,7 +629,8 @@ function App() {
     });
     socket.on("auth_failure", (payload) => {
       const eventProvider = payload?.provider || DEFAULT_PROVIDER;
-      if (eventProvider !== DEFAULT_PROVIDER) {
+      const eventAccountId = payload?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
         return;
       }
       setSessionStatus("auth_failure");
@@ -635,14 +638,28 @@ function App() {
     });
     socket.on("disconnected", (payload) => {
       const eventProvider = payload?.provider || DEFAULT_PROVIDER;
-      if (eventProvider !== DEFAULT_PROVIDER) {
+      const eventAccountId = payload?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
         return;
       }
       setSessionStatus("disconnected");
       showNotice("La sesión del proveedor se desconectó.", "error");
     });
-    socket.on("new_message", mergeLiveMessage);
+    socket.on("new_message", (payload) => {
+      const eventProvider = payload?.provider || DEFAULT_PROVIDER;
+      const eventAccountId = payload?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
+        return;
+      }
+      mergeLiveMessage(payload);
+    });
     socket.on("message_updated", (updated) => {
+      const eventProvider = updated?.provider || DEFAULT_PROVIDER;
+      const eventAccountId = updated?.accountId || DEFAULT_ACCOUNT_ID;
+      if (eventProvider !== DEFAULT_PROVIDER || eventAccountId !== DEFAULT_ACCOUNT_ID) {
+        return;
+      }
+
       const normalized = { ...updated, _uiId: messageId(updated) };
       setMessagesByChat((prev) => {
         const current = prev[updated.chatId] || [];

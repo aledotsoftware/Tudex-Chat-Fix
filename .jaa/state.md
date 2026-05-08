@@ -79,3 +79,7 @@
 * Refactored `fetchCurrentStatusDescriptors(provider)` to resolve the active provider adapter dynamically, avoiding hardcoding `whatsapp` and enabling full multi-channel state fetching.
 * Refactored the `setInterval` background `runStatusArchiveSweep` loop to iterate dynamically over all available adapters via `providerRegistry.listProviders()` instead of only scraping the default provider.
 * Secured WebSockets events (`qr`, `ready`, `auth_failure`, `disconnected`) on the frontend (`frontend/src/App.jsx`) to filter out and ignore events whose `provider` payload does not match the active `DEFAULT_PROVIDER` to ensure isolated session states.
+## Objective Completed: Orchestrator Architecture Coordination (Socket Isolation)
+
+* Updated `frontend/src/App.jsx` socket logic to fully filter and isolate all incoming socket events (`qr`, `ready`, `auth_failure`, `disconnected`, `new_message`, `message_updated`) enforcing the `eventProvider === DEFAULT_PROVIDER && eventAccountId === DEFAULT_ACCOUNT_ID` match, effectively preventing cross-talk between multi-provider sessions on the PWA frontend.
+* Modified the legacy `io.emit` implementations inside `backend/index.js` (`bindProviderEvents` and `adapter.on('message_create')`/`adapter.on('message_revoke')`) to attach the correct `provider` and `accountId` directly inside the payload object sent to `frontend/src/App.jsx` for all emitted states. Verified backward compatibility string handling on `qr` codes.
