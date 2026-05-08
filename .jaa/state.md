@@ -83,3 +83,8 @@
 
 * Updated `frontend/src/App.jsx` socket logic to fully filter and isolate all incoming socket events (`qr`, `ready`, `auth_failure`, `disconnected`, `new_message`, `message_updated`) enforcing the `eventProvider === DEFAULT_PROVIDER && eventAccountId === DEFAULT_ACCOUNT_ID` match, effectively preventing cross-talk between multi-provider sessions on the PWA frontend.
 * Modified the legacy `io.emit` implementations inside `backend/index.js` (`bindProviderEvents` and `adapter.on('message_create')`/`adapter.on('message_revoke')`) to attach the correct `provider` and `accountId` directly inside the payload object sent to `frontend/src/App.jsx` for all emitted states. Verified backward compatibility string handling on `qr` codes.
+## Objective Completed: Orchestrator Architecture Coordination (Routes & Sockets Integration)
+
+* Updated the Express routes (`/api/chats`, `/api/chats/:chatId/messages`, `/api/chats/:chatId/resources`, `/api/chats/:chatId/read`, `/api/status-archive`, `/api/status-archive/sweep`, `/api/sync/state`) in `backend/index.js` to handle dynamic `/:channelCode` channel overrides, enabling URL-based multi-provider context mapping without changing core frontend logic.
+* Updated frontend payload validation logic: confirmed canonical query variables map safely without conflicting with backend parameter precedence rules.
+* Updated remaining raw Socket.io global initial emissions in `io.on('connection')` inside `backend/index.js` to bundle canonical states containing `accountId: DEFAULT_ACCOUNT_ID` ensuring frontend sockets properly sync their states upon refresh.
