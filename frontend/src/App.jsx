@@ -609,19 +609,35 @@ function App() {
     socket.on("connect_error", () => {
       setSocketConnected(false);
     });
-    socket.on("qr", (value) => {
-      setQr(value);
+    socket.on("qr", (payload) => {
+      const eventProvider = payload?.provider || DEFAULT_PROVIDER;
+      if (eventProvider !== DEFAULT_PROVIDER) {
+        return;
+      }
+      setQr(payload?.qr || payload); // payload can be the string itself backward compat
       setSessionStatus("qr");
     });
-    socket.on("ready", () => {
+    socket.on("ready", (payload) => {
+      const eventProvider = payload?.provider || DEFAULT_PROVIDER;
+      if (eventProvider !== DEFAULT_PROVIDER) {
+        return;
+      }
       setQr("");
       setSessionStatus("authenticated");
     });
-    socket.on("auth_failure", () => {
+    socket.on("auth_failure", (payload) => {
+      const eventProvider = payload?.provider || DEFAULT_PROVIDER;
+      if (eventProvider !== DEFAULT_PROVIDER) {
+        return;
+      }
       setSessionStatus("auth_failure");
       showNotice("Fallo de autenticación del proveedor.", "error");
     });
-    socket.on("disconnected", () => {
+    socket.on("disconnected", (payload) => {
+      const eventProvider = payload?.provider || DEFAULT_PROVIDER;
+      if (eventProvider !== DEFAULT_PROVIDER) {
+        return;
+      }
       setSessionStatus("disconnected");
       showNotice("La sesión del proveedor se desconectó.", "error");
     });

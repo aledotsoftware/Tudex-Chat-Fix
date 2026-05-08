@@ -202,11 +202,13 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
-  const defaultState = getProviderState(DEFAULT_PROVIDER);
-  if (defaultState.status === 'qr' && defaultState.lastQR) {
-    socket.emit('qr', defaultState.lastQR);
-  } else if (defaultState.status === 'authenticated') {
-    socket.emit('ready', { status: 'authenticated' });
+  for (const providerName of providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER]) {
+    const state = getProviderState(providerName);
+    if (state.status === 'qr' && state.lastQR) {
+      socket.emit('qr', state.lastQR);
+    } else if (state.status === 'authenticated') {
+      socket.emit('ready', { status: 'authenticated', provider: providerName });
+    }
   }
 });
 
@@ -1170,12 +1172,12 @@ function normalizeStatusDescriptor(entry = {}) {
   };
 }
 
-async function fetchCurrentStatusDescriptors() {
+async function fetchCurrentStatusDescriptors(provider) {
   try {
-    const adapter = resolveProviderAdapter(DEFAULT_PROVIDER);
+    const adapter = resolveProviderAdapter(provider);
     return await adapter.fetchStatusDescriptors();
   } catch (err) {
-    console.error('⚠️ fetchStatusDescriptors error:', err.message);
+    console.error(`⚠️ fetchStatusDescriptors error for ${provider}:`, err.message);
     return [];
   }
 }
@@ -1284,7 +1286,7 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
   };
 
   try {
-    const descriptors = await fetchCurrentStatusDescriptors();
+    const descriptors = await fetchCurrentStatusDescriptors(provider);
 
     const ids = descriptors.map(d => normalizeStatusDescriptor(d).providerStatusMessageId).filter(Boolean);
     const existingStatuses = await StatusArchive.find({
@@ -1710,9 +1712,11 @@ for (const providerName of providerRegistry.listProviders()) {
 providerRegistry.initializeAll();
 
 setInterval(() => {
-  runStatusArchiveSweep('poll').catch((error) => {
-    console.error('⚠️ Scheduled status archive sweep failed:', error.message);
-  });
+  for (const providerName of providerRegistry.listProviders()) {
+    runStatusArchiveSweep('poll', { provider: providerName, accountId: DEFAULT_ACCOUNT_ID }).catch((error) => {
+      console.error(`⚠️ Scheduled status archive sweep failed for ${providerName}:`, error.message);
+    });
+  }
 }, STATUS_POLL_INTERVAL_MS);
 
 function ensureProviderReady(res, provider) {
