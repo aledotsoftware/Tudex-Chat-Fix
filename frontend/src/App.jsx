@@ -707,6 +707,14 @@ function App() {
 
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
+      // Escape to close modals and clear context states
+      if (e.key === 'Escape') {
+        if (showResources) setShowResources(false);
+        if (showAiSettings) setShowAiSettings(false);
+        if (replyTarget) setReplyTarget(null);
+        return; // Don't prevent default, just handle our local logic
+      }
+
       // Ctrl+K to search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
@@ -1705,6 +1713,7 @@ function App() {
               aria-label={`Chat con ${chat.name || chat.id}`}
               className={`chatItem ${chat.id === selectedChatId ? "active" : ""}`}
               onClick={() => setSelectedChatId(chat.id)}
+              aria-current={chat.id === selectedChatId ? "page" : undefined}
             >
               <div
                 className="chatAvatar"
@@ -2179,9 +2188,15 @@ function App() {
 
       {showResources ? (
         <section className="modalOverlay" onClick={() => setShowResources(false)}>
-          <div className="modalCard resourcesModal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modalCard resourcesModal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="resourcesModalHeading"
+          >
             <div className="modalHeader">
-              <h3>Recursos de {selectedChat?.name || selectedChatId}</h3>
+              <h3 id="resourcesModalHeading">Recursos de {selectedChat?.name || selectedChatId}</h3>
               <button className="secondary" onClick={() => setShowResources(false)}>Cerrar</button>
             </div>
 
@@ -2245,9 +2260,15 @@ function App() {
 
       {showAiSettings ? (
         <section className="modalOverlay" onClick={() => setShowAiSettings(false)}>
-          <div className="modalCard" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modalCard"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="aiSettingsModalHeading"
+          >
             <div className="modalHeader">
-              <h3>Configuración IA</h3>
+              <h3 id="aiSettingsModalHeading">Configuración IA</h3>
               <button className="secondary" onClick={() => setShowAiSettings(false)}>Cerrar</button>
             </div>
             {loadingAiConfig ? <p className="helper">Cargando configuración...</p> : null}
