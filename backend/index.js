@@ -661,14 +661,16 @@ async function ensureCanonicalProviderFields() {
     {
       $or: [
         { provider: { $exists: false } },
-        { accountId: { $exists: false } }
+        { accountId: { $exists: false } },
+        { providerStatusMessageId: { $exists: false } }
       ]
     },
     [
       {
         $set: {
           provider: { $ifNull: ['$provider', DEFAULT_PROVIDER] },
-          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] }
+          accountId: { $ifNull: ['$accountId', DEFAULT_ACCOUNT_ID] },
+          providerStatusMessageId: { $ifNull: ['$providerStatusMessageId', { $ifNull: ['$id', { $toString: '$_id' }] }] }
         }
       }
     ]
