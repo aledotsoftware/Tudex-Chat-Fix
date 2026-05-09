@@ -8,6 +8,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
 - [Tudex-Chat-Fix] Mobile UX Polish (Transiciones, Targets, Hover) - **COMPLETADO**
 - [Tudex-Chat-Fix] Accessibility Check (Modals, ARIA, Keyboard) - **COMPLETADO**
+- [Tudex-Chat-Fix] Coordinación Arquitectónica - **COMPLETADO**
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 
 ## 📝 AGENT NOTES
