@@ -104,6 +104,8 @@ const syncQueue = [];
 const syncPendingKeys = new Set();
 const syncInFlightKeys = new Set();
 const syncStateMemory = new Map();
+const aiMetadataCache = new Map(); // Temporary store for linking AI corrections sent via API to their message_create event
+
 let syncWorkerRunning = false;
 const AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
 const AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
@@ -1680,11 +1682,27 @@ function bindProviderEvents(adapter, accountId) {
 
     let chatId = adapter.getChatIdFromMessage(msg);
 
+    // Check if this message has associated AI metadata
+    let extraData = {};
+    if (adapter.extractMessageContext(msg).fromMe) {
+      const bodyMatch = adapter.extractMessageContext(msg).body.trim();
+      const matchKey = buildConversationKey(providerName, accountId, chatId) + ':' + bodyMatch;
+      const cachedMeta = aiMetadataCache.get(matchKey);
+      if (cachedMeta) {
+         extraData = {
+           originalText: cachedMeta.originalText,
+           correctedText: cachedMeta.correctedText,
+           sentText: cachedMeta.sentText
+         };
+         aiMetadataCache.delete(matchKey);
+      }
+    }
+
     // Cache and Emit
     const payload = await upsertMessage(
       msg,
       chatId,
-      {},
+      extraData,
       { provider: providerName, accountId }
     );
     if (payload) {
@@ -2174,12 +2192,21 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
     });
 
     // 5. Cache correction metadata
-    // We can't easily upsert here because we don't have the message ID yet,
-    // but we can store it temporarily or just rely on the fact that if it's sent from here,
-    // we could potentially match it in message_create by body and chatId.
-    // For now, let's keep it simple: the UI sends originalText/correctedText,
-    // we could use a temporary store or just accept that the very first load might
-    // not have the metadata until we implement a better matching.
+    // Store metadata locally to link it in the adapter message_create event
+    if (originalText && originalText !== text) {
+      const matchKey = buildConversationKey(provider, accountId, chatId) + ':' + text.trim();
+      aiMetadataCache.set(matchKey, {
+        originalText,
+        correctedText: text,
+        sentText: text,
+        timestamp: Date.now()
+      });
+
+      // Cleanup after 2 minutes to avoid leak if message_create fails/drops
+      setTimeout(() => {
+        aiMetadataCache.delete(matchKey);
+      }, 120000);
+    }
 
     res.json({
       success: true,
