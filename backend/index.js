@@ -2147,7 +2147,7 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
     }
 
     let chatId = String(
-      req.params.channelCode || req.query.chatId || req.body?.chatId || ''
+      req.query.chatId || req.body?.chatId || ''
     ).trim();
 
     const text = sanitizeTextInput(req.body?.text);

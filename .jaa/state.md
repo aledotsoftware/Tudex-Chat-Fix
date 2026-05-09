@@ -93,3 +93,7 @@
 * Refactored global backend endpoints (`/api/check-auth`, `/api/correct`, `/api/ai/*`) to remove dynamic channel routing (`/:channelCode`) and canonical provider context extraction.
 * Ensured these routes operate globally without depending on messaging channel parameters, aligning with the architectural mandate that global services (like AI and Health checks) should remain independent of specific provider channels.
 * Verified the corresponding API calls on the frontend to ensure no breaking changes were introduced, running test suites in both components successfully.
+## Objective Completed: Orchestrator Architecture Coordination (API Send Canonical Fix)
+
+* Fixed a critical routing bug in `backend/index.js` where the `chatId` resolution in the `POST /api/send/:channelCode` endpoint mistakenly evaluated `req.params.channelCode` as the actual destination `chatId`, effectively breaking external API publishing to specific chats when a channel code was provided in the route.
+* Removed the `req.params.channelCode` fallback in the `chatId` assignment block, ensuring the payload's body or query `chatId` is strictly respected for message delivery.
