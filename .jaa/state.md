@@ -13,6 +13,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 
 ## 📝 AGENT NOTES
+- **ChatFix-Orchestrator**: Coordinacion Arquitectonica Verificada - El contrato canonico multi-proveedor, sincronizacion asincronica y arquitecturas de frontend/backend han sido revisadas exhaustivamente y se encuentran correctamente implementadas de acuerdo a la especificacion centralizada. No se requieren cambios en el codigo.
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
 - **ChatFix-UX-Accessibility-Trust**: Modals have been updated to properly act as dialogs using `role="dialog"`, `aria-modal="true"` and `aria-labelledby`. The global hotkey for `Escape` has been wired to safely dismiss `Resources` and `AI Settings` overlays alongside contextual reply targets without blocking default operations. Chat items map correctly to `aria-current="page"` when selected.
