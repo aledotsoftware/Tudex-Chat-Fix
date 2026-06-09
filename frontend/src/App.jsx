@@ -205,6 +205,7 @@ function App() {
   const [showCloudflareToken, setShowCloudflareToken] = useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [pwaUpdateAvailable, setPwaUpdateAvailable] = useState(null);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [isMobileLayout, setIsMobileLayout] = useState(() =>
     typeof window !== "undefined"
       ? window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX}px)`).matches
@@ -504,6 +505,14 @@ function App() {
     });
   }
 
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`[ChatFix PWA] Install outcome: ${outcome}`);
+    setDeferredPrompt(null);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("chatfix_api_key");
     setApiAuthenticated(false);
@@ -524,17 +533,23 @@ function App() {
     const handleOffline = () => setIsOffline(true);
 
     const handlePwaUpdate = (e) => setPwaUpdateAvailable(() => e.detail.updateSW);
+    const handleInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
 
     window.addEventListener('chatfix_auth_error', handleAuthError);
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener("pwa_update_available", handlePwaUpdate);
+    window.addEventListener("beforeinstallprompt", handleInstallPrompt);
 
     return () => {
       window.removeEventListener('chatfix_auth_error', handleAuthError);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener("pwa_update_available", handlePwaUpdate);
+      window.removeEventListener("beforeinstallprompt", handleInstallPrompt);
     };
   }, []);
 
@@ -1756,6 +1771,11 @@ function App() {
           {viewMode === "chats" && filteredChats.length === 0 ? <p className="helper">No hay chats.</p> : null}
         </div>
         <footer className="sidebarFooter">
+          {deferredPrompt && (
+            <button className="secondary small installAppBtn" onClick={handleInstallApp} aria-label="Instalar aplicación">
+              📲 Instalar App
+            </button>
+          )}
           <span>Ctrl+K buscar</span>
           <span>Alt+↑↓ navegar</span>
           <button className="logoutBtn" onClick={handleLogout} aria-label="Cerrar sesión">Cerrar sesión</button>
