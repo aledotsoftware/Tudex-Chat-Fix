@@ -10,6 +10,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [Tudex-Chat-Fix] Accessibility Check (Modals, ARIA, Keyboard) - **COMPLETADO**
 - [Tudex-Chat-Fix] Coordinación Arquitectónica - **COMPLETADO** - Verified canonical models, sync contracts, backend/frontend configurations.
 - [Tudex-Chat-Fix] Backend Architecture & Orchestration Check - **COMPLETADO** - Validated endpoint provider context bindings and payload parser architectures.
+- [Tudex-Chat-Fix] AI Ops Configuration - **COMPLETADO** - Updated AI_PROVIDER cloudflare startup validation to allow either CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_AI_BASE_URL to be set. Updated `docs/OPERATIONS_RUNBOOK.md` and `README.md` to reflect this change.
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 
 ## 📝 AGENT NOTES

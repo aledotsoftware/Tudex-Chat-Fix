@@ -149,8 +149,10 @@ function validateStartupConfig() {
   }
 
   if (provider === 'cloudflare') {
-    if (!process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID.trim() === '') {
-      console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_ACCOUNT_ID is missing or empty.');
+    const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID.trim() !== '');
+    const hasBaseUrl = Boolean(process.env.CLOUDFLARE_AI_BASE_URL && process.env.CLOUDFLARE_AI_BASE_URL.trim() !== '');
+    if (!hasAccountId && !hasBaseUrl) {
+      console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but both CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_BASE_URL are missing or empty.');
     }
     if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');

@@ -78,7 +78,7 @@ En Docker Compose ya se inyectan:
 - `PORT=3005`
 - `MONGODB_URI=mongodb://mongo:27017/chatfix`
 - `LM_STUDIO_URL=http://host.docker.internal:1234`
-- `AI_PROVIDER=lmstudio` (o `cloudflare` usando `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`)
+- `AI_PROVIDER=lmstudio` (o `cloudflare` usando `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`, o alternativamente con `CLOUDFLARE_AI_BASE_URL` y `CLOUDFLARE_API_TOKEN`)
 - `MODEL_NAME=llama-3.1-8b-instruct`
 - `CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`
 - `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas (Mínimo de 1000ms).
