@@ -1691,6 +1691,10 @@ function App() {
             type="text"
             value={chatSearch}
             onChange={(e) => setChatSearch(e.target.value)}
+            spellCheck="false"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="none"
             placeholder={viewMode === "statuses" ? "🔍 Buscar estado..." : "🔍 Buscar chat... (Ctrl+K)"}
           />
         </div>
@@ -1962,7 +1966,7 @@ function App() {
                       <span className="pingBadge">Ping</span>
                     ) : null}
                     {msg.isRevoked ? (
-                      <div className="revokedNotice">🗑️ Mensaje eliminado</div>
+                      <div className="revokedNotice"><span aria-hidden="true">🗑️</span> Mensaje eliminado</div>
                     ) : null}
                     {msg.mediaType === "image" && (msg.imageDataUrl || msg.mediaUrl) ? (
                       <img className="msgImage" src={msg.mediaUrl ? `${API_URL}${msg.mediaUrl}` : msg.imageDataUrl} alt="Imagen del chat" />
@@ -2114,7 +2118,7 @@ function App() {
                         aria-label="Descartar sugerencia"
                         title="Descartar"
                       >
-                        ❌
+                        <span aria-hidden="true">❌</span>
                       </button>
                     </div>
                   </div>
@@ -2126,7 +2130,7 @@ function App() {
                       aria-label="Enviar la sugerencia de IA"
                       onClick={() => sendMessage(correctedDraft, "corrected")}
                     >
-                      ✨ Enviar versión IA
+                      <span aria-hidden="true">✨</span> <span className="hideOnMobile">Enviar versión IA</span>
                     </button>
                     <button
                       className="secondary useCorrectedBtn"
@@ -2135,8 +2139,7 @@ function App() {
                         setCorrectedDraft("");
                       }}
                       aria-label="Usar sugerencia en el cuadro principal para editar"
-                    >
-                      ✏️ <span className="hideOnMobile">Usar y editar</span>
+                    ><span aria-hidden="true">✏️</span> <span className="hideOnMobile">Usar y editar</span>
                     </button>
                   </div>
                 </div>
@@ -2167,24 +2170,21 @@ function App() {
                         aria-label="Mejorar redacción con IA y enviar"
                         onClick={correctAndSend}
                         disabled={!draft.trim()}
-                      >
-                        🚀 <span className="hideOnMobile">Mejorar y enviar</span>
+                      ><span aria-hidden="true">🚀</span> <span className="hideOnMobile">Mejorar y enviar</span>
                       </button>
                       <button
                         className="secondary"
                         aria-label="Previsualizar corrección de IA sin enviar"
                         onClick={correctDraft}
                         disabled={!draft.trim()}
-                      >
-                        ✨ <span className="hideOnMobile">Ver sugerencia</span>
+                      ><span aria-hidden="true">✨</span> <span className="hideOnMobile">Ver sugerencia</span>
                       </button>
                       <button
                         className="secondary plainSendBtn"
                         aria-label="Enviar mensaje original sin revisar"
                         onClick={() => sendMessage(draft, "original")}
                         disabled={!draft.trim()}
-                      >
-                        📤 <span className="hideOnMobile">Enviar original</span>
+                      ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Enviar original</span>
                       </button>
                     </>
                   ) : (
@@ -2193,8 +2193,7 @@ function App() {
                       aria-label="Enviar el texto original, descartando la sugerencia"
                       onClick={() => sendMessage(draft, "original")}
                       disabled={!draft.trim()}
-                    >
-                      📤 <span className="hideOnMobile">Descartar IA y enviar original</span>
+                    ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Descartar IA y enviar original</span>
                     </button>
                   )}
                 </div>
@@ -2242,7 +2241,7 @@ function App() {
                 </section>
 
                 <section className="resourceSection">
-                  <h4>🔗 Enlaces ({resources.links.length})</h4>
+                  <h4><span aria-hidden="true">🔗</span> Enlaces ({resources.links.length})</h4>
                   <ul className="resourceList">
                     {resources.links.map((link, i) => (
                       <li key={i}>
@@ -2304,7 +2303,7 @@ function App() {
             </select>
 
             <label htmlFor="aiEndpoint">Endpoint activo</label>
-            <input id="aiEndpoint" value={aiConfig.aiBaseUrl} readOnly />
+            <input id="aiEndpoint" value={aiConfig.aiBaseUrl} spellCheck="false" autoComplete="off" autoCorrect="off" autoCapitalize="none" readOnly />
 
             {aiConfig.provider === "lmstudio" ? (
               <>
@@ -2408,6 +2407,10 @@ function App() {
               min="0"
               max="2"
               value={aiConfig.temperature}
+              spellCheck="false"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, temperature: Number(e.target.value) }))
               }
@@ -2420,6 +2423,10 @@ function App() {
               min="5000"
               step="1000"
               value={aiConfig.timeoutMs}
+              spellCheck="false"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, timeoutMs: Number(e.target.value) }))
               }
@@ -2433,6 +2440,10 @@ function App() {
               max="2048"
               step="1"
               value={aiConfig.maxTokens}
+              spellCheck="false"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, maxTokens: Number(e.target.value) }))
               }
