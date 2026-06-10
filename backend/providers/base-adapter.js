@@ -51,19 +51,19 @@ class BaseAdapter extends EventEmitter {
     return this._status;
   }
 
-  async listChats(_ctx) {
+  async listChats({ provider, accountId } = {}) {
     throw new Error(`listChats() not implemented for provider=${this.provider}`);
   }
 
-  async fetchMessages(_ctx) {
+  async fetchMessages({ provider, accountId, conversationId, limit = 80 }) {
     throw new Error(`fetchMessages() not implemented for provider=${this.provider}`);
   }
 
-  async markRead(_ctx) {
+  async markRead({ provider, accountId, conversationId }) {
     throw new Error(`markRead() not implemented for provider=${this.provider}`);
   }
 
-  async sendMessage(_ctx) {
+  async sendMessage({ provider, accountId, conversationId, chatId, text, replyToMessageId, mediaUrl, mediaBase64, mediaName, mediaMimeType }) {
     throw new Error(`sendMessage() not implemented for provider=${this.provider}`);
   }
 

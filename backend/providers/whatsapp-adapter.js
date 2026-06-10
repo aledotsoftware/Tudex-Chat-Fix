@@ -83,17 +83,17 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
 
-  async listChats() {
+  async listChats({ provider, accountId } = {}) {
     return this.client.getChats();
   }
 
-  async fetchMessages({ conversationId, limit = 80 }) {
+  async fetchMessages({ provider, accountId, conversationId, limit = 80 }) {
     const chat = await this.client.getChatById(conversationId);
     if (!chat) return [];
     return chat.fetchMessages({ limit });
   }
 
-  async markRead({ conversationId }) {
+  async markRead({ provider, accountId, conversationId }) {
     const chat = await this.client.getChatById(conversationId);
     if (chat) {
       await chat.sendSeen();
@@ -249,6 +249,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async sendMessage(params) {
+    const { provider, accountId, conversationId } = params;
     let {
       chatId,
       text,
