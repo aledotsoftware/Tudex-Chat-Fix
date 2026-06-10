@@ -4,6 +4,7 @@ Este archivo contiene el estado compartido entre todos los repositorios gestiona
 Los agentes pueden leer este estado para entender el contexto de otros proyectos.
 
 ## 🚀 ACTIVE MILESTONES
+- [Tudex-Chat-Fix] Core Backend y Persistencia Canonica - **COMPLETADO** - Evaluated canonical field initialization, fast read-path API logic with stale-while-revalidate pattern, multi-level caching strategies, and verified schema normalizations. The backend handles the current multi-provider canonical contract reliably. No code adjustments required.
 - [JAA] Implementación de Jerarquía de Contexto (.jaa.md global) - **COMPLETADO**
 - [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
 - [Tudex-Chat-Fix] Mobile UX Polish (Transiciones, Targets, Hover) - **COMPLETADO**
@@ -15,6 +16,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [GENERAL] Estandarización de agentes para todos los repositorios.
 
 ## 📝 AGENT NOTES
+- **ChatFix-Backend-Core**: Verificacion Core Completada - Se validó de forma exhaustiva el flujo de lectura (GET /api/chats y GET /api/chats/:chatId/messages), la sincronización en segundo plano mediante la cola de sync y la preservación del modelo canónico (provider + accountId + conversationId) en MongoDB. Los índices son correctos, el fallback asíncrono y los cachés multinivel responden al estándar requerido. Se mantuvo el contrato intacto.
 - **ChatFix-Frontend-PWA**: PWA Mobile UX, Input Accessibility, and Cache features refined. Cleaned up spellCheck/autoComplete on technical inputs, wrapped action button emojis with aria-hidden, corrected mobile visibility transitions, verified correctAndSend state handling, and ensured query params correctly pass context. Added dynamic toast ARIA roles (alert/status) for screen reader compatibility.
 - **ChatFix-Orchestrator**: Coordinacion Arquitectonica Verificada - El contrato canonico multi-proveedor, sincronizacion asincronica y arquitecturas de frontend/backend han sido revisadas exhaustivamente y se encuentran correctamente implementadas de acuerdo a la especificacion centralizada. No se requieren cambios en el codigo.
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
