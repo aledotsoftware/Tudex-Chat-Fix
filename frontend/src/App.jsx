@@ -134,10 +134,10 @@ function getAvatarGradient(id) {
 }
 
 function AckIcon({ status }) {
-  if (status === 3) return <span className="ackDoubleBlue">✓✓</span>;
-  if (status === 2) return <span className="ackDouble">✓✓</span>;
-  if (status === 1) return <span className="ackSingle">✓</span>;
-  if (status === 'sending') return <span className="ackClock">⏲</span>;
+  if (status === 3) return <span className="ackDoubleBlue" aria-hidden="true">✓✓</span>;
+  if (status === 2) return <span className="ackDouble" aria-hidden="true">✓✓</span>;
+  if (status === 1) return <span className="ackSingle" aria-hidden="true">✓</span>;
+  if (status === 'sending') return <span className="ackClock" aria-hidden="true">⏲</span>;
   return null;
 }
 
@@ -1658,7 +1658,7 @@ function App() {
                 fetchAiModels();
               }}
             >
-              ✨ IA
+              <span aria-hidden="true">✨</span> IA
             </button>
             <button
               className="secondary"
@@ -1781,7 +1781,7 @@ function App() {
             </button>
           )}
           <span>Ctrl+K buscar</span>
-          <span>Alt+↑↓ navegar</span>
+          <span>Alt+<span aria-hidden="true">↑↓</span> navegar</span>
           <button className="logoutBtn" onClick={handleLogout} aria-label="Cerrar sesión">Cerrar sesión</button>
         </footer>
       </aside>
@@ -1796,7 +1796,7 @@ function App() {
                   aria-label="Volver a la lista"
                   onClick={() => setViewMode("chats")}
                 >
-                  ←
+                  <span aria-hidden="true">←</span>
                 </button>
                 <div className="chatHeaderAvatar statusArchivePanelIcon" aria-hidden="true">ST</div>
                 <div className="chatHeaderInfo">
@@ -1862,7 +1862,7 @@ function App() {
                   aria-label="Volver a lista de chats"
                   onClick={() => setSelectedChatId("")}
                 >
-                  ←
+                  <span aria-hidden="true">←</span>
                 </button>
                 <div
                   className="chatHeaderAvatar"
@@ -1881,7 +1881,12 @@ function App() {
                   )}
                 </div>
                 <div className="chatHeaderInfo">
-                  <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
+                  <h3>
+                    {selectedChat?.name || "Seleccioná un chat"}
+                    {syncingChat && (
+                      <span className="syncIndicator" title="Sincronizando mensajes..." aria-live="polite"><span aria-hidden="true">🔄</span></span>
+                    )}
+                  </h3>
                   <p>
                     {selectedChat?.id || "Sin chat seleccionado"}
                     {selectedChat?.isGroup ? " · Grupo" : ""}
@@ -1895,7 +1900,7 @@ function App() {
                   onClick={fetchResources}
                   disabled={!selectedChatId}
                 >
-                  📂 <span className="hideOnMobile">Recursos</span>
+                  <span aria-hidden="true">📂</span> <span className="hideOnMobile">Recursos</span>
                 </button>
                 <button
                   className="secondary"
@@ -2003,7 +2008,7 @@ function App() {
                   aria-label="Ir al último mensaje"
                   onClick={() => scrollMessagesToBottom("smooth")}
                 >
-                  ↓ Ir al último
+                  <span aria-hidden="true">↓</span> Ir al último
                   {pendingIncomingCount > 0 ? (
                     <span className="jumpToLatestCount">{pendingIncomingCount}</span>
                   ) : null}
@@ -2110,7 +2115,7 @@ function App() {
               {correctedDraft ? (
                 <div className="correctedPreview">
                   <div className="correctedHeader">
-                    <p className="correctedLabel">✨ Versión sugerida por IA</p>
+                    <p className="correctedLabel"><span aria-hidden="true">✨</span> Versión sugerida por IA</p>
                     <div className="correctedHeaderActions">
                       <button
                         className="iconButton"
@@ -2129,6 +2134,7 @@ function App() {
                       className="primary sendCorrectedBtn"
                       aria-label="Enviar la sugerencia de IA"
                       onClick={() => sendMessage(correctedDraft, "corrected")}
+                      disabled={sending || correcting || correctingAndSending}
                     >
                       <span aria-hidden="true">✨</span> <span className="hideOnMobile">Enviar versión IA</span>
                     </button>
@@ -2139,65 +2145,55 @@ function App() {
                         setCorrectedDraft("");
                       }}
                       aria-label="Usar sugerencia en el cuadro principal para editar"
+                      disabled={sending || correcting || correctingAndSending}
                     ><span aria-hidden="true">✏️</span> <span className="hideOnMobile">Usar y editar</span>
                     </button>
                   </div>
                 </div>
               ) : null}
 
-              {(sending || correcting || correctingAndSending || syncingChat) ? (
-                <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : sending ? "sending" : "syncing"}`}>
-                  {(syncingChat && !sending && !correcting && !correctingAndSending) ? (
-                    <>
-                      <span className="syncSpinner" aria-hidden="true" />
-                      <span>Sincronizando chat en segundo plano...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="spinner" aria-hidden="true" />
-                      <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
-                    </>
-                  )}
+              {(sending || correcting || correctingAndSending) ? (
+                <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : "sending"}`}>
+                  <span className="spinner" aria-hidden="true" />
+                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
                 </div>
               ) : null}
 
-              {!(sending || correcting || correctingAndSending) ? (
-                <div className="composerActions">
-                  {!correctedDraft ? (
-                    <>
-                      <button
-                        className="primary"
-                        aria-label="Mejorar redacción con IA y enviar"
-                        onClick={correctAndSend}
-                        disabled={!draft.trim()}
-                      ><span aria-hidden="true">🚀</span> <span className="hideOnMobile">Mejorar y enviar</span>
-                      </button>
-                      <button
-                        className="secondary"
-                        aria-label="Previsualizar corrección de IA sin enviar"
-                        onClick={correctDraft}
-                        disabled={!draft.trim()}
-                      ><span aria-hidden="true">✨</span> <span className="hideOnMobile">Ver sugerencia</span>
-                      </button>
-                      <button
-                        className="secondary plainSendBtn"
-                        aria-label="Enviar mensaje original sin revisar"
-                        onClick={() => sendMessage(draft, "original")}
-                        disabled={!draft.trim()}
-                      ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Enviar original</span>
-                      </button>
-                    </>
-                  ) : (
+              <div className="composerActions">
+                {!correctedDraft ? (
+                  <>
+                    <button
+                      className="primary"
+                      aria-label="Mejorar redacción con IA y enviar"
+                      onClick={correctAndSend}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                    ><span aria-hidden="true">🚀</span> <span className="hideOnMobile">Mejorar y enviar</span>
+                    </button>
+                    <button
+                      className="secondary"
+                      aria-label="Previsualizar corrección de IA sin enviar"
+                      onClick={correctDraft}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                    ><span aria-hidden="true">✨</span> <span className="hideOnMobile">Ver sugerencia</span>
+                    </button>
                     <button
                       className="secondary plainSendBtn"
-                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      aria-label="Enviar mensaje original sin revisar"
                       onClick={() => sendMessage(draft, "original")}
-                      disabled={!draft.trim()}
-                    ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Descartar IA y enviar original</span>
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                    ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Enviar original</span>
                     </button>
-                  )}
-                </div>
-              ) : null}
+                  </>
+                ) : (
+                  <button
+                    className="secondary plainSendBtn"
+                    aria-label="Enviar el texto original, descartando la sugerencia"
+                    onClick={() => sendMessage(draft, "original")}
+                    disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                  ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Descartar IA y enviar original</span>
+                  </button>
+                )}
+              </div>
 
 
             </footer>
