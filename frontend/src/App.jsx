@@ -1484,7 +1484,7 @@ function App() {
       {toasts.length > 0 && (
         <div className="toast-container" aria-live="polite">
           {toasts.map(t => (
-            <div key={t.id} className={`toast ${t.type}`}>
+            <div key={t.id} className={`toast ${t.type}`} role={t.type === "error" || t.type === "warning" ? "alert" : "status"}>
               {t.text}
             </div>
           ))}
@@ -2498,7 +2498,7 @@ function App() {
       {toasts.length > 0 && (
         <div className="toast-container" aria-live="polite">
           {toasts.map(t => (
-            <div key={t.id} className={`toast ${t.type}`}>
+            <div key={t.id} className={`toast ${t.type}`} role={t.type === "error" || t.type === "warning" ? "alert" : "status"}>
               {t.text}
             </div>
           ))}
