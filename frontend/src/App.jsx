@@ -1461,7 +1461,7 @@ function App() {
                 onClick={() => setShowApiKey(!showApiKey)}
                 aria-label={showApiKey ? "Ocultar API Key" : "Mostrar API Key"}
               >
-                {showApiKey ? "🙈" : "👁️"}
+                <span aria-hidden="true">{showApiKey ? "🙈" : "👁️"}</span>
               </button>
             </div>
             <button
@@ -1627,7 +1627,7 @@ function App() {
           <h2>
             {viewMode === "statuses" ? "Estados" : "Chats"}
             {viewMode === "chats" && syncingChats && (
-              <span className="syncIndicator" title="Sincronizando chats..." aria-live="polite"> 🔄</span>
+              <span className="syncIndicator" title="Sincronizando chats..." aria-live="polite"> <span aria-hidden="true">🔄</span></span>
             )}
           </h2>
           <div className="headerActions">
@@ -1667,7 +1667,7 @@ function App() {
               disabled={loadingChats}
               aria-busy={loadingChats}
             >
-              {loadingChats ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
+              {loadingChats ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Actualizar</span></>}
             </button>
           </div>
         </header>
@@ -1816,7 +1816,7 @@ function App() {
                   disabled={loadingStatusArchive}
                   aria-busy={loadingStatusArchive}
                 >
-                  {loadingStatusArchive ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <>🔄 <span className="hideOnMobile">Actualizar</span></>}
+                  {loadingStatusArchive ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Actualizar</span></>}
                 </button>
               </div>
             </header>
@@ -1904,7 +1904,7 @@ function App() {
                   disabled={!selectedChatId || loadingMessages[selectedChatId]}
                   aria-busy={loadingMessages[selectedChatId]}
                 >
-                  {loadingMessages[selectedChatId] ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Recargando...</span></> : <>🔄 <span className="hideOnMobile">Recargar</span></>}
+                  {loadingMessages[selectedChatId] ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Recargando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Recargar</span></>}
                 </button>
               </div>
             </header>
@@ -2355,7 +2355,7 @@ function App() {
                     onClick={() => setShowCloudflareToken(!showCloudflareToken)}
                     aria-label={showCloudflareToken ? "Ocultar Cloudflare Token" : "Mostrar Cloudflare Token"}
                   >
-                    {showCloudflareToken ? "🙈" : "👁️"}
+                    <span aria-hidden="true">{showCloudflareToken ? "🙈" : "👁️"}</span>
                   </button>
                 </div>
 

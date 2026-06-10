@@ -165,12 +165,12 @@ button, textarea, input, select {
 }
 
 .authInput[aria-invalid="true"] {
-  border-color: var(--error);
+  border-color: #ffbaba;
 }
 
 .authInput[aria-invalid="true"]:focus-visible {
-  outline-color: var(--error);
-  box-shadow: 0 0 0 4px var(--error);
+  outline-color: #ffbaba;
+  box-shadow: 0 0 0 4px rgba(255, 186, 186, 0.4);
 }
 
 .instructionText {
@@ -511,7 +511,7 @@ button, textarea, input, select {
 .logoutBtn {
   background: transparent;
   border: 1px solid rgba(255, 82, 82, 0.3);
-  color: var(--error);
+  color: #ffbaba;
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -1683,7 +1683,7 @@ button.fullWidth {
 .revokedNotice {
   font-size: 11px;
   font-weight: 600;
-  color: var(--error);
+  color: #ffbaba;
   margin-bottom: 6px;
   text-transform: uppercase;
 }
@@ -2045,3 +2045,4 @@ select {
 .onboarding-wizard p:last-child {
   margin-bottom: 0;
 }
+.syncIndicator { display: inline-block; animation: spin 1s linear infinite; margin-left: 6px; }
