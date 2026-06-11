@@ -163,6 +163,16 @@ function validateStartupConfig() {
     }
   }
 
+  // Explicit timeout boundaries checks (safeNumber handles defaults, but we log explicitly here if missed)
+  const aiTimeout = Number(process.env.AI_TIMEOUT_MS);
+  if (process.env.AI_TIMEOUT_MS && (isNaN(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000)) {
+    console.warn(`⚠️ WARNING: AI_TIMEOUT_MS (${process.env.AI_TIMEOUT_MS}) is invalid or out of safe bounds [1000, 60000]. It will be clamped.`);
+  }
+
+  const pollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
+  if (process.env.STATUS_POLL_INTERVAL_MS && (isNaN(pollInterval) || pollInterval < 1000 || pollInterval > 86400000)) {
+    console.warn(`⚠️ WARNING: STATUS_POLL_INTERVAL_MS (${process.env.STATUS_POLL_INTERVAL_MS}) is invalid or out of safe bounds. It will be clamped.`);
+  }
 }
 
 // Invoke validation on startup
