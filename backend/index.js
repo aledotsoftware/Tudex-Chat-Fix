@@ -140,7 +140,7 @@ let lastStatusArchiveStats = {
 
 // Startup validation logic
 function validateStartupConfig() {
-  const provider = (process.env.AI_PROVIDER || 'lmstudio').toLowerCase();
+  const provider = String(process.env.AI_PROVIDER || 'lmstudio').trim().toLowerCase();
 
   // Validate AI config values that aren't inherently checked by safeUrl/safeNumber correctly
   if (!process.env.MODEL_NAME || process.env.MODEL_NAME.trim() === '') {
@@ -167,6 +167,17 @@ function validateStartupConfig() {
   }
 
   // Explicit timeout boundaries checks (safeNumber handles defaults, but we log explicitly here if missed)
+
+  const temperature = Number(process.env.AI_TEMPERATURE);
+  if (process.env.AI_TEMPERATURE !== undefined && (isNaN(temperature) || temperature < 0 || temperature > 2)) {
+    console.warn(`⚠️ WARNING: AI_TEMPERATURE (${process.env.AI_TEMPERATURE}) is invalid or out of safe bounds [0, 2]. It will be clamped.`);
+  }
+
+  const maxTokens = Number(process.env.AI_MAX_TOKENS);
+  if (process.env.AI_MAX_TOKENS !== undefined && (isNaN(maxTokens) || maxTokens < 1 || maxTokens > 8192)) {
+    console.warn(`⚠️ WARNING: AI_MAX_TOKENS (${process.env.AI_MAX_TOKENS}) is invalid or out of safe bounds [1, 8192]. It will be clamped.`);
+  }
+
   const aiTimeout = Number(process.env.AI_TIMEOUT_MS);
   if (process.env.AI_TIMEOUT_MS && (isNaN(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000)) {
     console.warn(`⚠️ WARNING: AI_TIMEOUT_MS (${process.env.AI_TIMEOUT_MS}) is invalid or out of safe bounds [1000, 60000]. It will be clamped.`);
@@ -377,7 +388,7 @@ const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 
 const DEFAULT_AI_CONFIG = {
-  provider: (process.env.AI_PROVIDER || 'lmstudio').toLowerCase(),
+  provider: String(process.env.AI_PROVIDER || 'lmstudio').trim().toLowerCase(),
   lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL')
     .replace(/\/+$/, '')
     .replace(/\/v1\/chat\/completions$/, ''),
@@ -385,11 +396,11 @@ const DEFAULT_AI_CONFIG = {
   cloudflareApiToken: (process.env.CLOUDFLARE_API_TOKEN || '').trim(),
   cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL')
     .replace(/\/+$/, ''),
-  modelName: (process.env.MODEL_NAME || 'llama-3.1-8b-instruct').trim(),
+  modelName: (process.env.MODEL_NAME || '').trim() || 'llama-3.1-8b-instruct',
   temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'),
   maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'),
-  systemPrompt: (process.env.AI_SYSTEM_PROMPT || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.').trim(),
-  userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}').trim(),
+  systemPrompt: (process.env.AI_SYSTEM_PROMPT || '').trim() || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.',
+  userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || '').trim() || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}',
   timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS')
 };
 
