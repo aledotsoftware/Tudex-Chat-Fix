@@ -509,6 +509,7 @@ button, textarea, input, select {
 }
 
 .logoutBtn {
+  touch-action: manipulation;
   background: transparent;
   border: 1px solid rgba(255, 82, 82, 0.3);
   color: #ffbaba;
@@ -988,6 +989,7 @@ button, textarea, input, select {
 }
 
 .composerActions button {
+  touch-action: manipulation;
   flex: 1;
   min-width: 140px;
 }
@@ -1214,6 +1216,7 @@ button.fullWidth {
 }
 
 .iconButton {
+  touch-action: manipulation;
   background: transparent;
   border: none;
   font-size: 16px;
@@ -1538,16 +1541,17 @@ button.fullWidth {
     border: none;
     box-shadow: none;
     will-change: transform, opacity;
-    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.3s;
   }
 
   .sidebar {
     width: 100%;
     flex-shrink: 0;
     border-right: none;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
   }
 
   .chatPanel {
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.3s;
     position: absolute;
     top: 0;
     left: 0;
@@ -1660,6 +1664,7 @@ button.fullWidth {
 }
 
 .passwordToggleBtn {
+  touch-action: manipulation;
   position: absolute;
   right: 10px;
   top: 50%;
