@@ -57,8 +57,11 @@ const io = new Server(server, {
 });
 
 const providerStates = new Map();
-function getProviderState(provider) {
-  const key = String(provider || '').trim().toLowerCase();
+function getProviderState(provider, accountId = 'default') {
+  const providerKey = String(provider || '').trim().toLowerCase();
+  const accKey = String(accountId || 'default').trim();
+  const key = `${providerKey}:${accKey}`;
+
   if (!providerStates.has(key)) {
     const stateObj = {
       lastQR: null,
@@ -69,7 +72,7 @@ function getProviderState(provider) {
     Object.defineProperty(stateObj, 'status', {
       get() {
         try {
-          return resolveProviderAdapter(key).getStatus();
+          return resolveProviderAdapter(providerKey, accKey).getStatus();
         } catch {
           return 'connecting';
         }
@@ -82,7 +85,7 @@ function getProviderState(provider) {
     Object.defineProperty(stateObj, 'isReady', {
       get() {
         try {
-          return resolveProviderAdapter(key).isReady();
+          return resolveProviderAdapter(providerKey, accKey).isReady();
         } catch {
           return false;
         }
@@ -216,12 +219,23 @@ io.use((socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('🔌 Frontend client connected to socket');
-  for (const providerName of providerRegistry ? providerRegistry.listProviders() : [DEFAULT_PROVIDER]) {
-    const state = getProviderState(providerName);
+  if (providerRegistry) {
+    for (const adapter of providerRegistry.getAdapters()) {
+      const providerName = adapter.getProviderName();
+      const accountId = adapter.getAccountId();
+      const state = getProviderState(providerName, accountId);
+      if (state.status === 'qr' && state.lastQR) {
+        socket.emit('qr', { qr: state.lastQR, provider: providerName, accountId });
+      } else if (state.status === 'authenticated') {
+        socket.emit('ready', { status: 'authenticated', provider: providerName, accountId });
+      }
+    }
+  } else {
+    const state = getProviderState(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID);
     if (state.status === 'qr' && state.lastQR) {
-      socket.emit('qr', { qr: state.lastQR, provider: providerName, accountId: DEFAULT_ACCOUNT_ID });
+      socket.emit('qr', { qr: state.lastQR, provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
     } else if (state.status === 'authenticated') {
-      socket.emit('ready', { status: 'authenticated', provider: providerName, accountId: DEFAULT_ACCOUNT_ID });
+      socket.emit('ready', { status: 'authenticated', provider: DEFAULT_PROVIDER, accountId: DEFAULT_ACCOUNT_ID });
     }
   }
 });
@@ -584,11 +598,11 @@ function getSyncStateSnapshot(provider, accountId, conversationId, kind) {
   return { ...local };
 }
 
-function resolveProviderAdapter(provider) {
+function resolveProviderAdapter(provider, accountId = 'default') {
   if (!providerRegistry) {
     throw new Error('Provider registry not initialized');
   }
-  return providerRegistry.resolve(provider);
+  return providerRegistry.resolve(provider, accountId);
 }
 
 async function ensureCanonicalProviderFields() {
@@ -1188,12 +1202,12 @@ function normalizeStatusDescriptor(entry = {}) {
   };
 }
 
-async function fetchCurrentStatusDescriptors(provider) {
+async function fetchCurrentStatusDescriptors(provider, accountId = 'default') {
   try {
-    const adapter = resolveProviderAdapter(provider);
-    return await adapter.fetchStatusDescriptors();
+    const adapter = resolveProviderAdapter(provider, accountId);
+    return await adapter.fetchStatusDescriptors({ provider, accountId });
   } catch (err) {
-    console.error(`⚠️ fetchStatusDescriptors error for ${provider}:`, err.message);
+    console.error(`⚠️ fetchStatusDescriptors error for ${provider} (account: ${accountId}):`, err.message);
     return [];
   }
 }
@@ -1302,7 +1316,7 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
   };
 
   try {
-    const descriptors = await fetchCurrentStatusDescriptors(provider);
+    const descriptors = await fetchCurrentStatusDescriptors(provider, accountId);
 
     const ids = descriptors.map(d => normalizeStatusDescriptor(d).providerStatusMessageId).filter(Boolean);
     const existingStatuses = await StatusArchive.find({
@@ -1632,7 +1646,7 @@ function bindProviderEvents(adapter, accountId) {
 
   adapter.on('qr', (qr) => {
     console.log('📡 QR Received - Emitting to frontend...');
-    const state = getProviderState(providerName);
+    const state = getProviderState(providerName, accountId);
     state.lastQR = qr;
     state.lastDisconnectReason = null;
     io.emit('qr', { qr, provider: providerName, accountId });
@@ -1640,7 +1654,7 @@ function bindProviderEvents(adapter, accountId) {
 
   adapter.on('ready', () => {
     console.log(`✅ Client is ready for provider: ${providerName}!`);
-    const state = getProviderState(providerName);
+    const state = getProviderState(providerName, accountId);
     state.lastQR = null;
     state.lastReadyAt = new Date().toISOString();
     state.lastDisconnectReason = null;
@@ -1669,7 +1683,7 @@ function bindProviderEvents(adapter, accountId) {
 
   adapter.on('disconnected', (reason) => {
     console.log(`Client was logged out for provider: ${providerName}`, reason);
-    const state = getProviderState(providerName);
+    const state = getProviderState(providerName, accountId);
     state.lastDisconnectReason = String(reason || 'unknown');
     io.emit('disconnected', { reason, provider: providerName, accountId });
   });
@@ -1736,26 +1750,27 @@ function bindProviderEvents(adapter, accountId) {
 }
 
 // Bind events and initialize all registered providers
-for (const providerName of providerRegistry.listProviders()) {
-  const adapter = providerRegistry.resolve(providerName);
-  bindProviderEvents(adapter, DEFAULT_ACCOUNT_ID);
+for (const adapter of providerRegistry.getAdapters()) {
+  bindProviderEvents(adapter, adapter.getAccountId());
 }
 
 providerRegistry.initializeAll();
 
 setInterval(() => {
-  for (const providerName of providerRegistry.listProviders()) {
-    runStatusArchiveSweep('poll', { provider: providerName, accountId: DEFAULT_ACCOUNT_ID }).catch((error) => {
-      console.error(`⚠️ Scheduled status archive sweep failed for ${providerName}:`, error.message);
+  for (const adapter of providerRegistry.getAdapters()) {
+    const providerName = adapter.getProviderName();
+    const accountId = adapter.getAccountId();
+    runStatusArchiveSweep('poll', { provider: providerName, accountId }).catch((error) => {
+      console.error(`⚠️ Scheduled status archive sweep failed for ${providerName} (account: ${accountId}):`, error.message);
     });
   }
 }, STATUS_POLL_INTERVAL_MS);
 
-function ensureProviderReady(res, provider) {
-  const adapter = resolveProviderAdapter(provider);
+function ensureProviderReady(res, provider, accountId = 'default') {
+  const adapter = resolveProviderAdapter(provider, accountId);
   if (!adapter.isReady()) {
     res.status(503).json({
-      error: `${provider} client not ready`,
+      error: `${provider} client not ready (account: ${accountId})`,
       providerStatus: adapter.getStatus(),
       ready: false
     });
@@ -2263,8 +2278,8 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 app.get(['/api/status', '/api/status/:channelCode'], async (req, res) => {
   try {
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
-    const { provider } = parseProviderContext(req);
-    const defaultState = getProviderState(provider);
+    const { provider, accountId } = parseProviderContext(req);
+    const defaultState = getProviderState(provider, accountId);
     res.json({
       providerStatus: defaultState.status,
       providers: providerRegistry ? providerRegistry.listProviders() : [provider],
@@ -2338,10 +2353,10 @@ app.post(['/api/status-archive/sweep', '/api/status-archive/sweep/:channelCode']
 app.get(['/api/health', '/api/health/:channelCode'], async (req, res) => {
   try {
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
-    const { provider } = parseProviderContext(req);
+    const { provider, accountId } = parseProviderContext(req);
     const mongoOk = mongoose.connection.readyState === 1;
     const aiConfigured = isAiConfigured(aiConfig);
-    const defaultState = getProviderState(provider);
+    const defaultState = getProviderState(provider, accountId);
     const providerOk = defaultState.status === 'authenticated' || defaultState.status === 'qr';
     res.status(mongoOk ? 200 : 503).json({
       ok: mongoOk,
