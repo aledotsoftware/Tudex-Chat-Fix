@@ -1627,7 +1627,10 @@ function App() {
           <h2>
             {viewMode === "statuses" ? "Estados" : "Chats"}
             {viewMode === "chats" && syncingChats && (
-              <span className="syncIndicator" title="Sincronizando chats..." aria-live="polite"> <span aria-hidden="true">🔄</span></span>
+              <span className="syncingBadge" title="Sincronizando chats..." aria-live="polite">
+                <span className="syncIndicator" aria-hidden="true">🔄</span>
+                Sincronizando...
+              </span>
             )}
           </h2>
           <div className="headerActions">
@@ -1884,7 +1887,10 @@ function App() {
                   <h3>
                     {selectedChat?.name || "Seleccioná un chat"}
                     {syncingChat && (
-                      <span className="syncIndicator" title="Sincronizando mensajes..." aria-live="polite"><span aria-hidden="true">🔄</span></span>
+                      <span className="syncingBadge" title="Sincronizando mensajes..." aria-live="polite">
+                        <span className="syncIndicator" aria-hidden="true">🔄</span>
+                        Sincronizando...
+                      </span>
                     )}
                   </h3>
                   <p>
@@ -2153,7 +2159,7 @@ function App() {
               ) : null}
 
               {(sending || correcting || correctingAndSending) ? (
-                <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : "sending"}`}>
+                <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "sendingAi" : "sending"}`}>
                   <span className="spinner" aria-hidden="true" />
                   <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
                 </div>
