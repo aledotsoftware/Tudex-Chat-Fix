@@ -1,12 +1,13 @@
 const { EventEmitter } = require('events');
 
 class BaseAdapter extends EventEmitter {
-  constructor(provider) {
+  constructor(provider, accountId) {
     super();
     this.provider = String(provider || '').trim().toLowerCase();
     if (!this.provider) {
       throw new Error('Provider adapter requires a provider name');
     }
+    this.accountId = String(accountId || 'default').trim();
     this._isReady = false;
     this._status = 'initializing';
 
@@ -37,6 +38,10 @@ class BaseAdapter extends EventEmitter {
 
   getProviderName() {
     return this.provider;
+  }
+
+  getAccountId() {
+    return this.accountId;
   }
 
   initialize() {

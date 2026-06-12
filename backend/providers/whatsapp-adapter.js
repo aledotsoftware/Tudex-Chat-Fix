@@ -3,7 +3,7 @@ const { BaseAdapter } = require('./base-adapter');
 
 class WhatsAppAdapter extends BaseAdapter {
   constructor(options = {}) {
-    super('whatsapp');
+    super('whatsapp', options.accountId);
 
     // Configurable initialization
     if (options.client) {
