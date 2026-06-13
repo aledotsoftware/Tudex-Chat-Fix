@@ -411,6 +411,11 @@ button, textarea, input, select {
   touch-action: manipulation;
 }
 
+.chatItem:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 .chatItem:active {
   background: rgba(255, 255, 255, 0.1);
   transform: scale(0.98) !important;
@@ -1966,6 +1971,9 @@ select {
   .logoutBtn {
     min-height: 48px;
     min-width: 48px;
+  }
+  .authInput {
+    min-height: 48px;
   }
 }
 
