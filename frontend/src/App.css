@@ -618,6 +618,7 @@ button, textarea, input, select {
   font-size: 18px;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
 }
 
 .messagesArea {
