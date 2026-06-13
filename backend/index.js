@@ -280,6 +280,13 @@ app.get('/api/check-auth', (req, res) => {
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/chatfix')
   .then(async () => {
     console.log('✅ MongoDB connected');
+    // Explicit database index maintenance
+    await Promise.all([
+      Chat.syncIndexes(),
+      Message.syncIndexes(),
+      SyncState.syncIndexes(),
+      StatusArchive.syncIndexes()
+    ]);
     await ensureCanonicalProviderFields();
   })
   .catch(err => console.error('❌ MongoDB error:', err));
@@ -1987,6 +1994,7 @@ app.get('/api/ai/models', async (_req, res) => {
 // Get chats - helps the frontend list who we can talk to
 app.get(['/api/chats', '/api/chats/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=0, stale-while-revalidate=5');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const cacheKey = chatsCacheKey(provider, accountId);
@@ -2034,6 +2042,7 @@ app.get(['/api/chats', '/api/chats/:channelCode'], async (req, res) => {
 
 app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=0, stale-while-revalidate=5');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const chatId = req.params.chatId;
     const limit = parsePositiveInt(req.query.limit, 80, 200);
@@ -2288,6 +2297,7 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
 
 app.get(['/api/status', '/api/status/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const defaultState = getProviderState(provider, accountId);
@@ -2363,6 +2373,7 @@ app.post(['/api/status-archive/sweep', '/api/status-archive/sweep/:channelCode']
 
 app.get(['/api/health', '/api/health/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const mongoOk = mongoose.connection.readyState === 1;
@@ -2387,6 +2398,7 @@ app.get(['/api/health', '/api/health/:channelCode'], async (req, res) => {
 
 app.get(['/api/sync/state', '/api/sync/state/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=0, stale-while-revalidate=5');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const kind = req.query.kind === 'messages' ? 'messages' : 'chats';
