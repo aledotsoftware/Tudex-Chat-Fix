@@ -4,7 +4,7 @@ Este archivo contiene el estado compartido entre todos los repositorios gestiona
 Los agentes pueden leer este estado para entender el contexto de otros proyectos.
 
 ## 🚀 ACTIVE MILESTONES
-- [Tudex-Chat-Fix] Core Backend y Persistencia Canonica - **COMPLETADO** - Evaluated canonical field initialization, fast read-path API logic with stale-while-revalidate pattern, multi-level caching strategies, and verified schema normalizations. The backend handles the current multi-provider canonical contract reliably. No code adjustments required.
+- [Tudex-Chat-Fix] Core Backend y Persistencia Canonica - **COMPLETADO** - Evaluated canonical field initialization, fast read-path API logic with stale-while-revalidate pattern, multi-level caching strategies, and verified schema normalizations. The backend handles the current multi-provider canonical contract reliably. Updated upsertChat to use explicit $set operator for robustness.
 - [JAA] Implementación de Jerarquía de Contexto (.jaa.md global) - **COMPLETADO**
 - [JAA] Sistema de Estado Global (system-state.md) - **EN PROCESO**
 - [Tudex-Chat-Fix] Mobile UX Polish (Transiciones, Targets, Hover) - **COMPLETADO**

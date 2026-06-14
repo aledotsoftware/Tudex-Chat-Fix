@@ -1137,17 +1137,19 @@ async function upsertChat(chatData, index, context = {}) {
     await Chat.findOneAndUpdate(
       { provider, accountId, conversationId },
       {
-        id: chatId,
-        provider,
-        accountId,
-        conversationId,
-        conversationKey: buildConversationKey(provider, accountId, conversationId),
-        name: chatContext.name,
-        unreadCount: chatContext.unreadCount,
-        timestamp: chatContext.timestamp,
-        isGroup: chatContext.isGroup,
-        avatarUrl,
-        lastSyncedAt: now
+        $set: {
+          id: chatId,
+          provider,
+          accountId,
+          conversationId,
+          conversationKey: buildConversationKey(provider, accountId, conversationId),
+          name: chatContext.name,
+          unreadCount: chatContext.unreadCount,
+          timestamp: chatContext.timestamp,
+          isGroup: chatContext.isGroup,
+          avatarUrl,
+          lastSyncedAt: now
+        }
       },
       { upsert: true, new: true }
     );
