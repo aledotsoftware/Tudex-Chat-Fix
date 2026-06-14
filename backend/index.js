@@ -1926,7 +1926,13 @@ app.put('/api/ai/config', async (req, res) => {
     }
 
     const saved = await saveAiConfig(nextConfig);
-    res.json({ success: true, config: saved });
+
+    const configResponse = saved.toJSON ? saved.toJSON() : { ...saved };
+    if (configResponse.cloudflareApiToken) {
+      configResponse.cloudflareApiToken = '********';
+    }
+
+    res.json({ success: true, config: configResponse });
   } catch (error) {
     console.error('❌ Save AI config error:', error.message);
     res.status(500).json({ error: 'Failed to save AI config' });
