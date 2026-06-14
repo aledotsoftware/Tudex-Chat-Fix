@@ -100,11 +100,11 @@ class WhatsAppAdapter extends BaseAdapter {
     }
   }
 
-  async getMessageById(messageId) {
+  async getMessageById(messageId, { provider, accountId, conversationId } = {}) {
     return this.client.getMessageById(messageId);
   }
 
-  async fetchStatusDescriptors() {
+  async fetchStatusDescriptors({ provider, accountId } = {}) {
     if (!this.client?.pupPage) return [];
     return this.client.pupPage.evaluate(async () => {
       const statuses = window.Store.Status?.getModelsArray?.() || [];
@@ -149,7 +149,7 @@ class WhatsAppAdapter extends BaseAdapter {
     });
   }
 
-  async markStatusRead() {
+  async markStatusRead({ provider, accountId } = {}) {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 
@@ -248,18 +248,7 @@ class WhatsAppAdapter extends BaseAdapter {
     return null;
   }
 
-  async sendMessage(params) {
-    const { provider, accountId, conversationId } = params;
-    let {
-      chatId,
-      text,
-      replyToMessageId,
-      mediaUrl,
-      mediaBase64,
-      mediaName = 'image.jpg',
-      mediaMimeType = 'image/jpeg'
-    } = params;
-
+  async sendMessage({ provider, accountId, conversationId, chatId, text, replyToMessageId, mediaUrl, mediaBase64, mediaName = 'image.jpg', mediaMimeType = 'image/jpeg' }) {
     const isChannelUrl = chatId.includes('whatsapp.com/channel/');
     const looksLikeInviteCode = !chatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(chatId);
 

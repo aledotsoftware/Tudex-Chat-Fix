@@ -72,15 +72,15 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`sendMessage() not implemented for provider=${this.provider}`);
   }
 
-  async getMessageById(messageId) {
+  async getMessageById(messageId, { provider, accountId, conversationId } = {}) {
     throw new Error(`getMessageById() not implemented for provider=${this.provider}`);
   }
 
-  async fetchStatusDescriptors() {
+  async fetchStatusDescriptors({ provider, accountId } = {}) {
     throw new Error(`fetchStatusDescriptors() not implemented for provider=${this.provider}`);
   }
 
-  async markStatusRead() {
+  async markStatusRead({ provider, accountId } = {}) {
     throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
   }
 

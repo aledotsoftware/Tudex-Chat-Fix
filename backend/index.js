@@ -1253,8 +1253,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
   let statusMessage = null;
   try {
     const adapter = resolveProviderAdapter(provider);
-    await adapter.markStatusRead().catch(() => {});
-    statusMessage = await adapter.getMessageById(normalized.providerStatusMessageId).catch(() => null);
+    await adapter.markStatusRead({ provider, accountId }).catch(() => {});
+    statusMessage = await adapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId }).catch(() => null);
   } catch (err) {
     console.warn('⚠️ Adapter call failed during archiveStatusFromDescriptor:', err.message);
   }
@@ -1717,7 +1717,7 @@ function bindProviderEvents(adapter, accountId) {
     if (adapter.isStatusMessage(msg)) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
-        await adapter.markStatusRead();
+        await adapter.markStatusRead({ provider: providerName, accountId });
 
         const descriptor = adapter.extractStatusDescriptor(msg);
         await archiveStatusFromDescriptor(descriptor, 'event', { provider: providerName, accountId });
