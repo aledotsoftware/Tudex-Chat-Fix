@@ -920,21 +920,6 @@ button, textarea, input, select {
   width: 100%;
 }
 
-.composerOriginalLabel {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.8;
-}
-.composerOriginalLabel::before {
-  content: "📝";
-  font-size: 14px;
-}
-
 .composer textarea {
   width: 100%;
   background: rgba(255, 255, 255, 0.04);
@@ -1143,13 +1128,13 @@ button:disabled {
 
 .correctedPreview {
   margin-top: 16px;
-  background: linear-gradient(145deg, rgba(0, 210, 255, 0.08), rgba(0, 210, 255, 0.03));
+  background: linear-gradient(145deg, rgba(0, 210, 255, 0.15), rgba(0, 210, 255, 0.05));
   border: 1px solid var(--accent-primary);
   border-radius: 16px;
   padding: 16px;
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 210, 255, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 210, 255, 0.2);
 }
 
 @keyframes slideIn {
@@ -1945,6 +1930,11 @@ button.fullWidth {
 
   .composerActions button.primary {
     flex: 1 1 100%;
+    order: -1;
+  }
+
+  .composerActions button.plainSendBtn {
+    flex: 1 1 100%;
   }
 
   .bubbleActions {
@@ -2079,12 +2069,12 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 3px 10px;
   border-radius: 12px;
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-primary);
   margin-left: 10px;
   font-weight: 500;
   vertical-align: middle;

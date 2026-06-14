@@ -2094,7 +2094,6 @@ function App() {
 
               {/* Removed redundant syncingChat badge here to prevent layout shift; it's already in the header */}
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
-                {correctedDraft && <span className="composerOriginalLabel">Tu borrador original (modificarlo descartará la sugerencia IA)</span>}
                 <textarea
                   ref={draftInputRef}
                   value={draft}
@@ -2111,7 +2110,7 @@ function App() {
                     }
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder={correctedDraft ? "Escribí un mensaje... (Enter: enviar versión IA | Ctrl+Enter: enviar original)" : "Escribí un mensaje... (Enter: mejorar y enviar | Ctrl+Enter: enviar original sin revisar)"}
+                  placeholder={correctedDraft ? "Borrador original (Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
                   disabled={sending || correcting || correctingAndSending}
@@ -2161,7 +2160,7 @@ function App() {
               {(sending || correcting || correctingAndSending) ? (
                 <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "sendingAi" : "sending"}`}>
                   <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando redacción..." : sendingType === 'corrected' || sendingType === 'correctedAndSending' ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
+                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando con IA..." : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "✨ Enviando versión IA..." : "📤 Enviando mensaje..."}</span>
                 </div>
               ) : null}
 
@@ -2173,7 +2172,7 @@ function App() {
                       aria-label="Mejorar redacción con IA y enviar"
                       onClick={correctAndSend}
                       disabled={!draft.trim() || sending || correcting || correctingAndSending}
-                    ><span aria-hidden="true">🚀</span> <span className="hideOnMobile">Mejorar y enviar</span>
+                    ><span aria-hidden="true">🚀</span> <span>Mejorar y enviar</span>
                     </button>
                     <button
                       className="secondary"
@@ -2196,7 +2195,7 @@ function App() {
                     aria-label="Enviar el texto original, descartando la sugerencia"
                     onClick={() => sendMessage(draft, "original")}
                     disabled={!draft.trim() || sending || correcting || correctingAndSending}
-                  ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Descartar IA y enviar original</span>
+                  ><span aria-hidden="true">📤</span> <span>Enviar original</span>
                   </button>
                 )}
               </div>
