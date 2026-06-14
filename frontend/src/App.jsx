@@ -174,7 +174,8 @@ function App() {
   const [backendStatus, setBackendStatus] = useState({
     providerStatus: "unknown",
     uptimeSec: 0,
-    statusArchive: null
+    statusArchive: null,
+    latencyMs: null
   });
 
   const [toasts, setToasts] = useState([]);
@@ -846,16 +847,19 @@ function App() {
     if (!apiAuthenticated) return;
     const fetchStatus = async () => {
       try {
+        const start = Date.now();
         const url = new URL(`${API_URL}/api/status`);
         url.searchParams.set("provider", DEFAULT_PROVIDER);
         url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
         const res = await fetch(url.toString());
         if (!res.ok) return;
         const data = await res.json();
+        const latency = Date.now() - start;
         setBackendStatus({
           providerStatus: data.providerStatus || "unknown",
           uptimeSec: Number(data.uptimeSec || 0),
-          statusArchive: data.statusArchive || null
+          statusArchive: data.statusArchive || null,
+          latencyMs: latency
         });
       } catch (_error) {
         // silent on status poll
@@ -1264,6 +1268,24 @@ function App() {
   async function sendQueuedReply(item, options = {}) {
     const { silent = false, skipRefresh = false } = options;
     if (!item?.text?.trim()) return false;
+
+    const optimisticMsg = {
+      _uiId: `optimistic-${Date.now()}-${Math.random()}`,
+      chatId: item.chatId || selectedChatId,
+      body: item.text,
+      fromMe: true,
+      timestamp: Math.floor(Date.now() / 1000),
+      status: 'sending'
+    };
+    if (optimisticMsg.chatId === selectedChatId) {
+      setMessages(prev => [...prev, optimisticMsg]);
+    } else {
+      setMessagesByChat((prev) => {
+        const current = prev[optimisticMsg.chatId] || [];
+        return { ...prev, [optimisticMsg.chatId]: [...current, optimisticMsg] };
+      });
+    }
+
     setSendingReplyQueueIds((prev) => ({ ...prev, [item.localId]: true }));
     try {
       const ok = await postSendMessage({
@@ -1271,7 +1293,17 @@ function App() {
         originalText: item.text,
         replyToMessageId: item.replyToMessageId
       });
-      if (!ok) return false;
+      if (!ok) {
+        if (optimisticMsg.chatId === selectedChatId) {
+          setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
+        } else {
+          setMessagesByChat((prev) => {
+            const current = prev[optimisticMsg.chatId] || [];
+            return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
+          });
+        }
+        return false;
+      }
       setReplyQueue((prev) => prev.filter((entry) => entry.localId !== item.localId));
       if (!silent) {
         showNotice("Respuesta enviada.", "success");
@@ -1280,6 +1312,16 @@ function App() {
         await fetchMessages(selectedChatId, { withLoader: false, background: true });
       }
       return true;
+    } catch (err) {
+        if (optimisticMsg.chatId === selectedChatId) {
+          setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
+        } else {
+          setMessagesByChat((prev) => {
+            const current = prev[optimisticMsg.chatId] || [];
+            return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
+          });
+        }
+      return false;
     } finally {
       setSendingReplyQueueIds((prev) => {
         const next = { ...prev };
@@ -1311,6 +1353,7 @@ function App() {
         {
           localId,
           replyToMessageId: msg.id || msg._uiId,
+          chatId: msg.chatId,
           original: insight.original,
           text: template
         },
@@ -1633,6 +1676,7 @@ function App() {
               </span>
             )}
           </h2>
+          {viewMode === "chats" && syncingChats && <div className="syncProgressBar" aria-hidden="true"></div>}
           <div className="headerActions">
             <button
               className={`secondary ${viewMode === "statuses" ? "activeToggle" : ""}`}
@@ -1676,10 +1720,10 @@ function App() {
         </header>
 
         <div className="statusBar" role="status" aria-live="polite" aria-atomic="true">
-          <span className={`dot ${dotClass}`} aria-hidden="true" />
+          <span className={`dot ${dotClass}`} aria-hidden="true" title={backendStatus.latencyMs !== null ? `Latencia: ${backendStatus.latencyMs}ms` : ""} />
           <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
           <span>
-            {connectionLabel} · Provider: {backendStatus.providerStatus}
+            {connectionLabel} · Provider: {backendStatus.providerStatus} {backendStatus.latencyMs !== null ? `(${backendStatus.latencyMs}ms)` : ""}
           </span>
           {totalUnread > 0 ? <strong className="pendingCounter" aria-label={`${totalUnread} mensajes pendientes`}>{totalUnread} pendientes</strong> : null}
         </div>
@@ -1793,6 +1837,7 @@ function App() {
         {viewMode === "statuses" ? (
           <>
             <header className="chatHeader">
+              {loadingStatusArchive && <div className="syncProgressBar" aria-hidden="true"></div>}
               <div className="chatHeaderLeft">
                 <button
                   className="secondary mobileBackBtn"
