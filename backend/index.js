@@ -437,7 +437,7 @@ async function saveAiConfig(nextConfig) {
 
   await AiSettings.findOneAndUpdate(
     { key: 'ai_config' },
-    { key: 'ai_config', value: aiConfig },
+    { $set: { key: 'ai_config', value: aiConfig } },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
@@ -578,16 +578,18 @@ function setSyncState(task, patch) {
       kind: next.kind
     },
     {
-      provider: next.provider,
-      accountId: next.accountId,
-      conversationId: next.conversationId,
-      kind: next.kind,
-      status: next.status,
-      requestedLimit: next.requestedLimit,
-      lastRequestedAt: next.lastRequestedAt,
-      lastStartedAt: next.lastStartedAt,
-      lastFinishedAt: next.lastFinishedAt,
-      lastError: next.lastError
+      $set: {
+        provider: next.provider,
+        accountId: next.accountId,
+        conversationId: next.conversationId,
+        kind: next.kind,
+        status: next.status,
+        requestedLimit: next.requestedLimit,
+        lastRequestedAt: next.lastRequestedAt,
+        lastStartedAt: next.lastStartedAt,
+        lastFinishedAt: next.lastFinishedAt,
+        lastError: next.lastError
+      }
     },
     { upsert: true, new: true, setDefaultsOnInsert: true }
   ).catch((error) => {
@@ -2186,7 +2188,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
     // Update local cache first
     await Chat.findOneAndUpdate(
       { provider, accountId, conversationId: chatId },
-      { unreadCount: 0 },
+      { $set: { unreadCount: 0 } },
       { new: true }
     );
     invalidateChatsCache(provider, accountId);
