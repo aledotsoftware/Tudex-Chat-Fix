@@ -1135,7 +1135,8 @@ function App() {
   }
 
   async function postSendMessage(payload) {
-    if (!selectedChatId) {
+    const chatId = payload?.chatId || selectedChatId;
+    if (!chatId) {
       showNotice("Seleccioná un chat para enviar.", "error");
       return false;
     }
@@ -1149,7 +1150,7 @@ function App() {
         body: JSON.stringify({
           provider: DEFAULT_PROVIDER,
           accountId: DEFAULT_ACCOUNT_ID,
-          chatId: selectedChatId,
+          chatId,
           text,
           originalText: payload?.originalText || text,
           replyToMessageId: payload?.replyToMessageId || ""
@@ -1289,6 +1290,7 @@ function App() {
     setSendingReplyQueueIds((prev) => ({ ...prev, [item.localId]: true }));
     try {
       const ok = await postSendMessage({
+        chatId: item.chatId || selectedChatId,
         text: item.text,
         originalText: item.text,
         replyToMessageId: item.replyToMessageId
