@@ -1309,7 +1309,7 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
       accountId: payload.accountId,
       providerStatusMessageId: payload.providerStatusMessageId
     },
-    { $setOnInsert: payload },
+    { $set: payload },
     { upsert: true, new: true }
   );
 
@@ -1656,7 +1656,8 @@ async function handleMessageRevoke(after, before, context = {}) {
     );
 
     if (updated) {
-      io.emit('message_updated', { ...updated, provider: context.provider, accountId: context.accountId });
+      const payload = updated.toJSON ? updated.toJSON() : { ...updated };
+      io.emit('message_updated', { ...payload, provider: context.provider, accountId: context.accountId });
     }
   } catch (err) {
     console.error(`❌ Error handling revoke for ${msgId}:`, err.message);
