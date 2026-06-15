@@ -84,47 +84,47 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
   }
 
-  async downloadMedia(message) {
+  async downloadMedia(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`downloadMedia() not implemented for provider=${this.provider}`);
   }
 
-  async getQuotedMessage(message) {
+  async getQuotedMessage(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`getQuotedMessage() not implemented for provider=${this.provider}`);
   }
 
-  async getChatAvatarUrl(chat) {
+  async getChatAvatarUrl(chat, { provider, accountId, conversationId } = {}) {
     throw new Error(`getChatAvatarUrl() not implemented for provider=${this.provider}`);
   }
 
-  async getChatByMessage(message) {
+  async getChatByMessage(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`getChatByMessage() not implemented for provider=${this.provider}`);
   }
 
-  isStatusMessage(message) {
+  isStatusMessage(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`isStatusMessage() not implemented for provider=${this.provider}`);
   }
 
-  hasMedia(message) {
+  hasMedia(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`hasMedia() not implemented for provider=${this.provider}`);
   }
 
-  hasQuotedMsg(message) {
+  hasQuotedMsg(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`hasQuotedMsg() not implemented for provider=${this.provider}`);
   }
 
-  getChatIdFromMessage(message) {
+  getChatIdFromMessage(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`getChatIdFromMessage() not implemented for provider=${this.provider}`);
   }
 
-  extractMessageContext(message) {
+  extractMessageContext(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`extractMessageContext() not implemented for provider=${this.provider}`);
   }
 
-  extractChatContext(chat) {
+  extractChatContext(chat, { provider, accountId, conversationId } = {}) {
     throw new Error(`extractChatContext() not implemented for provider=${this.provider}`);
   }
 
-  extractStatusDescriptor(message) {
+  extractStatusDescriptor(message, { provider, accountId, conversationId } = {}) {
     throw new Error(`extractStatusDescriptor() not implemented for provider=${this.provider}`);
   }
 }

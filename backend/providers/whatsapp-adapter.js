@@ -153,44 +153,44 @@ class WhatsAppAdapter extends BaseAdapter {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 
-  async downloadMedia(message) {
+  async downloadMedia(message, { provider, accountId, conversationId } = {}) {
     if (typeof message.downloadMedia === 'function') {
       return message.downloadMedia();
     }
     return null;
   }
 
-  async getQuotedMessage(message) {
+  async getQuotedMessage(message, { provider, accountId, conversationId } = {}) {
     if (typeof message.getQuotedMessage === 'function') {
       return message.getQuotedMessage();
     }
     return null;
   }
 
-  async getChatByMessage(message) {
+  async getChatByMessage(message, { provider, accountId, conversationId } = {}) {
     if (typeof message.getChat === 'function') {
       return message.getChat();
     }
     return null;
   }
 
-  isStatusMessage(message) {
+  isStatusMessage(message, { provider, accountId, conversationId } = {}) {
     return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
   }
 
-  hasMedia(message) {
+  hasMedia(message, { provider, accountId, conversationId } = {}) {
     return Boolean(message?.hasMedia);
   }
 
-  hasQuotedMsg(message) {
+  hasQuotedMsg(message, { provider, accountId, conversationId } = {}) {
     return Boolean(message?.hasQuotedMsg);
   }
 
-  getChatIdFromMessage(message) {
+  getChatIdFromMessage(message, { provider, accountId, conversationId } = {}) {
     return message.fromMe ? message.to : message.from;
   }
 
-  extractMessageContext(message) {
+  extractMessageContext(message, { provider, accountId, conversationId } = {}) {
     return {
       providerMessageId: message?.id?._serialized || message?.id || null,
       body: message?.body || '',
@@ -202,7 +202,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  extractChatContext(chat) {
+  extractChatContext(chat, { provider, accountId, conversationId } = {}) {
     return {
       chatId: chat?.id?._serialized || chat?.id || null,
       name: chat?.name || null,
@@ -212,7 +212,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  extractStatusDescriptor(message) {
+  extractStatusDescriptor(message, { provider, accountId, conversationId } = {}) {
     return {
       providerStatusMessageId: message?.id?._serialized || message?.id || null,
       statusOwnerId: message?.author || message?.from || null,
@@ -223,7 +223,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  async getChatAvatarUrl(chat) {
+  async getChatAvatarUrl(chat, { provider, accountId, conversationId } = {}) {
     if (!chat) return null;
     try {
       if (typeof chat.getProfilePicUrl === 'function') {

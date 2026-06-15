@@ -1020,14 +1020,18 @@ async function archiveMedia(media, prefix = 'media') {
   };
 }
 
-async function buildMediaPayload(message, provider) {
-  const adapter = resolveProviderAdapter(provider);
-  if (!adapter.hasMedia(message)) {
+async function buildMediaPayload(message, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const adapter = resolveProviderAdapter(provider, accountId);
+  const conversationId = context.conversationId;
+
+  if (!adapter.hasMedia(message, { provider, accountId, conversationId })) {
     return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
   }
 
   try {
-    const mediaPromise = adapter.downloadMedia(message);
+    const mediaPromise = adapter.downloadMedia(message, { provider, accountId, conversationId });
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
@@ -1053,17 +1057,24 @@ async function buildMediaPayload(message, provider) {
 
     return payload;
   } catch (error) {
-    const adapter = resolveProviderAdapter(normalizeProvider(provider));
-    const msgCtx = adapter.extractMessageContext(message);
+    const provider = normalizeProvider(context.provider);
+    const accountId = normalizeAccountId(context.accountId);
+    const adapter = resolveProviderAdapter(provider, accountId);
+    const conversationId = context.conversationId;
+    const msgCtx = adapter.extractMessageContext(message, { provider, accountId, conversationId });
     console.warn(`⚠️ Media download skipped for message ${msgCtx.providerMessageId || 'unknown'}:`, error.message);
   }
 
   return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
 }
 
-async function buildReplyPayload(message, provider) {
-  const adapter = resolveProviderAdapter(provider);
-  if (!adapter.hasQuotedMsg(message)) {
+async function buildReplyPayload(message, context = {}) {
+  const provider = normalizeProvider(context.provider);
+  const accountId = normalizeAccountId(context.accountId);
+  const adapter = resolveProviderAdapter(provider, accountId);
+  const conversationId = context.conversationId;
+
+  if (!adapter.hasQuotedMsg(message, { provider, accountId, conversationId })) {
     return {
       replyToMessageId: null,
       replyToText: null
@@ -1071,8 +1082,8 @@ async function buildReplyPayload(message, provider) {
   }
 
   try {
-    const quoted = await adapter.getQuotedMessage(message);
-    const quotedCtx = adapter.extractMessageContext(quoted);
+    const quoted = await adapter.getQuotedMessage(message, { provider, accountId, conversationId });
+    const quotedCtx = adapter.extractMessageContext(quoted, { provider, accountId, conversationId });
     return {
       replyToMessageId: quotedCtx.providerMessageId || null,
       replyToText: quotedCtx.body || '[Mensaje citado]'
@@ -1087,9 +1098,10 @@ async function buildReplyPayload(message, provider) {
 
 async function serializeMessage(message, chatId, context = {}) {
   const provider = normalizeProvider(context.provider);
-  const adapter = resolveProviderAdapter(provider);
   const accountId = normalizeAccountId(context.accountId);
-  const msgContext = adapter.extractMessageContext(message);
+  const adapter = resolveProviderAdapter(provider, accountId);
+  const conversationId = chatId;
+  const msgContext = adapter.extractMessageContext(message, { provider, accountId, conversationId });
   const providerMessageId = msgContext.providerMessageId || `${msgContext.timestamp}-${Math.random()}`;
   const canonicalMessageId =
     provider === DEFAULT_PROVIDER
@@ -1097,8 +1109,8 @@ async function serializeMessage(message, chatId, context = {}) {
       : `${provider}:${accountId}:${providerMessageId}`;
 
   const [mediaPayload, replyPayload] = await Promise.all([
-    buildMediaPayload(message, provider),
-    buildReplyPayload(message, provider)
+    buildMediaPayload(message, { provider, accountId, conversationId }),
+    buildReplyPayload(message, { provider, accountId, conversationId })
   ]);
 
   const conversationId = chatId;
@@ -1128,12 +1140,12 @@ async function serializeMessage(message, chatId, context = {}) {
 async function upsertChat(chatData, index, context = {}) {
   try {
     const provider = normalizeProvider(context.provider);
-    const adapter = resolveProviderAdapter(provider);
     const accountId = normalizeAccountId(context.accountId);
-    const chatContext = adapter.extractChatContext(chatData);
+    const adapter = resolveProviderAdapter(provider, accountId);
+    const chatContext = adapter.extractChatContext(chatData, { provider, accountId });
     const chatId = chatContext.chatId;
     const conversationId = chatId;
-    const avatarUrl = await getChatAvatar(chatData, index || 0, context.provider);
+    const avatarUrl = await getChatAvatar(chatData, index || 0, provider, accountId);
     const now = new Date();
 
     await Chat.findOneAndUpdate(
@@ -1157,7 +1169,10 @@ async function upsertChat(chatData, index, context = {}) {
     );
     invalidateChatsCache(provider, accountId);
   } catch (err) {
-    const chatCtx = resolveProviderAdapter(normalizeProvider(context.provider)).extractChatContext(chatData);
+    const provider = normalizeProvider(context.provider);
+    const accountId = normalizeAccountId(context.accountId);
+    const adapter = resolveProviderAdapter(provider, accountId);
+    const chatCtx = adapter.extractChatContext(chatData, { provider, accountId });
     console.error(`❌ Error upserting chat ${chatCtx.chatId || 'unknown'}:`, err.message);
   }
 }
@@ -1187,8 +1202,10 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
     return payload;
   } catch (err) {
     const provider = normalizeProvider(context.provider);
-    const adapter = resolveProviderAdapter(provider);
-    const msgCtx = adapter.extractMessageContext(messageData);
+    const accountId = normalizeAccountId(context.accountId);
+    const adapter = resolveProviderAdapter(provider, accountId);
+    const conversationId = chatId;
+    const msgCtx = adapter.extractMessageContext(messageData, { provider, accountId, conversationId });
     console.error(`❌ Error upserting message ${msgCtx.providerMessageId || 'unknown'}:`, err.message);
     return null;
   }
@@ -1253,10 +1270,11 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
   }
 
   let statusMessage = null;
+  let currentAdapter = null;
   try {
-    const adapter = resolveProviderAdapter(provider);
-    await adapter.markStatusRead({ provider, accountId }).catch(() => {});
-    statusMessage = await adapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId }).catch(() => null);
+    currentAdapter = resolveProviderAdapter(provider, accountId);
+    await currentAdapter.markStatusRead({ provider, accountId }).catch(() => {});
+    statusMessage = await currentAdapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId }).catch(() => null);
   } catch (err) {
     console.warn('⚠️ Adapter call failed during archiveStatusFromDescriptor:', err.message);
   }
@@ -1267,9 +1285,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
 
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
-  const adapter = resolveProviderAdapter(provider);
-  if (adapter.hasMedia(statusMessage)) {
-    const media = await adapter.downloadMedia(statusMessage).catch(() => null);
+  if (currentAdapter && currentAdapter.hasMedia(statusMessage, { provider, accountId })) {
+    const media = await currentAdapter.downloadMedia(statusMessage, { provider, accountId }).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
       if (archived) {
@@ -1453,7 +1470,8 @@ async function syncChatMessages(chatId, limit = 50, context = {}) {
 }
 
 async function executeSyncTask(task) {
-  const adapter = resolveProviderAdapter(task.provider);
+  const accountId = task.accountId || 'default';
+  const adapter = resolveProviderAdapter(task.provider, accountId);
   if (!adapter.isReady()) {
     setSyncState(task, {
       status: 'idle',
@@ -1591,9 +1609,9 @@ async function toImageDataUrl(url) {
   }
 }
 
-async function getChatAvatar(chat, index, provider) {
-  const adapter = resolveProviderAdapter(provider);
-  const chatId = adapter.extractChatContext(chat).chatId;
+async function getChatAvatar(chat, index, provider, accountId = 'default') {
+  const adapter = resolveProviderAdapter(provider, accountId);
+  const chatId = adapter.extractChatContext(chat, { provider, accountId }).chatId;
   if (!chatId) return null;
 
   const cached = avatarCache.get(chatId);
@@ -1607,8 +1625,8 @@ async function getChatAvatar(chat, index, provider) {
 
   let avatarSourceUrl = null;
   try {
-    const adapter = resolveProviderAdapter(provider);
-    avatarSourceUrl = await adapter.getChatAvatarUrl(chat);
+    const adapter = resolveProviderAdapter(provider, accountId);
+    avatarSourceUrl = await adapter.getChatAvatarUrl(chat, { provider, accountId });
   } catch (err) {
     console.warn(`⚠️ Error resolving avatar for chat ${chatId}:`, err.message);
   }
@@ -1637,9 +1655,9 @@ providerRegistry.register(waAdapter);
 
 async function handleMessageRevoke(after, before, context = {}) {
   const provider = normalizeProvider(context.provider);
-  const adapter = resolveProviderAdapter(provider);
   const accountId = normalizeAccountId(context.accountId);
-  const msgId = adapter.extractMessageContext(before || after).providerMessageId;
+  const adapter = resolveProviderAdapter(provider, accountId);
+  const msgId = adapter.extractMessageContext(before || after, { provider, accountId }).providerMessageId;
   if (!msgId) return;
 
   console.log(`🗑️ Message revoked: ${msgId}`);
