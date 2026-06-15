@@ -34,6 +34,8 @@ Contrato nuevo:
 - Nunca esperan al proveedor para responder.
 - Encolan sync asíncrono (`stale-while-revalidate`).
 
+> **Excepción Intencional**: El endpoint `GET /api/chats/:chatId/resources` no sigue el contrato `items + syncState`. Está diseñado para devolver un objeto especializado `{ chatId, media, links, statuses }` directamente desde la persistencia (sin esperar `items`), y el frontend lo consume de manera directa.
+
 ## Sync asíncrono
 Se agregó cola interna de sync:
 - Dedupe por tarea (`kind + provider + accountId + conversationId`).
