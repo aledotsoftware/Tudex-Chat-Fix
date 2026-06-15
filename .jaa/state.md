@@ -9,3 +9,4 @@
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
 - **ChatFix-Orchestrator**: Completó la revisión y corrección de la configuración de IA. Aseguró que `cloudflareApiToken` se enmascara correctamente (con `********`) en la respuesta de `PUT /api/ai/config` para evitar fugas de credenciales. La serialización de objetos Mongoose en la respuesta fue corregida usando `.toJSON()`. La documentación en `docs/OPERATIONS_RUNBOOK.md` fue actualizada para reflejar este comportamiento de seguridad. Todos los tests pasan exitosamente.
+- **ChatFix-Orchestrator**: Se documentó la excepción intencional arquitectónica del endpoint `/api/chats/:chatId/resources` que no utiliza el contrato `items + syncState` en `CENTRALIZED_MESSAGING_ARCHITECTURE.md` y `OPERATIONS_RUNBOOK.md`. El frontend ya lo maneja correctamente mediante un objeto directo `{ chatId, media, links, statuses }`.

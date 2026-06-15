@@ -31,6 +31,19 @@ Respuesta:
 
 Mismo formato (`items` + metadata).
 
+### Recursos de Chat
+`GET /api/chats/:chatId/resources?provider=whatsapp&accountId=default`
+
+**Excepción:** Devuelve un formato especializado en lugar del contrato `items + syncState`:
+```json
+{
+  "chatId": "<id>",
+  "media": [],
+  "links": [],
+  "statuses": []
+}
+```
+
 ### Read receipt
 `POST /api/chats/:chatId/read?provider=whatsapp&accountId=default`
 
