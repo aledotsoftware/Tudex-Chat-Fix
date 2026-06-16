@@ -276,20 +276,22 @@ function App() {
   }, [chatSearch, statusArchiveItems]);
 
   const connectionLabel = useMemo(() => {
+    if (isOffline) return "Sin conexión a Internet";
     if (!socketConnected) return "Desconectado del servidor (WebSocket)";
     if (sessionStatus === "authenticated") return "Conectado al proveedor";
     if (sessionStatus === "qr") return "Requiere vinculación (QR)";
     if (sessionStatus === "auth_failure") return "Sesión rechazada/inválida";
     if (sessionStatus === "disconnected") return "Proveedor desconectado";
     return "Sincronizando con proveedor...";
-  }, [sessionStatus, socketConnected]);
+  }, [isOffline, sessionStatus, socketConnected]);
 
   const dotClass = useMemo(() => {
+    if (isOffline) return "bad";
     if (!socketConnected) return "bad";
     if (sessionStatus === "authenticated") return "ok";
     if (sessionStatus === "qr" || sessionStatus === "connecting") return "warning";
     return "bad";
-  }, [sessionStatus, socketConnected]);
+  }, [isOffline, sessionStatus, socketConnected]);
 
   const authScreenLabel = useMemo(() => {
     if (!socketConnected) return "Conectando al servidor...";
@@ -1475,7 +1477,7 @@ function App() {
         <main className="authScreen">
         <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
-          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px' }}>{authError}</div>}
+          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}><span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span> <strong>{authError}</strong></div>}
 
           <div className="onboarding-wizard">
             <p><strong>¡Bienvenido a ChatFix!</strong></p>
@@ -1483,7 +1485,7 @@ function App() {
           </div>
 
           <form onSubmit={(e) => { e.preventDefault(); checkAuth(inputApiKey); }}>
-            <label htmlFor="apiKeyInput" className="sr-only">Clave de acceso API</label>
+            <label htmlFor="apiKeyInput" className="authInputLabel">Clave de acceso API</label>
             <div className="passwordInputWrapper">
               <input
                 id="apiKeyInput"
@@ -1521,7 +1523,12 @@ function App() {
                   <span className="buttonSpinner" aria-hidden="true" />
                   <span>Comprobando...</span>
                 </>
-              ) : "Ingresar de forma segura"}
+              ) : (
+                <>
+                  <span aria-hidden="true">🔒</span>
+                  <span>Ingresar de forma segura</span>
+                </>
+              )}
             </button>
           </form>
         </section>
@@ -1559,13 +1566,14 @@ function App() {
               {qr ? (
                 <>
                   <div className="instructionList">
-                    <p>Para usar el proveedor en ChatFix:</p>
+                    <p>Para usar el proveedor (ej. WhatsApp) en ChatFix:</p>
                     <ol>
-                      <li>Abre la aplicación del proveedor en tu teléfono</li>
+                      <li>Abre la aplicación en tu teléfono</li>
                       <li>Toca el menú (tres puntos) o "Configuración"</li>
                       <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
                       <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
                     </ol>
+                    <p style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8, fontWeight: 'normal' }}>El código QR se actualiza automáticamente.</p>
                   </div>
                   <div className="qrBox" role="img" aria-label="Código QR para vincular dispositivo">
                     <QRCode value={qr} size={230} />
@@ -1605,26 +1613,28 @@ function App() {
 
           {(sessionStatus === "auth_failure" && socketConnected) && (
             <div className="authRecoveryOptions">
+              <div className="notice error mb-4" role="alert" aria-live="assertive" style={{ textAlign: 'left', marginBottom: '16px' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '15px' }}>
+                  <strong>⚠️ Sesión Invalidada</strong>
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4' }}>
+                  El proveedor rechazó la conexión. Es probable que la sesión haya sido cerrada desde el dispositivo principal (ej. desde "Dispositivos vinculados" en tu teléfono).
+                </p>
+              </div>
               <button
                 className="primary fullWidth"
-                aria-label="Reintentar conexión con el proveedor"
-                onClick={() => fetchChats(true)}
+                aria-label="Reintentar conexión y recargar"
+                onClick={() => window.location.reload()}
               >
-                Reintentar conexión
+                <span aria-hidden="true">🔄</span> Recargar página
               </button>
               <button
                 className="secondary fullWidth mt-2"
                 aria-label="Cerrar sesión y volver al inicio"
                 onClick={handleLogout}
               >
-                Cerrar sesión
+                <span aria-hidden="true">🚪</span> Cerrar sesión
               </button>
-              <div className="notice error mt-2" role="alert" aria-live="assertive">
-                <p className="helperText errorText">
-                  <strong>⚠️ Error de Autenticación de Proveedor</strong><br />
-                  Si el problema persiste, es posible que el dispositivo haya sido desvinculado desde tu teléfono u origen.
-                </p>
-              </div>
             </div>
           )}
         </section>
@@ -1648,17 +1658,17 @@ function App() {
       )}
       {isOffline && (
         <div className="offlineBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">⚠️</span> Estás navegando sin conexión. Mostrando versión guardada.
+          <span aria-hidden="true">⚠️</span> Sin conexión a Internet. Mostrando versión guardada en caché.
         </div>
       )}
       {!isOffline && !socketConnected && (
         <div className="warningBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">⚡</span> Reconectando con el servidor...
+          <span aria-hidden="true">⚡</span> Conexión perdida con el servidor. Intentando reconectar automáticamente...
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
         <div className="warningBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">⚠️</span> Proveedor desconectado. Revisa la conexión en tu teléfono.
+          <span aria-hidden="true">📱</span> El teléfono o proveedor está desconectado. Revisá la conexión del dispositivo.
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "connecting" && (
@@ -2078,6 +2088,7 @@ function App() {
                       className="primary"
                       aria-label="Enviar todas las respuestas en cola"
                       onClick={sendAllQueuedReplies}
+                      disabled={isOffline}
                     >
                       Enviar todas
                     </button>
@@ -2095,7 +2106,7 @@ function App() {
                         <button
                           className="primary"
                           aria-label="Enviar respuesta sugerida"
-                          disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim()}
+                          disabled={Boolean(sendingReplyQueueIds[item.localId]) || !item.text.trim() || isOffline}
                           onClick={() => sendQueuedReply(item)}
                           aria-busy={Boolean(sendingReplyQueueIds[item.localId])}
                         >
@@ -2186,7 +2197,7 @@ function App() {
                       className="primary sendCorrectedBtn"
                       aria-label="Enviar la sugerencia de IA"
                       onClick={() => sendMessage(correctedDraft, "corrected")}
-                      disabled={sending || correcting || correctingAndSending}
+                      disabled={sending || correcting || correctingAndSending || isOffline}
                     >
                       <span aria-hidden="true">✨</span> <span>Enviar versión IA</span>
                     </button>
@@ -2219,21 +2230,21 @@ function App() {
                       className="primary"
                       aria-label="Mejorar redacción con IA y enviar"
                       onClick={correctAndSend}
-                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
                     ><span aria-hidden="true">🚀</span> <span>Mejorar y enviar</span>
                     </button>
                     <button
                       className="secondary"
                       aria-label="Previsualizar corrección de IA sin enviar"
                       onClick={correctDraft}
-                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
                     ><span aria-hidden="true">✨</span> <span>Ver sugerencia</span>
                     </button>
                     <button
                       className="secondary plainSendBtn"
                       aria-label="Enviar mensaje original sin revisar"
                       onClick={() => sendMessage(draft, "original")}
-                      disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
                     ><span aria-hidden="true">📤</span> <span>Enviar original</span>
                     </button>
                   </>
@@ -2242,7 +2253,7 @@ function App() {
                     className="secondary plainSendBtn"
                     aria-label="Enviar el texto original, descartando la sugerencia"
                     onClick={() => sendMessage(draft, "original")}
-                    disabled={!draft.trim() || sending || correcting || correctingAndSending}
+                    disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
                   ><span aria-hidden="true">📤</span> <span>Enviar original (sin IA)</span>
                   </button>
                 )}
