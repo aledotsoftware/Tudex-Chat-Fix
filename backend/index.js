@@ -1760,12 +1760,12 @@ function bindProviderEvents(adapter, accountId) {
   // Message handling (incoming and outgoing)
   adapter.on('message_create', async (msg) => {
     // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-    if (adapter.isStatusMessage(msg)) {
+    if (adapter.isStatusMessage(msg, { provider: providerName, accountId })) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
         await adapter.markStatusRead({ provider: providerName, accountId });
 
-        const descriptor = adapter.extractStatusDescriptor(msg);
+        const descriptor = adapter.extractStatusDescriptor(msg, { provider: providerName, accountId });
         await archiveStatusFromDescriptor(descriptor, 'event', { provider: providerName, accountId });
         console.log(`👁️ Status auto-visto [${descriptor.mediaType}] de: ${descriptor.statusOwnerId}`);
       } catch (e) {
@@ -1774,12 +1774,12 @@ function bindProviderEvents(adapter, accountId) {
       return; // No procesamos los estados como mensajes normales en la UI
     }
 
-    let chatId = adapter.getChatIdFromMessage(msg);
+    let chatId = adapter.getChatIdFromMessage(msg, { provider: providerName, accountId });
 
     // Check if this message has associated AI metadata
     let extraData = {};
-    if (adapter.extractMessageContext(msg).fromMe) {
-      const bodyMatch = adapter.extractMessageContext(msg).body.trim();
+    if (adapter.extractMessageContext(msg, { provider: providerName, accountId, conversationId: chatId }).fromMe) {
+      const bodyMatch = adapter.extractMessageContext(msg, { provider: providerName, accountId, conversationId: chatId }).body.trim();
       const matchKey = buildConversationKey(providerName, accountId, chatId) + ':' + bodyMatch;
       const cachedMeta = aiMetadataCache.get(matchKey);
       if (cachedMeta) {
@@ -1805,7 +1805,7 @@ function bindProviderEvents(adapter, accountId) {
 
     // Also update chat timestamp/unread in cache
     try {
-      const chat = await adapter.getChatByMessage(msg);
+      const chat = await adapter.getChatByMessage(msg, { provider: providerName, accountId, conversationId: chatId });
       if (chat) {
         await upsertChat(chat, 0, { provider: providerName, accountId });
       }
