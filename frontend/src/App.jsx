@@ -2157,7 +2157,7 @@ function App() {
                     }
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder={correctedDraft ? "Borrador original (Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
+                  placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
                   disabled={sending || correcting || correctingAndSending}
@@ -2188,17 +2188,18 @@ function App() {
                       onClick={() => sendMessage(correctedDraft, "corrected")}
                       disabled={sending || correcting || correctingAndSending}
                     >
-                      <span aria-hidden="true">✨</span> <span className="hideOnMobile">Enviar versión IA</span>
+                      <span aria-hidden="true">✨</span> <span>Enviar versión IA</span>
                     </button>
                     <button
                       className="secondary useCorrectedBtn"
                       onClick={() => {
                         setDraft(correctedDraft);
                         setCorrectedDraft("");
+                        setTimeout(() => draftInputRef.current?.focus(), 0);
                       }}
                       aria-label="Usar sugerencia en el cuadro principal para editar"
                       disabled={sending || correcting || correctingAndSending}
-                    ><span aria-hidden="true">✏️</span> <span className="hideOnMobile">Usar y editar</span>
+                    ><span aria-hidden="true">✏️</span> <span>Usar y editar</span>
                     </button>
                   </div>
                 </div>
@@ -2207,7 +2208,7 @@ function App() {
               {(sending || correcting || correctingAndSending) ? (
                 <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "sendingAi" : "sending"}`}>
                   <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando con IA..." : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "✨ Enviando versión IA..." : "📤 Enviando mensaje..."}</span>
+                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando con IA..." : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
                 </div>
               ) : null}
 
@@ -2226,14 +2227,14 @@ function App() {
                       aria-label="Previsualizar corrección de IA sin enviar"
                       onClick={correctDraft}
                       disabled={!draft.trim() || sending || correcting || correctingAndSending}
-                    ><span aria-hidden="true">✨</span> <span className="hideOnMobile">Ver sugerencia</span>
+                    ><span aria-hidden="true">✨</span> <span>Ver sugerencia</span>
                     </button>
                     <button
                       className="secondary plainSendBtn"
                       aria-label="Enviar mensaje original sin revisar"
                       onClick={() => sendMessage(draft, "original")}
                       disabled={!draft.trim() || sending || correcting || correctingAndSending}
-                    ><span aria-hidden="true">📤</span> <span className="hideOnMobile">Enviar original</span>
+                    ><span aria-hidden="true">📤</span> <span>Enviar original</span>
                     </button>
                   </>
                 ) : (
@@ -2242,7 +2243,7 @@ function App() {
                     aria-label="Enviar el texto original, descartando la sugerencia"
                     onClick={() => sendMessage(draft, "original")}
                     disabled={!draft.trim() || sending || correcting || correctingAndSending}
-                  ><span aria-hidden="true">📤</span> <span>Enviar original</span>
+                  ><span aria-hidden="true">📤</span> <span>Enviar original (sin IA)</span>
                   </button>
                 )}
               </div>

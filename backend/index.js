@@ -1113,7 +1113,6 @@ async function serializeMessage(message, chatId, context = {}) {
     buildReplyPayload(message, { provider, accountId, conversationId })
   ]);
 
-  const conversationId = chatId;
   return {
     id: canonicalMessageId,
     provider,
