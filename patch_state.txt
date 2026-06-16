@@ -1,0 +1,6 @@
+<<<<<<< SEARCH
+- **ChatFix-AI-Ops**: Fixed a bug in `backend/index.js` where `axios.get` for Cloudflare AI models lacked authentication headers. Implemented strict startup validation logging for timeout properties (`AVATAR_FETCH_TIMEOUT_MS`, `AVATAR_TTL_MS`, `CHATS_CACHE_TTL_MS`, etc.) to ensure invalid values are explicitly warned and clamped. Updated documentation to reflect these validation rules.
+=======
+- **ChatFix-AI-Ops**: Fixed a bug in `backend/index.js` where `axios.get` for Cloudflare AI models lacked authentication headers. Implemented strict startup validation logging for timeout properties (`AVATAR_FETCH_TIMEOUT_MS`, `AVATAR_TTL_MS`, `CHATS_CACHE_TTL_MS`, etc.) to ensure invalid values are explicitly warned and clamped. Updated documentation to reflect these validation rules.
+- **ChatFix-Orchestrator**: Architecture alignment fix. Updated all instances of `resolveProviderAdapter(provider)` in `backend/index.js` to correctly pass the `accountId` argument (`resolveProviderAdapter(provider, accountId)`). This guarantees multi-account isolation across all backend flows, such as message syncs and sweeps, complying with the canonical messaging contract (`provider/accountId/conversationId`).
+>>>>>>> REPLACE
