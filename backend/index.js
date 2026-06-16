@@ -1361,7 +1361,7 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
 
-  const adapter = resolveProviderAdapter(provider);
+  const adapter = resolveProviderAdapter(provider, accountId);
   if (!adapter.isReady()) {
     return { checked: 0, archived: 0, skipped: 0, errors: 0, source };
   }
@@ -1425,7 +1425,7 @@ async function runStatusArchiveSweep(source = 'poll', context = {}) {
 async function syncAllChats(context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
-  const adapter = resolveProviderAdapter(provider);
+  const adapter = resolveProviderAdapter(provider, accountId);
   if (!adapter.isReady()) return;
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
@@ -1447,7 +1447,7 @@ async function syncAllChats(context = {}) {
 async function syncChatMessages(chatId, limit = 50, context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
-  const adapter = resolveProviderAdapter(provider);
+  const adapter = resolveProviderAdapter(provider, accountId);
   if (!adapter.isReady()) return;
 
   try {
@@ -2237,7 +2237,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
     );
     invalidateChatsCache(provider, accountId);
 
-    const adapter = resolveProviderAdapter(provider);
+    const adapter = resolveProviderAdapter(provider, accountId);
     if (adapter.isReady()) {
       adapter.markRead({ provider, accountId, conversationId: chatId }).catch(err => {
         console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, err.message);
@@ -2257,7 +2257,7 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
   try {
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
-    const adapter = resolveProviderAdapter(provider);
+    const adapter = resolveProviderAdapter(provider, accountId);
 
     if (!adapter.isReady()) {
       return res.status(503).json({
