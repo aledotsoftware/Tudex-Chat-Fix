@@ -140,6 +140,15 @@ button, textarea, input, select {
   margin-bottom: 24px;
 }
 
+.authInputLabel {
+  display: block;
+  text-align: left;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
 .authInput {
   width: 100%;
   padding: 14px;
@@ -1872,6 +1881,7 @@ button.fullWidth {
   justify-content: center;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .offlineBanner {
