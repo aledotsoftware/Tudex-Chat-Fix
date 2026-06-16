@@ -1946,18 +1946,18 @@ button.fullWidth {
 }
 
 @media (max-width: 920px) {
-  .composerActions {
+  .composerActions, .correctedActions {
     flex-direction: row;
     flex-wrap: wrap;
   }
 
-  .composerActions button {
+  .composerActions button, .correctedActions button {
     min-width: 48px;
     min-height: 48px;
     flex: 1 1 calc(50% - 6px);
   }
 
-  .composerActions button.primary {
+  .composerActions button.primary, .correctedActions button.primary {
     flex: 1 1 100%;
     order: -1;
   }
