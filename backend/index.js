@@ -187,6 +187,31 @@ function validateStartupConfig() {
   if (process.env.STATUS_POLL_INTERVAL_MS && (isNaN(pollInterval) || pollInterval < 1000 || pollInterval > 86400000)) {
     console.warn(`⚠️ WARNING: STATUS_POLL_INTERVAL_MS (${process.env.STATUS_POLL_INTERVAL_MS}) is invalid or out of safe bounds. It will be clamped.`);
   }
+
+  const avatarFetchTimeout = Number(process.env.AVATAR_FETCH_TIMEOUT_MS);
+  if (process.env.AVATAR_FETCH_TIMEOUT_MS && (isNaN(avatarFetchTimeout) || avatarFetchTimeout < 1000 || avatarFetchTimeout > 30000)) {
+    console.warn(`⚠️ WARNING: AVATAR_FETCH_TIMEOUT_MS (${process.env.AVATAR_FETCH_TIMEOUT_MS}) is invalid or out of safe bounds [1000, 30000]. It will be clamped.`);
+  }
+
+  const avatarTtl = Number(process.env.AVATAR_TTL_MS);
+  if (process.env.AVATAR_TTL_MS && (isNaN(avatarTtl) || avatarTtl < 1000 || avatarTtl > 86400000)) {
+    console.warn(`⚠️ WARNING: AVATAR_TTL_MS (${process.env.AVATAR_TTL_MS}) is invalid or out of safe bounds [1000, 86400000]. It will be clamped.`);
+  }
+
+  const avatarFetchLimit = Number(process.env.AVATAR_FETCH_LIMIT);
+  if (process.env.AVATAR_FETCH_LIMIT && (isNaN(avatarFetchLimit) || avatarFetchLimit < 1 || avatarFetchLimit > 200)) {
+    console.warn(`⚠️ WARNING: AVATAR_FETCH_LIMIT (${process.env.AVATAR_FETCH_LIMIT}) is invalid or out of safe bounds [1, 200]. It will be clamped.`);
+  }
+
+  const chatsCacheTtl = Number(process.env.CHATS_CACHE_TTL_MS);
+  if (process.env.CHATS_CACHE_TTL_MS && (isNaN(chatsCacheTtl) || chatsCacheTtl < 0 || chatsCacheTtl > 3600000)) {
+    console.warn(`⚠️ WARNING: CHATS_CACHE_TTL_MS (${process.env.CHATS_CACHE_TTL_MS}) is invalid or out of safe bounds [0, 3600000]. It will be clamped.`);
+  }
+
+  const messagesCacheTtl = Number(process.env.MESSAGES_CACHE_TTL_MS);
+  if (process.env.MESSAGES_CACHE_TTL_MS && (isNaN(messagesCacheTtl) || messagesCacheTtl < 0 || messagesCacheTtl > 3600000)) {
+    console.warn(`⚠️ WARNING: MESSAGES_CACHE_TTL_MS (${process.env.MESSAGES_CACHE_TTL_MS}) is invalid or out of safe bounds [0, 3600000]. It will be clamped.`);
+  }
 }
 
 // Invoke validation on startup
@@ -1578,7 +1603,8 @@ async function getAvailableModels(forceRefresh = false) {
     models = [String(aiConfig.modelName || '').trim()].filter(Boolean);
   } else {
     const response = await axios.get(`${getAiBaseUrl(aiConfig)}/v1/models`, {
-      timeout: 7000
+      timeout: 7000,
+      headers: getAiRequestHeaders(aiConfig)
     });
     models = Array.isArray(response.data?.data) ? response.data.data.map((model) => model.id) : [];
   }
