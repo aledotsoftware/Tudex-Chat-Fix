@@ -89,6 +89,7 @@ En Docker Compose ya se inyectan:
 - `AI_USER_PROMPT_TEMPLATE` Formato en el que se envía el mensaje original a la IA.
 - `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción. Se puede configurar como un string vacío (o omitir por completo) para **deshabilitar la autenticación**, lo que registrará un warning de seguridad.
 - `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas.
+- `STATUS_POLL_INTERVAL_MS`, `AI_TIMEOUT_MS` y demás parámetros operativos y de límites de tiempos cuentan con validación explícita durante el arranque que registra advertencias en los logs si los valores exceden límites seguros o si se proporcionan formatos inválidos (clamping automático).
 - Variables de caché (`CHATS_CACHE_TTL_MS`, `MESSAGES_CACHE_TTL_MS`, `AVATAR_TTL_MS`, `AVATAR_FETCH_LIMIT`, `AVATAR_FETCH_TIMEOUT_MS`) para controlar los tiempos de expiración y límites de la caché local del backend. Todas estas variables están protegidas mediante validación estricta y se limitan (clamp) automáticamente a rangos seguros en el arranque del sistema, emitiendo alertas si se proveen valores fuera de límites.
 - `DEFAULT_ACCOUNT_ID` para especificar el ID de cuenta de proveedor predeterminado (por defecto es `default`).
 

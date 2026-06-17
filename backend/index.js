@@ -138,6 +138,8 @@ let lastStatusArchiveStats = {
   source: 'idle'
 };
 
+const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
+
 // Startup validation logic
 function validateStartupConfig() {
   const provider = String(process.env.AI_PROVIDER || 'lmstudio').trim().toLowerCase();
@@ -160,25 +162,36 @@ function validateStartupConfig() {
     if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
     }
-  } else if (provider === 'lmstudio') {
+  } else {
     if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
     }
   }
 
-  const apiKey = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
-  if (apiKey.length > 0 && apiKey.length < 8) {
+  if (API_KEY.length > 0 && API_KEY.length < 8) {
     console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
-  } else if (apiKey.length === 0) {
+  } else if (API_KEY.length === 0) {
     console.warn('⚠️ WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
+  }
+
+  // Validate operational limits
+  if (process.env.STATUS_POLL_INTERVAL_MS !== undefined) {
+    const pollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
+    if (!Number.isFinite(pollInterval) || pollInterval < 1000) {
+      console.warn(`⚠️ WARNING: STATUS_POLL_INTERVAL_MS is invalid or too low (${process.env.STATUS_POLL_INTERVAL_MS}). Clamping to minimum safe value (1000ms).`);
+    }
+  }
+
+  if (process.env.AI_TIMEOUT_MS !== undefined) {
+    const aiTimeout = Number(process.env.AI_TIMEOUT_MS);
+    if (!Number.isFinite(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000) {
+      console.warn(`⚠️ WARNING: AI_TIMEOUT_MS is invalid or out of bounds (${process.env.AI_TIMEOUT_MS}). Must be between 1000 and 60000 ms.`);
+    }
   }
 }
 
 // Invoke validation on startup
 validateStartupConfig();
-
-// API Key authentication middleware
-const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
@@ -374,7 +387,7 @@ const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 
 const DEFAULT_AI_CONFIG = {
-  provider: String(process.env.AI_PROVIDER || 'lmstudio').trim().toLowerCase(),
+  provider: String(process.env.AI_PROVIDER || '').trim().toLowerCase() === 'cloudflare' ? 'cloudflare' : 'lmstudio',
   lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL')
     .replace(/\/+$/, '')
     .replace(/\/v1\/chat\/completions$/, ''),
