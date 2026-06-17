@@ -594,7 +594,7 @@ function getSyncStateSnapshot(provider, accountId, conversationId, kind) {
       lastError: null
     };
   }
-  return { ...local };
+  return { provider, accountId, conversationId: conversationId || "__all__", kind, ...local };
 }
 
 function resolveProviderAdapter(provider, accountId = 'default') {
