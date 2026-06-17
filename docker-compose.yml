@@ -22,6 +22,7 @@ services:
     ports:
       - "3005:3005"
     environment:
+      NODE_ENV: production
       PORT: 3005
       MONGODB_URI: mongodb://mongo:27017/chatfix
       LM_STUDIO_URL: ${LM_STUDIO_URL:-http://host.docker.internal:1234}
