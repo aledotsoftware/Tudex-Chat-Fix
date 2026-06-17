@@ -166,51 +166,11 @@ function validateStartupConfig() {
     }
   }
 
-  // Explicit timeout boundaries checks (safeNumber handles defaults, but we log explicitly here if missed)
-
-  const temperature = Number(process.env.AI_TEMPERATURE);
-  if (process.env.AI_TEMPERATURE !== undefined && (isNaN(temperature) || temperature < 0 || temperature > 2)) {
-    console.warn(`⚠️ WARNING: AI_TEMPERATURE (${process.env.AI_TEMPERATURE}) is invalid or out of safe bounds [0, 2]. It will be clamped.`);
-  }
-
-  const maxTokens = Number(process.env.AI_MAX_TOKENS);
-  if (process.env.AI_MAX_TOKENS !== undefined && (isNaN(maxTokens) || maxTokens < 1 || maxTokens > 8192)) {
-    console.warn(`⚠️ WARNING: AI_MAX_TOKENS (${process.env.AI_MAX_TOKENS}) is invalid or out of safe bounds [1, 8192]. It will be clamped.`);
-  }
-
-  const aiTimeout = Number(process.env.AI_TIMEOUT_MS);
-  if (process.env.AI_TIMEOUT_MS && (isNaN(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000)) {
-    console.warn(`⚠️ WARNING: AI_TIMEOUT_MS (${process.env.AI_TIMEOUT_MS}) is invalid or out of safe bounds [1000, 60000]. It will be clamped.`);
-  }
-
-  const pollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
-  if (process.env.STATUS_POLL_INTERVAL_MS && (isNaN(pollInterval) || pollInterval < 1000 || pollInterval > 86400000)) {
-    console.warn(`⚠️ WARNING: STATUS_POLL_INTERVAL_MS (${process.env.STATUS_POLL_INTERVAL_MS}) is invalid or out of safe bounds. It will be clamped.`);
-  }
-
-  const avatarFetchTimeout = Number(process.env.AVATAR_FETCH_TIMEOUT_MS);
-  if (process.env.AVATAR_FETCH_TIMEOUT_MS && (isNaN(avatarFetchTimeout) || avatarFetchTimeout < 1000 || avatarFetchTimeout > 30000)) {
-    console.warn(`⚠️ WARNING: AVATAR_FETCH_TIMEOUT_MS (${process.env.AVATAR_FETCH_TIMEOUT_MS}) is invalid or out of safe bounds [1000, 30000]. It will be clamped.`);
-  }
-
-  const avatarTtl = Number(process.env.AVATAR_TTL_MS);
-  if (process.env.AVATAR_TTL_MS && (isNaN(avatarTtl) || avatarTtl < 1000 || avatarTtl > 86400000)) {
-    console.warn(`⚠️ WARNING: AVATAR_TTL_MS (${process.env.AVATAR_TTL_MS}) is invalid or out of safe bounds [1000, 86400000]. It will be clamped.`);
-  }
-
-  const avatarFetchLimit = Number(process.env.AVATAR_FETCH_LIMIT);
-  if (process.env.AVATAR_FETCH_LIMIT && (isNaN(avatarFetchLimit) || avatarFetchLimit < 1 || avatarFetchLimit > 200)) {
-    console.warn(`⚠️ WARNING: AVATAR_FETCH_LIMIT (${process.env.AVATAR_FETCH_LIMIT}) is invalid or out of safe bounds [1, 200]. It will be clamped.`);
-  }
-
-  const chatsCacheTtl = Number(process.env.CHATS_CACHE_TTL_MS);
-  if (process.env.CHATS_CACHE_TTL_MS && (isNaN(chatsCacheTtl) || chatsCacheTtl < 0 || chatsCacheTtl > 3600000)) {
-    console.warn(`⚠️ WARNING: CHATS_CACHE_TTL_MS (${process.env.CHATS_CACHE_TTL_MS}) is invalid or out of safe bounds [0, 3600000]. It will be clamped.`);
-  }
-
-  const messagesCacheTtl = Number(process.env.MESSAGES_CACHE_TTL_MS);
-  if (process.env.MESSAGES_CACHE_TTL_MS && (isNaN(messagesCacheTtl) || messagesCacheTtl < 0 || messagesCacheTtl > 3600000)) {
-    console.warn(`⚠️ WARNING: MESSAGES_CACHE_TTL_MS (${process.env.MESSAGES_CACHE_TTL_MS}) is invalid or out of safe bounds [0, 3600000]. It will be clamped.`);
+  const apiKey = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
+  if (apiKey.length > 0 && apiKey.length < 8) {
+    console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
+  } else if (apiKey.length === 0) {
+    console.warn('⚠️ WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
   }
 }
 
@@ -219,12 +179,6 @@ validateStartupConfig();
 
 // API Key authentication middleware
 const API_KEY = process.env.API_KEY !== undefined ? process.env.API_KEY : '';
-
-if (API_KEY.length > 0 && API_KEY.length < 8) {
-  console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
-} else if (API_KEY.length === 0) {
-  console.warn('⚠️ WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
-}
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
@@ -1969,6 +1923,23 @@ app.put('/api/ai/config', async (req, res) => {
     }
     if (req.body.timeoutMs !== undefined) {
       nextConfig.timeoutMs = safeNumber(req.body.timeoutMs, aiConfig.timeoutMs, 1000, 60000, 'PUT_TIMEOUT_MS');
+    }
+
+    if (nextConfig.provider === 'cloudflare') {
+      const hasAccountId = Boolean(nextConfig.cloudflareAccountId && nextConfig.cloudflareAccountId.trim() !== '');
+      const hasBaseUrl = Boolean(nextConfig.cloudflareBaseUrl && nextConfig.cloudflareBaseUrl.trim() !== '');
+      const hasToken = Boolean(nextConfig.cloudflareApiToken && nextConfig.cloudflareApiToken.trim() !== '');
+
+      if (!hasAccountId && !hasBaseUrl) {
+        return res.status(400).json({ error: 'Missing cloudflareAccountId or cloudflareBaseUrl for Cloudflare AI provider.' });
+      }
+      if (!hasToken) {
+        return res.status(400).json({ error: 'Missing cloudflareApiToken for Cloudflare AI provider.' });
+      }
+    } else {
+      if (!nextConfig.lmStudioBaseUrl || nextConfig.lmStudioBaseUrl.trim() === '') {
+        return res.status(400).json({ error: 'Missing lmStudioBaseUrl for LM Studio provider.' });
+      }
     }
 
     const saved = await saveAiConfig(nextConfig);
