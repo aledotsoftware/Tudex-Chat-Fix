@@ -56,7 +56,7 @@ class BaseAdapter extends EventEmitter {
     return this._status;
   }
 
-  async listChats({ provider, accountId } = {}) {
+  async listChats({ provider, accountId, conversationId } = {}) {
     throw new Error(`listChats() not implemented for provider=${this.provider}`);
   }
 
@@ -76,11 +76,11 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`getMessageById() not implemented for provider=${this.provider}`);
   }
 
-  async fetchStatusDescriptors({ provider, accountId } = {}) {
+  async fetchStatusDescriptors({ provider, accountId, conversationId } = {}) {
     throw new Error(`fetchStatusDescriptors() not implemented for provider=${this.provider}`);
   }
 
-  async markStatusRead({ provider, accountId } = {}) {
+  async markStatusRead({ provider, accountId, conversationId } = {}) {
     throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
   }
 
