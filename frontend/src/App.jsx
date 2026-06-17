@@ -1477,7 +1477,7 @@ function App() {
         <main className="authScreen">
         <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
-          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left', background: 'var(--error)', color: '#000', padding: '12px', borderRadius: '4px', borderLeft: 'none' }}><span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span> <strong>{authError}</strong></div>}
+          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error apiKeyError"><span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span> <strong>{authError}</strong></div>}
 
           <div className="onboarding-wizard">
             <p><strong>¡Bienvenido a ChatFix!</strong></p>
@@ -1565,8 +1565,8 @@ function App() {
             <>
               {qr ? (
                 <>
-                  <div className="instructionList">
-                    <p>Para usar el proveedor (ej. WhatsApp) en ChatFix:</p>
+                  <div className="instructionList" role="alert" aria-live="assertive">
+                    <p className="instructionListTitle"><span aria-hidden="true" className="instructionListIcon">📱</span>Para usar el proveedor (ej. WhatsApp) en ChatFix:</p>
                     <ol>
                       <li>Abre la aplicación en tu teléfono</li>
                       <li>Toca el menú (tres puntos) o "Configuración"</li>
@@ -1603,16 +1603,16 @@ function App() {
           )}
 
           {sessionStatus === "connecting" && socketConnected && (
-            <div className="loadingSpinnerContainer" aria-busy="true" aria-live="polite">
+            <div className="loadingSpinnerContainer" role="status" aria-busy="true" aria-live="polite">
               <div className="largeSpinner" aria-hidden="true"></div>
-              <p className="helperText">Sincronizando mensajes y contactos...</p>
+              <p className="helperText connectingStatus">Sincronizando mensajes y contactos...</p>
             </div>
           )}
 
           {!socketConnected && (
-             <div className="loadingSpinnerContainer" aria-busy="true" aria-live="assertive">
+             <div className="loadingSpinnerContainer" role="alert" aria-busy="true" aria-live="assertive">
                 <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
-                <p className="helperText errorText">Reconectando con el servidor...</p>
+                <p className="helperText errorText reconnectingAlert"><span aria-hidden="true">⚡</span> Reconectando con el servidor...</p>
              </div>
           )}
 
@@ -1735,7 +1735,7 @@ function App() {
               className="secondary"
               aria-label="Actualizar chats"
               onClick={() => fetchChats(false)}
-              disabled={loadingChats}
+              disabled={loadingChats || isOffline}
               aria-busy={loadingChats}
             >
               {loadingChats ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Actualizar</span></>}
@@ -1885,7 +1885,7 @@ function App() {
                   className="secondary"
                   aria-label="Actualizar estados archivados"
                   onClick={() => fetchStatusArchive(false)}
-                  disabled={loadingStatusArchive}
+                  disabled={loadingStatusArchive || isOffline}
                   aria-busy={loadingStatusArchive}
                 >
                   {loadingStatusArchive ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Actualizar</span></>}
@@ -1973,7 +1973,7 @@ function App() {
                   className="secondary"
                   aria-label="Ver recursos del contacto"
                   onClick={fetchResources}
-                  disabled={!selectedChatId}
+                  disabled={!selectedChatId || isOffline}
                 >
                   <span aria-hidden="true">📂</span> <span className="hideOnMobile">Recursos</span>
                 </button>
@@ -1981,7 +1981,7 @@ function App() {
                   className="secondary"
                   aria-label="Recargar mensajes"
                   onClick={() => fetchMessages(selectedChatId, { withLoader: true })}
-                  disabled={!selectedChatId || loadingMessages[selectedChatId]}
+                  disabled={!selectedChatId || loadingMessages[selectedChatId] || isOffline}
                   aria-busy={loadingMessages[selectedChatId]}
                 >
                   {loadingMessages[selectedChatId] ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Recargando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Recargar</span></>}
@@ -2561,7 +2561,10 @@ function App() {
             </div>
 
             {aiHealth ? (
-              <p className={`notice ${aiHealth.ok ? "success" : "error"}`}>{aiHealth.message}</p>
+              <p className={`notice ${aiHealth.ok ? "success" : "error"} aiHealthAlert`} role={aiHealth.ok ? "status" : "alert"} aria-live="assertive">
+                <span aria-hidden="true" style={{ fontSize: '18px' }}>{aiHealth.ok ? "✅" : "❌"}</span>
+                {aiHealth.message}
+              </p>
             ) : null}
           </div>
         </section>

@@ -105,6 +105,51 @@ button, textarea, input, select {
   position: relative;
 }
 
+.apiKeyError {
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  background: var(--error);
+  color: #000;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: none;
+}
+
+.instructionListTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.instructionListIcon {
+  font-size: 18px;
+}
+
+.connectingStatus {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.reconnectingAlert {
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aiHealthAlert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .authCard {
   width: 100%;
   max-width: 440px;
