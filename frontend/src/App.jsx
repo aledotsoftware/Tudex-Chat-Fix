@@ -1477,7 +1477,7 @@ function App() {
         <main className="authScreen">
         <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
-          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left' }}><span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span> <strong>{authError}</strong></div>}
+          {authError && <div id="apiKeyError" role="alert" aria-live="assertive" className="notice error" style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', textAlign: 'left', background: 'var(--error)', color: '#000', padding: '12px', borderRadius: '4px', borderLeft: 'none' }}><span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span> <strong>{authError}</strong></div>}
 
           <div className="onboarding-wizard">
             <p><strong>¡Bienvenido a ChatFix!</strong></p>
@@ -1573,7 +1573,12 @@ function App() {
                       <li>Selecciona <strong>"Dispositivos vinculados"</strong></li>
                       <li>Toca <strong>"Vincular un dispositivo"</strong> y apunta tu cámara a esta pantalla</li>
                     </ol>
-                    <p style={{ marginTop: '8px', fontSize: '12px', opacity: 0.8, fontWeight: 'normal' }}>El código QR se actualiza automáticamente.</p>
+                    <div className="notice info" style={{ marginTop: '16px', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left', background: 'rgba(56, 189, 248, 0.15)', borderLeft: '4px solid var(--accent-primary)', padding: '10px 14px' }}>
+                      <span aria-hidden="true" style={{ fontSize: '16px', marginTop: '2px' }}>🔄</span>
+                      <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4', color: 'var(--accent-primary)' }}>
+                        El código QR es dinámico y se actualiza automáticamente de forma segura. No es necesario recargar la página.
+                      </p>
+                    </div>
                   </div>
                   <div className="qrBox" role="img" aria-label="Código QR para vincular dispositivo">
                     <QRCode value={qr} size={230} />
@@ -1613,17 +1618,20 @@ function App() {
 
           {(sessionStatus === "auth_failure" && socketConnected) && (
             <div className="authRecoveryOptions">
-              <div className="notice error mb-4" role="alert" aria-live="assertive" style={{ textAlign: 'left', marginBottom: '16px' }}>
-                <p style={{ margin: '0 0 8px 0', fontSize: '15px' }}>
-                  <strong>⚠️ Sesión Invalidada</strong>
+              <div className="notice error mb-4" role="alert" aria-live="assertive" style={{ textAlign: 'left', marginBottom: '16px', background: 'var(--error)', color: '#000', padding: '16px', borderRadius: '8px', borderLeft: 'none' }}>
+                <p style={{ margin: '0 0 8px 0', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span aria-hidden="true">⚠️</span> <strong>Sesión Invalidada / Rechazada</strong>
                 </p>
-                <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.4' }}>
-                  El proveedor rechazó la conexión. Es probable que la sesión haya sido cerrada desde el dispositivo principal (ej. desde "Dispositivos vinculados" en tu teléfono).
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
+                  El proveedor rechazó la conexión actual. Es probable que la sesión haya sido cerrada activamente desde el dispositivo principal (ej. desde "Dispositivos vinculados" en tu teléfono).
+                </p>
+                <p style={{ margin: '8px 0 0 0', fontSize: '14px', lineHeight: '1.5' }}>
+                  Por favor, cierra la sesión aquí y vuelve a vincular tu dispositivo para generar un nuevo código QR.
                 </p>
               </div>
               <button
                 className="primary fullWidth"
-                aria-label="Reintentar conexión y recargar"
+                aria-label="Recargar aplicación para intentar reconexión"
                 onClick={() => window.location.reload()}
               >
                 <span aria-hidden="true">🔄</span> Recargar página
@@ -1657,23 +1665,27 @@ function App() {
         </div>
       )}
       {isOffline && (
-        <div className="offlineBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">⚠️</span> Sin conexión a Internet. Mostrando versión guardada en caché.
+        <div className="offlineBanner" role="alert" aria-live="assertive" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span aria-hidden="true" style={{ fontSize: '18px' }}>⚠️</span>
+          <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea. Mostrando caché.</span>
         </div>
       )}
       {!isOffline && !socketConnected && (
-        <div className="warningBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">⚡</span> Conexión perdida con el servidor. Intentando reconectar automáticamente...
+        <div className="warningBanner" role="alert" aria-live="assertive" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span aria-hidden="true" style={{ fontSize: '18px' }}>⚡</span>
+          <span><strong>Desconectado del servidor.</strong> Reconectando automáticamente en segundo plano...</span>
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
-        <div className="warningBanner" role="alert" aria-live="assertive">
-          <span aria-hidden="true">📱</span> El teléfono o proveedor está desconectado. Revisá la conexión del dispositivo.
+        <div className="warningBanner" role="alert" aria-live="assertive" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span aria-hidden="true" style={{ fontSize: '18px' }}>📱</span>
+          <span><strong>Proveedor desconectado.</strong> Revisá la conexión a Internet del teléfono vinculado.</span>
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "connecting" && (
-        <div className="infoBanner" role="status" aria-live="polite">
-          <span aria-hidden="true">🔄</span> Estableciendo conexión con el proveedor...
+        <div className="infoBanner" role="status" aria-live="polite" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span aria-hidden="true" className="buttonSpinner" style={{ display: 'inline-block' }}></span>
+          <span><strong>Conectando...</strong> Estableciendo conexión inicial con el proveedor.</span>
         </div>
       )}
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
