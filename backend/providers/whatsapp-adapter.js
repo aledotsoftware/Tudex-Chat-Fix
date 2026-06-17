@@ -83,7 +83,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
 
-  async listChats({ provider, accountId } = {}) {
+  async listChats({ provider, accountId, conversationId } = {}) {
     return this.client.getChats();
   }
 
@@ -104,7 +104,7 @@ class WhatsAppAdapter extends BaseAdapter {
     return this.client.getMessageById(messageId);
   }
 
-  async fetchStatusDescriptors({ provider, accountId } = {}) {
+  async fetchStatusDescriptors({ provider, accountId, conversationId } = {}) {
     if (!this.client?.pupPage) return [];
     return this.client.pupPage.evaluate(async () => {
       const statuses = window.Store.Status?.getModelsArray?.() || [];
@@ -149,7 +149,7 @@ class WhatsAppAdapter extends BaseAdapter {
     });
   }
 
-  async markStatusRead({ provider, accountId } = {}) {
+  async markStatusRead({ provider, accountId, conversationId } = {}) {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 

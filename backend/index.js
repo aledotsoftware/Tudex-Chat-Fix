@@ -1120,7 +1120,7 @@ async function upsertChat(chatData, index, context = {}) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
-    const chatContext = adapter.extractChatContext(chatData, { provider, accountId });
+    const chatContext = adapter.extractChatContext(chatData, { provider, accountId, conversationId: context.conversationId });
     const chatId = chatContext.chatId;
     const conversationId = chatId;
     const avatarUrl = await getChatAvatar(chatData, index || 0, provider, accountId);
@@ -1150,7 +1150,7 @@ async function upsertChat(chatData, index, context = {}) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
-    const chatCtx = adapter.extractChatContext(chatData, { provider, accountId });
+    const chatCtx = adapter.extractChatContext(chatData, { provider, accountId, conversationId: context.conversationId });
     console.error(`❌ Error upserting chat ${chatCtx.chatId || 'unknown'}:`, err.message);
   }
 }
@@ -1222,7 +1222,7 @@ function normalizeStatusDescriptor(entry = {}) {
 async function fetchCurrentStatusDescriptors(provider, accountId = 'default') {
   try {
     const adapter = resolveProviderAdapter(provider, accountId);
-    return await adapter.fetchStatusDescriptors({ provider, accountId });
+    return await adapter.fetchStatusDescriptors({ provider, accountId, conversationId: undefined });
   } catch (err) {
     console.error(`⚠️ fetchStatusDescriptors error for ${provider} (account: ${accountId}):`, err.message);
     return [];
@@ -1251,8 +1251,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
   let currentAdapter = null;
   try {
     currentAdapter = resolveProviderAdapter(provider, accountId);
-    await currentAdapter.markStatusRead({ provider, accountId }).catch(() => {});
-    statusMessage = await currentAdapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId }).catch(() => null);
+    await currentAdapter.markStatusRead({ provider, accountId, conversationId: context.conversationId }).catch(() => {});
+    statusMessage = await currentAdapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId, conversationId: context.conversationId }).catch(() => null);
   } catch (err) {
     console.warn('⚠️ Adapter call failed during archiveStatusFromDescriptor:', err.message);
   }
@@ -1263,8 +1263,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
 
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
-  if (currentAdapter && currentAdapter.hasMedia(statusMessage, { provider, accountId })) {
-    const media = await currentAdapter.downloadMedia(statusMessage, { provider, accountId }).catch(() => null);
+  if (currentAdapter && currentAdapter.hasMedia(statusMessage, { provider, accountId, conversationId: context.conversationId })) {
+    const media = await currentAdapter.downloadMedia(statusMessage, { provider, accountId, conversationId: context.conversationId }).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
       if (archived) {
@@ -1383,7 +1383,7 @@ async function syncAllChats(context = {}) {
   if (!adapter.isReady()) return;
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
-    const chats = await adapter.listChats({ provider, accountId });
+    const chats = await adapter.listChats({ provider, accountId, conversationId: context?.conversationId });
     if (!chats || chats.length === 0) return;
 
     // Concurrently upsert chats to parallelize avatar fetching and DB writes
@@ -1590,7 +1590,7 @@ async function toImageDataUrl(url) {
 
 async function getChatAvatar(chat, index, provider, accountId = 'default') {
   const adapter = resolveProviderAdapter(provider, accountId);
-  const chatId = adapter.extractChatContext(chat, { provider, accountId }).chatId;
+  const chatId = adapter.extractChatContext(chat, { provider, accountId, conversationId: undefined }).chatId;
   if (!chatId) return null;
 
   const cached = avatarCache.get(chatId);
@@ -1605,7 +1605,7 @@ async function getChatAvatar(chat, index, provider, accountId = 'default') {
   let avatarSourceUrl = null;
   try {
     const adapter = resolveProviderAdapter(provider, accountId);
-    avatarSourceUrl = await adapter.getChatAvatarUrl(chat, { provider, accountId });
+    avatarSourceUrl = await adapter.getChatAvatarUrl(chat, { provider, accountId, conversationId: undefined });
   } catch (err) {
     console.warn(`⚠️ Error resolving avatar for chat ${chatId}:`, err.message);
   }
@@ -1636,7 +1636,7 @@ async function handleMessageRevoke(after, before, context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
   const adapter = resolveProviderAdapter(provider, accountId);
-  const msgId = adapter.extractMessageContext(before || after, { provider, accountId }).providerMessageId;
+  const msgId = adapter.extractMessageContext(before || after, { provider, accountId, conversationId: context.conversationId }).providerMessageId;
   if (!msgId) return;
 
   console.log(`🗑️ Message revoked: ${msgId}`);
@@ -1708,18 +1708,18 @@ function bindProviderEvents(adapter, accountId) {
     io.emit('disconnected', { reason, provider: providerName, accountId });
   });
 
-  adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
-  adapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
+  adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId, conversationId: undefined }));
+  adapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId, conversationId: undefined }));
 
   // Message handling (incoming and outgoing)
   adapter.on('message_create', async (msg) => {
     // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-    if (adapter.isStatusMessage(msg, { provider: providerName, accountId })) {
+    if (adapter.isStatusMessage(msg, { provider: providerName, accountId, conversationId: undefined })) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
-        await adapter.markStatusRead({ provider: providerName, accountId });
+        await adapter.markStatusRead({ provider: providerName, accountId, conversationId: undefined });
 
-        const descriptor = adapter.extractStatusDescriptor(msg, { provider: providerName, accountId });
+        const descriptor = adapter.extractStatusDescriptor(msg, { provider: providerName, accountId, conversationId: undefined });
         await archiveStatusFromDescriptor(descriptor, 'event', { provider: providerName, accountId });
         console.log(`👁️ Status auto-visto [${descriptor.mediaType}] de: ${descriptor.statusOwnerId}`);
       } catch (e) {
@@ -1728,7 +1728,7 @@ function bindProviderEvents(adapter, accountId) {
       return; // No procesamos los estados como mensajes normales en la UI
     }
 
-    let chatId = adapter.getChatIdFromMessage(msg, { provider: providerName, accountId });
+    let chatId = adapter.getChatIdFromMessage(msg, { provider: providerName, accountId, conversationId: undefined });
 
     // Check if this message has associated AI metadata
     let extraData = {};
