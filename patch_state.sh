@@ -1,0 +1,7 @@
+cat << 'INNEREOF' > patch_state.md
+<<<<<<< SEARCH
+- **ChatFix-UX-Conversation-Flow**: Se mejoró el flujo conversacional eliminando la ambigüedad en el input de redacción (añadiendo el label "Tu borrador original" cuando hay corrección IA). Los botones de acción se agruparon unificadamente en `.composerActions` sin cambios bruscos de layout al aparecer una sugerencia, y se introdujo `.syncProgressBar` en el header del chat para indicar sincronizaciones de fondo sin irrumpir en el compositor.
+=======
+- **ChatFix-UX-Conversation-Flow**: Se mejoró significativamente el flujo conversacional eliminando la fricción entre la redacción y el envío rápido. Los botones de acción se agruparon unificadamente en `.composerActions` mediante props dinámicos para garantizar estabilidad absoluta en el layout sin unmounts condicionales. Se modificaron los botones y el evento "Enter" (`handleDraftKeyDown`) para que el estado de fondo `correcting` ya no bloquee la interacción, abortando transparentemente cualquier sugerencia pendiente vía `AbortController` al enviar. Adicionalmente, se mitigó la ambigüedad en el texto de entrada agregando la etiqueta "Tu borrador original" y barras `.syncProgressBar` para operaciones de fondo sin irrumpir en el compositor.
+>>>>>>> REPLACE
+INNEREOF
