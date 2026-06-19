@@ -1320,6 +1320,7 @@ button.fullWidth {
 }
 
 button.small {
+  min-height: 48px;
   padding: 6px 12px;
   font-size: 13px;
   border-radius: 8px;
@@ -1909,8 +1910,9 @@ button.fullWidth {
   z-index: 1000;
 }
 .updateBanner button {
+  min-height: 48px;
   padding: 6px 16px;
-  min-height: 32px;
+
   font-size: 14px;
 }
 
