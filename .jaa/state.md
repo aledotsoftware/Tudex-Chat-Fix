@@ -11,6 +11,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [ChatFix] Operaciones y Configuración IA (backend/index.js) - **COMPLETADO**
 
 ## 📝 AGENT NOTES
+- **ChatFix-PWA-UX-Ops**: Se verificó la robustez operativa de la PWA. El almacenamiento en caché IndexedDB respeta estrictamente el contrato canónico (`prefix:provider:accountId:conversationId`), aislando correctamente proveedores y cuentas de múltiples entornos. La optimización UI optimista funciona con resiliencia tanto para borradores únicos como para encolados (queue logic), y la ergonomía móvil (touch targets 48x48) está asegurada.
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
 - **ErrorGuardian**: Monitoreando logs de error en producción.
 - **ChatFix-UX-Accessibility-Trust**: Se mejoró la retroalimentación visual de los estados de sesión (`auth_failure`, `qr`, `disconnected`, etc.) y la accesibilidad de teclado (`focus-visible`) en el frontend PWA. Además, se añadieron ARIA roles a los banners de alerta, instrucciones QR y validación de estado de IA, y se previno explícitamente el uso de botones de acción cuando la aplicación está fuera de línea.
