@@ -1970,6 +1970,7 @@ function App() {
                 </div>
               </div>
               <div className="chatHeaderActions">
+                {syncingChat && <div className="syncProgressBar" aria-hidden="true"></div>}
                 <button
                   className="secondary"
                   aria-label="Ver recursos del contacto"
@@ -2164,6 +2165,11 @@ function App() {
               ) : null}
 
               {/* Removed redundant syncingChat badge here to prevent layout shift; it's already in the header */}
+              {correctedDraft ? (
+                <p className="originalDraftLabel">
+                  <span aria-hidden="true">📝</span> Tu borrador original
+                </p>
+              ) : null}
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
                 <textarea
                   ref={draftInputRef}
@@ -2234,28 +2240,6 @@ function App() {
                     </div>
                   </div>
                   <p className="correctedText">{correctedDraft}</p>
-
-                  <div className="correctedActions">
-                    <button
-                      className="primary sendCorrectedBtn"
-                      aria-label="Enviar la sugerencia de IA"
-                      onClick={() => sendMessage(correctedDraft, "corrected")}
-                      disabled={sending || correcting || correctingAndSending || isOffline}
-                    >
-                      <span aria-hidden="true">✨</span> <span>Enviar versión IA</span>
-                    </button>
-                    <button
-                      className="secondary useCorrectedBtn"
-                      onClick={() => {
-                        setDraft(correctedDraft);
-                        setCorrectedDraft("");
-                        setTimeout(() => draftInputRef.current?.focus(), 0);
-                      }}
-                      aria-label="Usar sugerencia en el cuadro principal para editar"
-                      disabled={sending || correcting || correctingAndSending}
-                    ><span aria-hidden="true">✏️</span> <span>Usar y editar</span>
-                    </button>
-                  </div>
                 </div>
               ) : null}
 
@@ -2292,13 +2276,34 @@ function App() {
                     </button>
                   </>
                 ) : (
-                  <button
-                    className="secondary plainSendBtn"
-                    aria-label="Enviar el texto original, descartando la sugerencia"
-                    onClick={() => sendMessage(draft, "original")}
-                    disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
-                  ><span aria-hidden="true">📤</span> <span>Enviar original (sin IA)</span>
-                  </button>
+                  <>
+                    <button
+                      className="primary sendCorrectedBtn"
+                      aria-label="Enviar la sugerencia de IA"
+                      onClick={() => sendMessage(correctedDraft, "corrected")}
+                      disabled={sending || correcting || correctingAndSending || isOffline}
+                    >
+                      <span aria-hidden="true">✨</span> <span>Enviar versión IA</span>
+                    </button>
+                    <button
+                      className="secondary useCorrectedBtn"
+                      onClick={() => {
+                        setDraft(correctedDraft);
+                        setCorrectedDraft("");
+                        setTimeout(() => draftInputRef.current?.focus(), 0);
+                      }}
+                      aria-label="Usar sugerencia en el cuadro principal para editar"
+                      disabled={sending || correcting || correctingAndSending}
+                    ><span aria-hidden="true">✏️</span> <span>Usar y editar</span>
+                    </button>
+                    <button
+                      className="secondary plainSendBtn"
+                      aria-label="Enviar el texto original, descartando la sugerencia"
+                      onClick={() => sendMessage(draft, "original")}
+                      disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
+                    ><span aria-hidden="true">📤</span> <span>Enviar original (sin IA)</span>
+                    </button>
+                  </>
                 )}
               </div>
 

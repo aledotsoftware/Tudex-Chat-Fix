@@ -1230,19 +1230,6 @@ button:disabled {
 }
 
 
-.correctedActions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.correctedActions button {
-  flex: 1;
-  min-width: 120px;
-  padding: 8px 16px;
-  font-size: 14px;
-}
 
 .sendCorrectedBtn {
   background: var(--accent-primary);
@@ -1271,6 +1258,18 @@ button:disabled {
   font-weight: 700;
   color: var(--accent-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.originalDraftLabel {
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin: 0 0 8px 4px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -2005,25 +2004,23 @@ button.fullWidth {
 }
 
 @media (max-width: 920px) {
-  .composerActions, .correctedActions {
+  .composerActions {
     flex-direction: row;
     flex-wrap: wrap;
   }
 
-  .composerActions button, .correctedActions button {
+  .composerActions button {
     min-width: 48px;
     min-height: 48px;
     flex: 1 1 calc(50% - 6px);
   }
 
-  .composerActions button.primary, .correctedActions button.primary {
+  .composerActions button.primary {
     flex: 1 1 100%;
     order: -1;
   }
 
-  .composerActions button.plainSendBtn {
-    flex: 1 1 100%;
-  }
+  /* Remove plainSendBtn 100% width so it can share space with useCorrectedBtn or secondary buttons */
 
   .bubbleActions {
     opacity: 1;
