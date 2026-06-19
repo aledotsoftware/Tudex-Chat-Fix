@@ -114,7 +114,9 @@ button, textarea, input, select {
   background: var(--error);
   color: #000;
   padding: 12px;
-  border-radius: 4px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
   border-left: none;
 }
 
@@ -1907,6 +1909,7 @@ button.fullWidth {
   align-items: center;
   justify-content: center;
   gap: 12px;
+  flex-wrap: wrap;
   z-index: 1000;
 }
 .updateBanner button {
