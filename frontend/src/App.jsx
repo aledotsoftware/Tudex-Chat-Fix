@@ -1712,14 +1712,14 @@ function App() {
                 fetchStatusArchive(false);
               }}
             >
-              Estados
+              <span aria-hidden="true">📸</span> <span className="hideOnMobile">Estados</span>
             </button>
             <button
               className={`secondary ${viewMode === "chats" ? "activeToggle" : ""}`}
               aria-label="Ver chats"
               onClick={() => setViewMode("chats")}
             >
-              Chats
+              <span aria-hidden="true">💬</span> <span className="hideOnMobile">Chats</span>
             </button>
             <button
               className="secondary"
@@ -1730,7 +1730,7 @@ function App() {
                 fetchAiModels();
               }}
             >
-              <span aria-hidden="true">✨</span> IA
+              <span aria-hidden="true">✨</span> <span className="hideOnMobile">IA</span>
             </button>
             <button
               className="secondary"
