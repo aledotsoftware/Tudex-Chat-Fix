@@ -1982,7 +1982,7 @@ button.fullWidth {
     border-radius: 0;
     padding: 16px;
     margin: 0;
-    animation: slideUpMobile 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    animation: slideUpMobile 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
     overflow-y: auto;
     will-change: transform, opacity;
   }
