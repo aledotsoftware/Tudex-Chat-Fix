@@ -154,6 +154,9 @@ function validateStartupConfig() {
 
   if (provider !== 'lmstudio' && provider !== 'cloudflare') {
     console.warn(`⚠️ WARNING: Unsupported AI_PROVIDER "${process.env.AI_PROVIDER}". Falling back to "lmstudio".`);
+    process.env.AI_PROVIDER = 'lmstudio';
+  } else {
+    process.env.AI_PROVIDER = provider;
   }
 
   if (provider === 'cloudflare') {
@@ -171,8 +174,9 @@ function validateStartupConfig() {
   } else {
     if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
+      process.env.LM_STUDIO_URL = 'http://localhost:1234';
     } else {
-      process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, '', 'LM_STUDIO_URL');
+      process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
     }
   }
 
@@ -189,6 +193,35 @@ function validateStartupConfig() {
 
   if (process.env.AI_TIMEOUT_MS !== undefined) {
     process.env.AI_TIMEOUT_MS = String(safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS'));
+  }
+
+  if (process.env.AI_TEMPERATURE !== undefined) {
+    process.env.AI_TEMPERATURE = String(safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'));
+  }
+
+  if (process.env.AI_MAX_TOKENS !== undefined) {
+    process.env.AI_MAX_TOKENS = String(safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'));
+  }
+
+  // Cache & Fetch limits
+  if (process.env.AVATAR_TTL_MS !== undefined) {
+    process.env.AVATAR_TTL_MS = String(safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS'));
+  }
+
+  if (process.env.AVATAR_FETCH_LIMIT !== undefined) {
+    process.env.AVATAR_FETCH_LIMIT = String(safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT'));
+  }
+
+  if (process.env.AVATAR_FETCH_TIMEOUT_MS !== undefined) {
+    process.env.AVATAR_FETCH_TIMEOUT_MS = String(safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS'));
+  }
+
+  if (process.env.CHATS_CACHE_TTL_MS !== undefined) {
+    process.env.CHATS_CACHE_TTL_MS = String(safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS'));
+  }
+
+  if (process.env.MESSAGES_CACHE_TTL_MS !== undefined) {
+    process.env.MESSAGES_CACHE_TTL_MS = String(safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS'));
   }
 }
 
