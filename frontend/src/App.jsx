@@ -1756,8 +1756,8 @@ function App() {
 
         <div className="statusBar" role="status" aria-live="polite" aria-atomic="true">
           <span className={`dot ${dotClass}`} aria-hidden="true" title={backendStatus.latencyMs !== null ? `Latencia: ${backendStatus.latencyMs}ms` : ""} />
-          <span className="sr-only">{socketConnected ? "Conectado al servidor." : "Desconectado del servidor."}</span>
-          <span>
+          <span className="sr-only">Estado: {connectionLabel}. Proveedor: {backendStatus.providerStatus}.</span>
+          <span aria-hidden="true">
             {connectionLabel} · Provider: {backendStatus.providerStatus} {backendStatus.latencyMs !== null ? `(${backendStatus.latencyMs}ms)` : ""}
           </span>
           {totalUnread > 0 ? <strong className="pendingCounter" aria-label={`${totalUnread} mensajes pendientes`}>{totalUnread} pendientes</strong> : null}
