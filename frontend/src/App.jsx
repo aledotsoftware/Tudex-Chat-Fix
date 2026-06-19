@@ -226,6 +226,7 @@ function App() {
   const [draftsByChat, setDraftsByChat] = useState(() => { try { return JSON.parse(localStorage.getItem("chatfix_drafts") || "{}"); } catch (e) { return {}; } }); const draft = draftsByChat[selectedChatId] || ""; const setDraft = (val) => setDraftsByChat(prev => ({ ...prev, [selectedChatId]: val }));
   const [correctedDraft, setCorrectedDraft] = useState("");
   const debouncedDraftRef = useRef(null);
+  const abortControllerRef = useRef(null);
   const [replyTarget, setReplyTarget] = useState(null);
   const [grammarInsights, setGrammarInsights] = useState({});
   const [replyQueue, setReplyQueue] = useState([]);
@@ -1753,7 +1754,7 @@ function App() {
         </div>
 
         <div className="searchWrap">
-          <label htmlFor="chatSearchInput" className="sr-only">
+          <label htmlFor="chatSearchInput">
             {viewMode === "statuses" ? "Buscar estado" : "Buscar chat"}
           </label>
           <input
@@ -2173,9 +2174,39 @@ function App() {
                     if (correctedDraft) setCorrectedDraft("");
 
                     if (debouncedDraftRef.current) clearTimeout(debouncedDraftRef.current);
+                    if (abortControllerRef.current) {
+                      abortControllerRef.current.abort();
+                      abortControllerRef.current = null;
+                    }
+
                     if (val.trim().length > 5) {
-                      debouncedDraftRef.current = setTimeout(() => {
-                        // Live correction trigger could go here (if requested to auto-correct)
+                      debouncedDraftRef.current = setTimeout(async () => {
+                        const controller = new AbortController();
+                        abortControllerRef.current = controller;
+                        setCorrecting(true);
+                        try {
+                          const res = await fetch(`${API_URL}/api/correct`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ text: val }),
+                            signal: controller.signal
+                          });
+                          if (!res.ok) throw new Error("Error IA");
+                          const data = await res.json();
+                          const corrected = (data.corrected || "").trim();
+                          if (corrected && corrected !== val) {
+                            setCorrectedDraft(corrected);
+                          }
+                        } catch (error) {
+                          if (error.name !== "AbortError") {
+                            // quiet failure for background suggestions
+                          }
+                        } finally {
+                          if (abortControllerRef.current === controller) {
+                            setCorrecting(false);
+                            abortControllerRef.current = null;
+                          }
+                        }
                       }, 1000);
                     }
                   }}
@@ -2460,7 +2491,7 @@ function App() {
                 </option>
               ))}
             </select>
-            <label htmlFor="aiModelInput" className="sr-only">Modelo (texto)</label>
+            <label htmlFor="aiModelInput">Modelo (texto)</label>
             <input
               id="aiModelInput"
               value={aiConfig.modelName}
