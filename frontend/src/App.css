@@ -1917,6 +1917,11 @@ button.fullWidth {
 .offlineBanner,
 .warningBanner,
 .infoBanner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   color: #000;
   text-align: center;
   padding: 12px;
@@ -1945,6 +1950,11 @@ button.fullWidth {
 }
 
 .infoBanner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   background-color: var(--accent-primary);
   color: #000;
   box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
@@ -2164,4 +2174,77 @@ select {
   margin-left: 10px;
   font-weight: 500;
   vertical-align: middle;
+}
+
+/* Additional alert classes for accessibility and consistent styling */
+.notice.info.qr-info {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  background: rgba(56, 189, 248, 0.15);
+  border-left: 4px solid var(--accent-primary);
+  padding: 10px 14px;
+}
+
+.notice.info.qr-info p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--accent-primary);
+}
+
+.notice.info.qr-info span {
+  font-size: 16px;
+  margin-top: 2px;
+}
+
+.notice.error.session-rejected {
+  text-align: left;
+  margin-bottom: 16px;
+  background: var(--error);
+  color: #000;
+  padding: 16px;
+  border-radius: 8px;
+  border-left: none;
+}
+
+.notice.error.session-rejected p.title {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notice.error.session-rejected p.desc {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notice.error.session-rejected p.instruction {
+  margin: 8px 0 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Additional alert specific styles */
+.apiKeyError span {
+  font-size: 18px;
+}
+
+.offlineBanner span[aria-hidden="true"],
+.warningBanner span[aria-hidden="true"],
+.infoBanner span[aria-hidden="true"] {
+  font-size: 18px;
+}
+
+.infoBanner span.buttonSpinner {
+  display: inline-block;
+}
+
+.aiHealthAlert span[aria-hidden="true"] {
+  font-size: 18px;
 }
