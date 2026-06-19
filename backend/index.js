@@ -147,6 +147,9 @@ function validateStartupConfig() {
   // Validate AI config values that aren't inherently checked by safeUrl/safeNumber correctly
   if (!process.env.MODEL_NAME || process.env.MODEL_NAME.trim() === '') {
     console.warn('⚠️ WARNING: MODEL_NAME is not set or empty. Falling back to "llama-3.1-8b-instruct".');
+    process.env.MODEL_NAME = 'llama-3.1-8b-instruct';
+  } else {
+    process.env.MODEL_NAME = process.env.MODEL_NAME.trim();
   }
 
   if (provider !== 'lmstudio' && provider !== 'cloudflare') {
@@ -162,9 +165,14 @@ function validateStartupConfig() {
     if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
     }
+    if (hasBaseUrl) {
+      process.env.CLOUDFLARE_AI_BASE_URL = safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL');
+    }
   } else {
     if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
+    } else {
+      process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, '', 'LM_STUDIO_URL');
     }
   }
 
@@ -176,17 +184,11 @@ function validateStartupConfig() {
 
   // Validate operational limits
   if (process.env.STATUS_POLL_INTERVAL_MS !== undefined) {
-    const pollInterval = Number(process.env.STATUS_POLL_INTERVAL_MS);
-    if (!Number.isFinite(pollInterval) || pollInterval < 1000) {
-      console.warn(`⚠️ WARNING: STATUS_POLL_INTERVAL_MS is invalid or too low (${process.env.STATUS_POLL_INTERVAL_MS}). Clamping to minimum safe value (1000ms).`);
-    }
+    process.env.STATUS_POLL_INTERVAL_MS = String(safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS'));
   }
 
   if (process.env.AI_TIMEOUT_MS !== undefined) {
-    const aiTimeout = Number(process.env.AI_TIMEOUT_MS);
-    if (!Number.isFinite(aiTimeout) || aiTimeout < 1000 || aiTimeout > 60000) {
-      console.warn(`⚠️ WARNING: AI_TIMEOUT_MS is invalid or out of bounds (${process.env.AI_TIMEOUT_MS}). Must be between 1000 and 60000 ms.`);
-    }
+    process.env.AI_TIMEOUT_MS = String(safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS'));
   }
 }
 
