@@ -1270,7 +1270,7 @@ function normalizeStatusDescriptor(entry = {}) {
 async function fetchCurrentStatusDescriptors(provider, accountId = 'default') {
   try {
     const adapter = resolveProviderAdapter(provider, accountId);
-    return await adapter.fetchStatusDescriptors({ provider, accountId, conversationId: undefined });
+    return await adapter.fetchStatusDescriptors({ provider, accountId });
   } catch (err) {
     console.error(`⚠️ fetchStatusDescriptors error for ${provider} (account: ${accountId}):`, err.message);
     return [];
@@ -1431,7 +1431,7 @@ async function syncAllChats(context = {}) {
   if (!adapter.isReady()) return;
   console.log(`🔄 Starting full chat sync provider=${provider} account=${accountId}`);
   try {
-    const chats = await adapter.listChats({ provider, accountId, conversationId: context?.conversationId });
+    const chats = await adapter.listChats({ provider, accountId });
     if (!chats || chats.length === 0) return;
 
     // Concurrently upsert chats to parallelize avatar fetching and DB writes
@@ -1653,7 +1653,7 @@ async function getChatAvatar(chat, index, provider, accountId = 'default') {
   let avatarSourceUrl = null;
   try {
     const adapter = resolveProviderAdapter(provider, accountId);
-    avatarSourceUrl = await adapter.getChatAvatarUrl(chat, { provider, accountId, conversationId: undefined });
+    avatarSourceUrl = await adapter.getChatAvatarUrl(chat, { provider, accountId });
   } catch (err) {
     console.warn(`⚠️ Error resolving avatar for chat ${chatId}:`, err.message);
   }
@@ -1762,12 +1762,12 @@ function bindProviderEvents(adapter, accountId) {
   // Message handling (incoming and outgoing)
   adapter.on('message_create', async (msg) => {
     // Auto-ver estados (Stories) para que no aparezcan como pendientes en el teléfono
-    if (adapter.isStatusMessage(msg, { provider: providerName, accountId, conversationId: undefined })) {
+    if (adapter.isStatusMessage(msg, { provider: providerName, accountId })) {
       try {
         // Marcamos el chat de estados como visto de forma directa y rápida
-        await adapter.markStatusRead({ provider: providerName, accountId, conversationId: undefined });
+        await adapter.markStatusRead({ provider: providerName, accountId });
 
-        const descriptor = adapter.extractStatusDescriptor(msg, { provider: providerName, accountId, conversationId: undefined });
+        const descriptor = adapter.extractStatusDescriptor(msg, { provider: providerName, accountId });
         await archiveStatusFromDescriptor(descriptor, 'event', { provider: providerName, accountId });
         console.log(`👁️ Status auto-visto [${descriptor.mediaType}] de: ${descriptor.statusOwnerId}`);
       } catch (e) {

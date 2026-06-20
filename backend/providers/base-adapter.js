@@ -56,7 +56,7 @@ class BaseAdapter extends EventEmitter {
     return this._status;
   }
 
-  async listChats({ provider, accountId, conversationId } = {}) {
+  async listChats({ provider, accountId } = {}) {
     throw new Error(`listChats() not implemented for provider=${this.provider}`);
   }
 
@@ -76,11 +76,11 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`getMessageById() not implemented for provider=${this.provider}`);
   }
 
-  async fetchStatusDescriptors({ provider, accountId, conversationId } = {}) {
+  async fetchStatusDescriptors({ provider, accountId } = {}) {
     throw new Error(`fetchStatusDescriptors() not implemented for provider=${this.provider}`);
   }
 
-  async markStatusRead({ provider, accountId, conversationId } = {}) {
+  async markStatusRead({ provider, accountId } = {}) {
     throw new Error(`markStatusRead() not implemented for provider=${this.provider}`);
   }
 
@@ -92,7 +92,7 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`getQuotedMessage() not implemented for provider=${this.provider}`);
   }
 
-  async getChatAvatarUrl(chat, { provider, accountId, conversationId } = {}) {
+  async getChatAvatarUrl(chat, { provider, accountId } = {}) {
     throw new Error(`getChatAvatarUrl() not implemented for provider=${this.provider}`);
   }
 
@@ -100,7 +100,7 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`getChatByMessage() not implemented for provider=${this.provider}`);
   }
 
-  isStatusMessage(message, { provider, accountId, conversationId } = {}) {
+  isStatusMessage(message, { provider, accountId } = {}) {
     throw new Error(`isStatusMessage() not implemented for provider=${this.provider}`);
   }
 
@@ -124,7 +124,7 @@ class BaseAdapter extends EventEmitter {
     throw new Error(`extractChatContext() not implemented for provider=${this.provider}`);
   }
 
-  extractStatusDescriptor(message, { provider, accountId, conversationId } = {}) {
+  extractStatusDescriptor(message, { provider, accountId } = {}) {
     throw new Error(`extractStatusDescriptor() not implemented for provider=${this.provider}`);
   }
 }

@@ -83,7 +83,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
 
-  async listChats({ provider, accountId, conversationId } = {}) {
+  async listChats({ provider, accountId } = {}) {
     return this.client.getChats();
   }
 
@@ -104,7 +104,7 @@ class WhatsAppAdapter extends BaseAdapter {
     return this.client.getMessageById(messageId);
   }
 
-  async fetchStatusDescriptors({ provider, accountId, conversationId } = {}) {
+  async fetchStatusDescriptors({ provider, accountId } = {}) {
     if (!this.client?.pupPage) return [];
     return this.client.pupPage.evaluate(async () => {
       const statuses = window.Store.Status?.getModelsArray?.() || [];
@@ -149,7 +149,7 @@ class WhatsAppAdapter extends BaseAdapter {
     });
   }
 
-  async markStatusRead({ provider, accountId, conversationId } = {}) {
+  async markStatusRead({ provider, accountId } = {}) {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 
@@ -174,7 +174,7 @@ class WhatsAppAdapter extends BaseAdapter {
     return null;
   }
 
-  isStatusMessage(message, { provider, accountId, conversationId } = {}) {
+  isStatusMessage(message, { provider, accountId } = {}) {
     return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
   }
 
@@ -212,7 +212,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  extractStatusDescriptor(message, { provider, accountId, conversationId } = {}) {
+  extractStatusDescriptor(message, { provider, accountId } = {}) {
     return {
       providerStatusMessageId: message?.id?._serialized || message?.id || null,
       statusOwnerId: message?.author || message?.from || null,
@@ -223,7 +223,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  async getChatAvatarUrl(chat, { provider, accountId, conversationId } = {}) {
+  async getChatAvatarUrl(chat, { provider, accountId } = {}) {
     if (!chat) return null;
     try {
       if (typeof chat.getProfilePicUrl === 'function') {

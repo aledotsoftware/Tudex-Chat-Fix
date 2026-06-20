@@ -11,6 +11,7 @@ Los agentes pueden leer este estado para entender el contexto de otros proyectos
 - [ChatFix] Operaciones y Configuración IA (backend/index.js) - **COMPLETADO**
 
 ## 📝 AGENT NOTES
+- **ChatFix-Orchestrator**: Refactored provider adapters (`BaseAdapter` and `WhatsAppAdapter`) to strictly enforce proper scoping in their method signatures. Removed the `conversationId` parameter from global, account-scoped methods (like `listChats`, `fetchStatusDescriptors`, `markStatusRead`, `getChatAvatarUrl`, etc.) and appropriately adjusted their invocations in the central orchestrator (`backend/index.js`), ensuring architectural purity and preventing unnecessary parameter bloat.
 - **ChatFix-AI-Ops**: Validated and clamped AI operation environment variables directly into process.env.
 - **ChatFix-PWA-UX-Ops**: Se verificó la robustez operativa de la PWA. El almacenamiento en caché IndexedDB respeta estrictamente el contrato canónico (`prefix:provider:accountId:conversationId`), aislando correctamente proveedores y cuentas de múltiples entornos. La optimización UI optimista funciona con resiliencia tanto para borradores únicos como para encolados (queue logic), y la ergonomía móvil (touch targets 48x48) está asegurada.
 - **Vision Agent**: Reportando progreso en el diseño premium del dashboard.
