@@ -4,6 +4,7 @@ const STORE_NAME = "kv";
 
 const CHATS_PREFIX = "chats";
 const MESSAGES_PREFIX = "messages";
+const STATUSES_PREFIX = "statuses";
 
 export function getStorageKey(prefix, provider, accountId, conversationId = "") {
   return `${prefix}:${provider}:${accountId}:${conversationId}`;
@@ -118,4 +119,21 @@ export async function setCachedMessages(provider, accountId, conversationId, mes
   const limitedMessages = messages.slice(-150);
   const key = getStorageKey(MESSAGES_PREFIX, provider, accountId, conversationId);
   try { await writeEntry(key, limitedMessages); } catch (e) {}
+}
+
+export async function getCachedStatuses(provider, accountId) {
+  try {
+    const key = getStorageKey(STATUSES_PREFIX, provider, accountId);
+    const entry = await readEntry(key);
+    return Array.isArray(entry?.value) ? entry.value : [];
+  } catch (_error) {
+    return [];
+  }
+}
+
+export async function setCachedStatuses(provider, accountId, statuses) {
+  if (!Array.isArray(statuses)) return;
+  const limitedStatuses = statuses.slice(0, 150);
+  const key = getStorageKey(STATUSES_PREFIX, provider, accountId);
+  try { await writeEntry(key, limitedStatuses); } catch (e) {}
 }

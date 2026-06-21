@@ -6,6 +6,8 @@ import {
   getCachedMessages,
   setCachedChats,
   setCachedMessages,
+  getCachedStatuses,
+  setCachedStatuses,
   clearCache
 } from "./cacheStore";
 
@@ -875,9 +877,21 @@ function App() {
 
   async function fetchStatusArchive(background = false) {
     if (!apiAuthenticated) return;
-    if (!navigator.onLine) return;
+
     if (!background) setLoadingStatusArchive(true);
     try {
+      const cachedStatuses = await getCachedStatuses(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID);
+      if (cachedStatuses.length > 0) {
+        const sortedCached = [...cachedStatuses].sort(
+          (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0)
+        );
+        setStatusArchiveItems(sortedCached);
+      }
+
+      if (!navigator.onLine) {
+        return;
+      }
+
       const url = new URL(`${API_URL}/api/status-archive`);
       url.searchParams.set("provider", DEFAULT_PROVIDER);
       url.searchParams.set("accountId", DEFAULT_ACCOUNT_ID);
@@ -885,7 +899,9 @@ function App() {
       const res = await fetch(url.toString());
       if (!res.ok) throw new Error("No se pudieron cargar los estados archivados.");
       const data = await res.json();
-      setStatusArchiveItems(Array.isArray(data.items) ? data.items : []);
+      const items = Array.isArray(data.items) ? data.items : [];
+      setStatusArchiveItems(items);
+      await setCachedStatuses(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, items);
     } catch (error) {
       if (!background) showNotice(error.message, "error");
     } finally {
