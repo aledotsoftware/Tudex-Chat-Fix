@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
-import { getCachedChats, getCachedMessages, setCachedChats, setCachedMessages, clearCache, getStorageKey } from './cacheStore.js';
+import { getCachedChats, getCachedMessages, getCachedStatuses, setCachedChats, setCachedMessages, setCachedStatuses, clearCache, getStorageKey } from './cacheStore.js';
 
 describe('getStorageKey', () => {
   test('concatenates all parts with colons', () => {
@@ -49,9 +49,13 @@ describe('cacheStore error recovery', () => {
       const msgs = await getCachedMessages('whatsapp', 'test-account', 'chat1');
       assert.deepStrictEqual(msgs, [], 'Should return empty array on failure');
 
+      const statuses = await getCachedStatuses('whatsapp', 'test-account');
+      assert.deepStrictEqual(statuses, [], 'Should return empty array on failure');
+
       // Should handle silent catch for sets and clear
       await setCachedChats('whatsapp', 'test-account', []);
       await setCachedMessages('whatsapp', 'test-account', 'chat1', []);
+      await setCachedStatuses('whatsapp', 'test-account', []);
       await clearCache();
     } finally {
       // Cleanup global mock
@@ -90,6 +94,9 @@ describe('cacheStore error recovery', () => {
     try {
       const result = await getCachedChats('whatsapp', 'test-account');
       assert.deepStrictEqual(result, [], 'Should return empty array on transaction failure');
+
+      const statuses = await getCachedStatuses('whatsapp', 'test-account');
+      assert.deepStrictEqual(statuses, [], 'Should return empty array on transaction failure');
     } finally {
       // Cleanup global mock
       delete global.window;
