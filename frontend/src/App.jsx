@@ -1198,6 +1198,14 @@ function App() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    const savedDraft = draft;
+    const savedCorrected = correctedDraft;
+    const savedReplyTarget = replyTarget;
+    setDraft("");
+    setCorrectedDraft("");
+    setReplyTarget(null);
+    setDraftsByChat(prev => ({ ...prev, [selectedChatId]: "" }));
+
     const optimisticMsg = {
       _uiId: `optimistic-${Date.now()}`,
       chatId: selectedChatId,
@@ -1212,20 +1220,25 @@ function App() {
     try {
       const ok = await postSendMessage({
         text: textToSend,
-        originalText: draftsByChat[selectedChatId] || textToSend,
-        replyToMessageId: replyTarget?.id || ""
+        originalText: savedDraft || textToSend,
+        replyToMessageId: savedReplyTarget?.id || ""
       });
       if (!ok) {
         setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
+        setDraft(savedDraft);
+        setCorrectedDraft(savedCorrected);
+        setReplyTarget(savedReplyTarget);
+        setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
         return;
       }
-      setDraft("");
-      setCorrectedDraft("");
-      setReplyTarget(null);
       showNotice(type === "corrected" || type === "correctedAndSending" ? "✨ Mensaje mejorado por IA y enviado." : "📤 Mensaje original enviado.", "success");
       await fetchMessages(selectedChatId, { withLoader: false, background: true });
     } catch (error) {
       setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
+      setDraft(savedDraft);
+      setCorrectedDraft(savedCorrected);
+      setReplyTarget(savedReplyTarget);
+      setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
       showNotice(error.message, "error");
     } finally {
       setSending(false);
@@ -1299,6 +1312,14 @@ function App() {
     const { silent = false, skipRefresh = false } = options;
     if (!item?.text?.trim()) return false;
 
+    const savedDraft = draft;
+    const savedCorrected = correctedDraft;
+    const savedReplyTarget = replyTarget;
+    setDraft("");
+    setCorrectedDraft("");
+    setReplyTarget(null);
+    setDraftsByChat(prev => ({ ...prev, [selectedChatId]: "" }));
+
     const optimisticMsg = {
       _uiId: `optimistic-${Date.now()}-${Math.random()}`,
       chatId: item.chatId || selectedChatId,
@@ -1333,6 +1354,10 @@ function App() {
             return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
           });
         }
+        setDraft(savedDraft);
+        setCorrectedDraft(savedCorrected);
+        setReplyTarget(savedReplyTarget);
+        setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
         return false;
       }
       setReplyQueue((prev) => prev.filter((entry) => entry.localId !== item.localId));
@@ -1352,6 +1377,10 @@ function App() {
             return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
           });
         }
+        setDraft(savedDraft);
+        setCorrectedDraft(savedCorrected);
+        setReplyTarget(savedReplyTarget);
+        setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
       return false;
     } finally {
       setSendingReplyQueueIds((prev) => {
