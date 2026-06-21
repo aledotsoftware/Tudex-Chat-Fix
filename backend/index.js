@@ -342,7 +342,7 @@ const MessageSchema = new mongoose.Schema({
   sentText: String,
   timestamp: Number
 }, { timestamps: true });
-MessageSchema.index({ provider: 1, accountId: 1, conversationId: 1, timestamp: -1 });
+MessageSchema.index({ provider: 1, accountId: 1: 1, timestamp: -1 });
 MessageSchema.index(
   { provider: 1, accountId: 1, providerMessageId: 1 },
   { unique: true }
@@ -364,7 +364,7 @@ const ChatSchema = new mongoose.Schema({
   lastSyncedAt: Date
 }, { timestamps: true });
 ChatSchema.index({ provider: 1, accountId: 1, timestamp: -1 });
-ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: true });
+ChatSchema.index({ provider: 1, accountId: 1: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', ChatSchema);
 
@@ -380,7 +380,7 @@ const SyncStateSchema = new mongoose.Schema({
   lastFinishedAt: Date,
   lastError: String
 }, { timestamps: true });
-SyncStateSchema.index({ provider: 1, accountId: 1, conversationId: 1, kind: 1 }, { unique: true });
+SyncStateSchema.index({ provider: 1, accountId: 1: 1, kind: 1 }, { unique: true });
 const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
 const StatusArchiveSchema = new mongoose.Schema({
@@ -479,7 +479,7 @@ function normalizeAccountId(value) {
   return normalized || DEFAULT_ACCOUNT_ID;
 }
 
-function buildConversationKey(provider, accountId, conversationId) {
+function buildConversationKey(provider, accountId) {
   return `${provider}:${accountId}:${conversationId}`;
 }
 
@@ -558,7 +558,7 @@ function chatsCacheKey(provider, accountId) {
   return `${provider}:${accountId}:chats`;
 }
 
-function messagesCacheKey(provider, accountId, conversationId, limit) {
+function messagesCacheKey(provider, accountId, limit) {
   return `${provider}:${accountId}:${conversationId}:limit:${limit}`;
 }
 
@@ -566,7 +566,7 @@ function invalidateChatsCache(provider, accountId) {
   l1ChatsCache.delete(chatsCacheKey(provider, accountId));
 }
 
-function invalidateMessagesCache(provider, accountId, conversationId) {
+function invalidateMessagesCache(provider, accountId) {
   const prefix = `${provider}:${accountId}:${conversationId}:limit:`;
   for (const key of l1MessagesCache.keys()) {
     if (key.startsWith(prefix)) {
@@ -623,7 +623,7 @@ function setSyncState(task, patch) {
   return next;
 }
 
-function getSyncStateSnapshot(provider, accountId, conversationId, kind) {
+function getSyncStateSnapshot(provider, accountId, kind) {
   const taskKey = `${kind}:${provider}:${accountId}:${conversationId || '__all__'}`;
   const local = syncStateMemory.get(taskKey);
   if (!local) {
@@ -640,7 +640,7 @@ function getSyncStateSnapshot(provider, accountId, conversationId, kind) {
       lastError: null
     };
   }
-  return { provider, accountId, conversationId: conversationId || "__all__", kind, ...local };
+  return { provider, accountId: conversationId || "__all__", kind, ...local };
 }
 
 function resolveProviderAdapter(provider, accountId = 'default') {
@@ -1051,12 +1051,12 @@ async function buildMediaPayload(message, context = {}) {
   const adapter = resolveProviderAdapter(provider, accountId);
   const conversationId = context.conversationId;
 
-  if (!adapter.hasMedia(message, { provider, accountId, conversationId })) {
+  if (!adapter.hasMedia(message, { provider, accountId })) {
     return { mediaType: null, imageDataUrl: null, mediaUrl: null, mimeType: null };
   }
 
   try {
-    const mediaPromise = adapter.downloadMedia(message, { provider, accountId, conversationId });
+    const mediaPromise = adapter.downloadMedia(message, { provider, accountId });
     const timeoutPromise = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Media download timeout')), 8000)
     );
@@ -1086,7 +1086,7 @@ async function buildMediaPayload(message, context = {}) {
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
     const conversationId = context.conversationId;
-    const msgCtx = adapter.extractMessageContext(message, { provider, accountId, conversationId });
+    const msgCtx = adapter.extractMessageContext(message, { provider, accountId });
     console.warn(`⚠️ Media download skipped for message ${msgCtx.providerMessageId || 'unknown'}:`, error.message);
   }
 
@@ -1099,7 +1099,7 @@ async function buildReplyPayload(message, context = {}) {
   const adapter = resolveProviderAdapter(provider, accountId);
   const conversationId = context.conversationId;
 
-  if (!adapter.hasQuotedMsg(message, { provider, accountId, conversationId })) {
+  if (!adapter.hasQuotedMsg(message, { provider, accountId })) {
     return {
       replyToMessageId: null,
       replyToText: null
@@ -1107,8 +1107,8 @@ async function buildReplyPayload(message, context = {}) {
   }
 
   try {
-    const quoted = await adapter.getQuotedMessage(message, { provider, accountId, conversationId });
-    const quotedCtx = adapter.extractMessageContext(quoted, { provider, accountId, conversationId });
+    const quoted = await adapter.getQuotedMessage(message, { provider, accountId });
+    const quotedCtx = adapter.extractMessageContext(quoted, { provider, accountId });
     return {
       replyToMessageId: quotedCtx.providerMessageId || null,
       replyToText: quotedCtx.body || '[Mensaje citado]'
@@ -1126,7 +1126,7 @@ async function serializeMessage(message, chatId, context = {}) {
   const accountId = normalizeAccountId(context.accountId);
   const adapter = resolveProviderAdapter(provider, accountId);
   const conversationId = chatId;
-  const msgContext = adapter.extractMessageContext(message, { provider, accountId, conversationId });
+  const msgContext = adapter.extractMessageContext(message, { provider, accountId });
   const providerMessageId = msgContext.providerMessageId || `${msgContext.timestamp}-${Math.random()}`;
   const canonicalMessageId =
     provider === DEFAULT_PROVIDER
@@ -1134,8 +1134,8 @@ async function serializeMessage(message, chatId, context = {}) {
       : `${provider}:${accountId}:${providerMessageId}`;
 
   const [mediaPayload, replyPayload] = await Promise.all([
-    buildMediaPayload(message, { provider, accountId, conversationId }),
-    buildReplyPayload(message, { provider, accountId, conversationId })
+    buildMediaPayload(message, { provider, accountId }),
+    buildReplyPayload(message, { provider, accountId })
   ]);
 
   return {
@@ -1144,7 +1144,7 @@ async function serializeMessage(message, chatId, context = {}) {
     accountId,
     conversationId,
     providerMessageId,
-    conversationKey: buildConversationKey(provider, accountId, conversationId),
+    conversationKey: buildConversationKey(provider, accountId),
     chatId,
     body: msgContext.body,
     timestamp: msgContext.timestamp,
@@ -1166,21 +1166,21 @@ async function upsertChat(chatData, index, context = {}) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
-    const chatContext = adapter.extractChatContext(chatData, { provider, accountId, conversationId: context.conversationId });
+    const chatContext = adapter.extractChatContext(chatData, { provider, accountId });
     const chatId = chatContext.chatId;
     const conversationId = chatId;
     const avatarUrl = await getChatAvatar(chatData, index || 0, provider, accountId);
     const now = new Date();
 
     const saved = await Chat.findOneAndUpdate(
-      { provider, accountId, conversationId },
+      { provider, accountId },
       {
         $set: {
           id: chatId,
           provider,
           accountId,
           conversationId,
-          conversationKey: buildConversationKey(provider, accountId, conversationId),
+          conversationKey: buildConversationKey(provider, accountId),
           name: chatContext.name,
           unreadCount: chatContext.unreadCount,
           timestamp: chatContext.timestamp,
@@ -1197,7 +1197,7 @@ async function upsertChat(chatData, index, context = {}) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
-    const chatCtx = adapter.extractChatContext(chatData, { provider, accountId, conversationId: context.conversationId });
+    const chatCtx = adapter.extractChatContext(chatData, { provider, accountId });
     console.error(`❌ Error upserting chat ${chatCtx.chatId || 'unknown'}:`, err.message);
   }
 }
@@ -1230,7 +1230,7 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
     const accountId = normalizeAccountId(context.accountId);
     const adapter = resolveProviderAdapter(provider, accountId);
     const conversationId = chatId;
-    const msgCtx = adapter.extractMessageContext(messageData, { provider, accountId, conversationId });
+    const msgCtx = adapter.extractMessageContext(messageData, { provider, accountId });
     console.error(`❌ Error upserting message ${msgCtx.providerMessageId || 'unknown'}:`, err.message);
     return null;
   }
@@ -1298,8 +1298,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
   let currentAdapter = null;
   try {
     currentAdapter = resolveProviderAdapter(provider, accountId);
-    await currentAdapter.markStatusRead({ provider, accountId, conversationId: context.conversationId }).catch(() => {});
-    statusMessage = await currentAdapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId, conversationId: context.conversationId }).catch(() => null);
+    await currentAdapter.markStatusRead({ provider, accountId }).catch(() => {});
+    statusMessage = await currentAdapter.getMessageById(normalized.providerStatusMessageId, { provider, accountId }).catch(() => null);
   } catch (err) {
     console.warn('⚠️ Adapter call failed during archiveStatusFromDescriptor:', err.message);
   }
@@ -1310,8 +1310,8 @@ async function archiveStatusFromDescriptor(entry = {}, source = 'poll', context 
 
   let mediaPayload = { fileName: null, filePath: null, publicUrl: null, mimeType: null, mediaSha256: null };
 
-  if (currentAdapter && currentAdapter.hasMedia(statusMessage, { provider, accountId, conversationId: context.conversationId })) {
-    const media = await currentAdapter.downloadMedia(statusMessage, { provider, accountId, conversationId: context.conversationId }).catch(() => null);
+  if (currentAdapter && currentAdapter.hasMedia(statusMessage, { provider, accountId })) {
+    const media = await currentAdapter.downloadMedia(statusMessage, { provider, accountId }).catch(() => null);
     if (media && media.data) {
       const archived = await archiveMedia(media, 'status');
       if (archived) {
@@ -1637,7 +1637,7 @@ async function toImageDataUrl(url) {
 
 async function getChatAvatar(chat, index, provider, accountId = 'default') {
   const adapter = resolveProviderAdapter(provider, accountId);
-  const chatId = adapter.extractChatContext(chat, { provider, accountId, conversationId: undefined }).chatId;
+  const chatId = adapter.extractChatContext(chat, { provider, accountId }).chatId;
   if (!chatId) return null;
 
   const cached = avatarCache.get(chatId);
@@ -1683,7 +1683,7 @@ async function handleMessageRevoke(after, before, context = {}) {
   const provider = normalizeProvider(context.provider);
   const accountId = normalizeAccountId(context.accountId);
   const adapter = resolveProviderAdapter(provider, accountId);
-  const msgId = adapter.extractMessageContext(before || after, { provider, accountId, conversationId: context.conversationId }).providerMessageId;
+  const msgId = adapter.extractMessageContext(before || after, { provider, accountId }).providerMessageId;
   if (!msgId) return;
 
   console.log(`🗑️ Message revoked: ${msgId}`);
@@ -1755,8 +1755,8 @@ function bindProviderEvents(adapter, accountId) {
     io.emit('disconnected', { reason, provider: providerName, accountId });
   });
 
-  adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId, conversationId: undefined }));
-  adapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId, conversationId: undefined }));
+  adapter.on('message_revoke_everyone', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
+  adapter.on('message_revoke_me', async (after, before) => handleMessageRevoke(after, before, { provider: providerName, accountId }));
 
   // Message handling (incoming and outgoing)
   adapter.on('message_create', async (msg) => {
@@ -1775,12 +1775,12 @@ function bindProviderEvents(adapter, accountId) {
       return; // No procesamos los estados como mensajes normales en la UI
     }
 
-    let chatId = adapter.getChatIdFromMessage(msg, { provider: providerName, accountId, conversationId: undefined });
+    let chatId = adapter.getChatIdFromMessage(msg, { provider: providerName, accountId });
 
     // Check if this message has associated AI metadata
     let extraData = {};
-    if (adapter.extractMessageContext(msg, { provider: providerName, accountId, conversationId: chatId }).fromMe) {
-      const bodyMatch = adapter.extractMessageContext(msg, { provider: providerName, accountId, conversationId: chatId }).body.trim();
+    if (adapter.extractMessageContext(msg, { provider: providerName, accountId }).fromMe) {
+      const bodyMatch = adapter.extractMessageContext(msg, { provider: providerName, accountId }).body.trim();
       const matchKey = buildConversationKey(providerName, accountId, chatId) + ':' + bodyMatch;
       const cachedMeta = aiMetadataCache.get(matchKey);
       if (cachedMeta) {
@@ -1806,7 +1806,7 @@ function bindProviderEvents(adapter, accountId) {
 
     // Also update chat timestamp/unread in cache
     try {
-      const chat = await adapter.getChatByMessage(msg, { provider: providerName, accountId, conversationId: chatId });
+      const chat = await adapter.getChatByMessage(msg, { provider: providerName, accountId });
       if (chat) {
         await upsertChat(chat, 0, { provider: providerName, accountId });
       }
@@ -2249,7 +2249,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
 
     // Update local cache first
     await Chat.findOneAndUpdate(
-      { provider, accountId, conversationId: chatId },
+      { provider, accountId },
       { $set: { unreadCount: 0 } },
       { new: true }
     );
@@ -2257,12 +2257,12 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
 
     const adapter = resolveProviderAdapter(provider, accountId);
     if (adapter.isReady()) {
-      adapter.markRead({ provider, accountId, conversationId: chatId }).catch(err => {
+      adapter.markRead({ provider, accountId }).catch(err => {
         console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, err.message);
       });
     }
 
-    res.json({ success: true, provider, accountId, conversationId: chatId });
+    res.json({ success: true, provider, accountId });
   } catch (error) {
     console.error('❌ Mark read error:', error.message);
     res.status(500).json({ error: 'Failed to mark chat as read' });

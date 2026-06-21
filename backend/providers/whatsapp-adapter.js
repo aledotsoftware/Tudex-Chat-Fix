@@ -153,21 +153,21 @@ class WhatsAppAdapter extends BaseAdapter {
     await this.client.sendSeen('status@broadcast').catch(() => {});
   }
 
-  async downloadMedia(message, { provider, accountId, conversationId } = {}) {
+  async downloadMedia(message, { provider, accountId } = {}) {
     if (typeof message.downloadMedia === 'function') {
       return message.downloadMedia();
     }
     return null;
   }
 
-  async getQuotedMessage(message, { provider, accountId, conversationId } = {}) {
+  async getQuotedMessage(message, { provider, accountId } = {}) {
     if (typeof message.getQuotedMessage === 'function') {
       return message.getQuotedMessage();
     }
     return null;
   }
 
-  async getChatByMessage(message, { provider, accountId, conversationId } = {}) {
+  async getChatByMessage(message, { provider, accountId } = {}) {
     if (typeof message.getChat === 'function') {
       return message.getChat();
     }
@@ -178,19 +178,19 @@ class WhatsAppAdapter extends BaseAdapter {
     return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
   }
 
-  hasMedia(message, { provider, accountId, conversationId } = {}) {
+  hasMedia(message, { provider, accountId } = {}) {
     return Boolean(message?.hasMedia);
   }
 
-  hasQuotedMsg(message, { provider, accountId, conversationId } = {}) {
+  hasQuotedMsg(message, { provider, accountId } = {}) {
     return Boolean(message?.hasQuotedMsg);
   }
 
-  getChatIdFromMessage(message, { provider, accountId, conversationId } = {}) {
+  getChatIdFromMessage(message, { provider, accountId } = {}) {
     return message.fromMe ? message.to : message.from;
   }
 
-  extractMessageContext(message, { provider, accountId, conversationId } = {}) {
+  extractMessageContext(message, { provider, accountId } = {}) {
     return {
       providerMessageId: message?.id?._serialized || message?.id || null,
       body: message?.body || '',
@@ -202,7 +202,7 @@ class WhatsAppAdapter extends BaseAdapter {
     };
   }
 
-  extractChatContext(chat, { provider, accountId, conversationId } = {}) {
+  extractChatContext(chat, { provider, accountId } = {}) {
     return {
       chatId: chat?.id?._serialized || chat?.id || null,
       name: chat?.name || null,
