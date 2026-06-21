@@ -160,12 +160,15 @@ function validateStartupConfig() {
   }
 
   if (provider === 'cloudflare') {
-    const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID.trim() !== '');
+    if (process.env.CLOUDFLARE_ACCOUNT_ID) process.env.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID.trim();
+    if (process.env.CLOUDFLARE_API_TOKEN) process.env.CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN.trim();
+
+    const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID !== '');
     const hasBaseUrl = Boolean(process.env.CLOUDFLARE_AI_BASE_URL && process.env.CLOUDFLARE_AI_BASE_URL.trim() !== '');
     if (!hasAccountId && !hasBaseUrl) {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but both CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_BASE_URL are missing or empty.');
     }
-    if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN.trim() === '') {
+    if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
     }
     if (hasBaseUrl) {
@@ -185,42 +188,17 @@ function validateStartupConfig() {
   }
 
   // Validate operational limits
-  if (process.env.STATUS_POLL_INTERVAL_MS !== undefined) {
-    process.env.STATUS_POLL_INTERVAL_MS = String(safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS'));
-  }
-
-  if (process.env.AI_TIMEOUT_MS !== undefined) {
-    process.env.AI_TIMEOUT_MS = String(safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS'));
-  }
-
-  if (process.env.AI_TEMPERATURE !== undefined) {
-    process.env.AI_TEMPERATURE = String(safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'));
-  }
-
-  if (process.env.AI_MAX_TOKENS !== undefined) {
-    process.env.AI_MAX_TOKENS = String(safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'));
-  }
+  process.env.STATUS_POLL_INTERVAL_MS = String(safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS'));
+  process.env.AI_TIMEOUT_MS = String(safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS'));
+  process.env.AI_TEMPERATURE = String(safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'));
+  process.env.AI_MAX_TOKENS = String(safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'));
 
   // Cache & Fetch limits
-  if (process.env.AVATAR_TTL_MS !== undefined) {
-    process.env.AVATAR_TTL_MS = String(safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS'));
-  }
-
-  if (process.env.AVATAR_FETCH_LIMIT !== undefined) {
-    process.env.AVATAR_FETCH_LIMIT = String(safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT'));
-  }
-
-  if (process.env.AVATAR_FETCH_TIMEOUT_MS !== undefined) {
-    process.env.AVATAR_FETCH_TIMEOUT_MS = String(safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS'));
-  }
-
-  if (process.env.CHATS_CACHE_TTL_MS !== undefined) {
-    process.env.CHATS_CACHE_TTL_MS = String(safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS'));
-  }
-
-  if (process.env.MESSAGES_CACHE_TTL_MS !== undefined) {
-    process.env.MESSAGES_CACHE_TTL_MS = String(safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS'));
-  }
+  process.env.AVATAR_TTL_MS = String(safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS'));
+  process.env.AVATAR_FETCH_LIMIT = String(safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT'));
+  process.env.AVATAR_FETCH_TIMEOUT_MS = String(safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS'));
+  process.env.CHATS_CACHE_TTL_MS = String(safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS'));
+  process.env.MESSAGES_CACHE_TTL_MS = String(safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS'));
 }
 
 // Invoke validation on startup
@@ -1889,6 +1867,7 @@ app.post('/api/correct', async (req, res) => {
 
 app.get('/api/ai/config', async (_req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache');
     const configResponse = {
       ...aiConfig,
       provider: getAiProvider(aiConfig),
@@ -2005,6 +1984,7 @@ app.put('/api/ai/config', async (req, res) => {
 
 app.get('/api/ai/health', async (_req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache');
     const models = await getAvailableModels(_req.query.refresh === '1');
     const provider = getAiProvider(aiConfig);
     const payload = {
@@ -2050,6 +2030,7 @@ app.get('/api/ai/health', async (_req, res) => {
 
 app.get('/api/ai/models', async (_req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache');
     const models = await getAvailableModels(_req.query.refresh === '1');
     res.json({
       ok: true,
