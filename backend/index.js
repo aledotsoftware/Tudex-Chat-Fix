@@ -174,10 +174,8 @@ function validateStartupConfig() {
   } else {
     if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
-      process.env.LM_STUDIO_URL = 'http://localhost:1234';
-    } else {
-      process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
     }
+    process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
   }
 
   if (API_KEY.length > 0 && API_KEY.length < 8) {
