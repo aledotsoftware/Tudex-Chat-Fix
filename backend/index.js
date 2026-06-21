@@ -1174,7 +1174,7 @@ async function upsertChat(chatData, index, context = {}) {
     const avatarUrl = await getChatAvatar(chatData, index || 0, provider, accountId);
     const now = new Date();
 
-    await Chat.findOneAndUpdate(
+    const saved = await Chat.findOneAndUpdate(
       { provider, accountId, conversationId },
       {
         $set: {
@@ -1194,6 +1194,7 @@ async function upsertChat(chatData, index, context = {}) {
       { upsert: true, new: true }
     );
     invalidateChatsCache(provider, accountId);
+    return saved.toJSON ? saved.toJSON() : { ...saved };
   } catch (err) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
@@ -1214,7 +1215,7 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
     // Remove undefined values to avoid overwriting existing data with nothing
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
-    await Message.findOneAndUpdate(
+    const saved = await Message.findOneAndUpdate(
       {
         provider: payload.provider,
         accountId: payload.accountId,
@@ -1225,7 +1226,7 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
     );
     invalidateMessagesCache(payload.provider, payload.accountId, payload.conversationId);
     invalidateChatsCache(payload.provider, payload.accountId);
-    return payload;
+    return saved.toJSON ? saved.toJSON() : { ...saved };
   } catch (err) {
     const provider = normalizeProvider(context.provider);
     const accountId = normalizeAccountId(context.accountId);
