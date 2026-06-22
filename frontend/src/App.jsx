@@ -1642,7 +1642,7 @@ function App() {
                   </div>
                 </>
               ) : (
-                <div className="loadingSpinnerContainer" aria-busy="true" aria-live="polite">
+                <div className="loadingSpinnerContainer" role="status" aria-busy="true" aria-live="polite">
                   <div className="largeSpinner" aria-hidden="true"></div>
                   <p className="helperText">Generando código QR...</p>
                 </div>
