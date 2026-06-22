@@ -1858,7 +1858,10 @@ function App() {
               key={chat.id}
               aria-label={`Chat con ${chat.name || chat.id}`}
               className={`chatItem ${chat.id === selectedChatId ? "active" : ""}`}
-              onClick={() => setSelectedChatId(chat.id)}
+              onClick={() => {
+                setSelectedChatId(chat.id);
+                setReplyTarget(null);
+              }}
               aria-current={chat.id === selectedChatId ? "page" : undefined}
             >
               <div
@@ -2275,7 +2278,7 @@ function App() {
                   placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
-                  disabled={sending || correcting || correctingAndSending}
+                  disabled={sending || correctingAndSending}
                 />
               </div>
 
@@ -2310,7 +2313,7 @@ function App() {
                   className={correctedDraft ? "primary sendCorrectedBtn" : "primary"}
                   aria-label={correctedDraft ? "Enviar la sugerencia de IA" : "Mejorar redacción con IA y enviar"}
                   onClick={correctedDraft ? () => sendMessage(correctedDraft, "corrected") : correctAndSend}
-                  disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
+                  disabled={!draft.trim() || sending || correctingAndSending || isOffline}
                 >
                   <span aria-hidden="true">{correctedDraft ? "✨" : "🚀"}</span>
                   <span>{correctedDraft ? "Enviar versión IA" : "Mejorar y enviar"}</span>
@@ -2323,7 +2326,7 @@ function App() {
                     setCorrectedDraft("");
                     setTimeout(() => draftInputRef.current?.focus(), 0);
                   } : correctDraft}
-                  disabled={!draft.trim() || sending || correcting || correctingAndSending || (!correctedDraft && isOffline)}
+                  disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline)}
                 >
                   <span aria-hidden="true">{correctedDraft ? "✏️" : "✨"}</span>
                   <span>{correctedDraft ? "Usar y editar" : "Ver sugerencia"}</span>
@@ -2332,7 +2335,7 @@ function App() {
                   className="secondary plainSendBtn"
                   aria-label={correctedDraft ? "Enviar el texto original, descartando la sugerencia" : "Enviar mensaje original sin revisar"}
                   onClick={() => sendMessage(draft, "original")}
-                  disabled={!draft.trim() || sending || correcting || correctingAndSending || isOffline}
+                  disabled={!draft.trim() || sending || correctingAndSending || isOffline}
                 >
                   <span aria-hidden="true">📤</span>
                   <span>{correctedDraft ? "Enviar original (sin IA)" : "Enviar original"}</span>
