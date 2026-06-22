@@ -759,6 +759,7 @@ function App() {
         const nextChat = filteredChats[nextIndex];
         if (nextChat) {
           setSelectedChatId(nextChat.id);
+          setReplyTarget(null);
           // Auto-scroll to active chat item could be added here
         }
       }
@@ -1764,6 +1765,7 @@ function App() {
               onClick={() => {
                 setViewMode("statuses");
                 setSelectedChatId("");
+                setReplyTarget(null);
                 fetchStatusArchive(false);
               }}
             >
@@ -1831,7 +1833,10 @@ function App() {
             <button
               key={item._id || item.id || item.providerStatusMessageId}
               className="chatItem statusArchiveSidebarItem"
-              onClick={() => setSelectedChatId("")}
+              onClick={() => {
+                setSelectedChatId("");
+                setReplyTarget(null);
+              }}
             >
               <div className="chatAvatar statusArchiveThumb" aria-hidden="true">
                 {(item.imageUrl || item.mediaUrl) ? (
@@ -1991,7 +1996,10 @@ function App() {
                 <button
                   className="secondary mobileBackBtn"
                   aria-label="Volver a lista de chats"
-                  onClick={() => setSelectedChatId("")}
+                  onClick={() => {
+                    setSelectedChatId("");
+                    setReplyTarget(null);
+                  }}
                 >
                   <span aria-hidden="true">←</span>
                 </button>
