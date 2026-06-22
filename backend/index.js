@@ -2238,7 +2238,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
 
     const adapter = resolveProviderAdapter(provider, accountId);
     if (adapter.isReady()) {
-      adapter.markRead({ provider, accountId }).catch(err => {
+      adapter.markRead({ provider, accountId, conversationId: chatId }).catch(err => {
         console.warn(`⚠️ Failed to sendSeen via provider ${provider} for ${chatId}:`, err.message);
       });
     }
