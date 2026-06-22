@@ -2301,22 +2301,16 @@ function App() {
                 </div>
               ) : null}
 
-              {(sending || correcting || correctingAndSending) ? (
-                <div className={`activityStateBadge ${correctingAndSending ? "processingAndSending" : correcting ? "processing" : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "sendingAi" : "sending"}`}>
-                  <span className="spinner" aria-hidden="true" />
-                  <span>{correctingAndSending ? "✨ Mejorando y enviando..." : correcting ? "✨ Mejorando con IA..." : (sendingType === 'corrected' || sendingType === 'correctedAndSending') ? "✨ Enviando versión IA..." : "📤 Enviando mensaje original..."}</span>
-                </div>
-              ) : null}
-
               <div className="composerActions">
                 <button
                   className={correctedDraft ? "primary sendCorrectedBtn" : "primary"}
                   aria-label={correctedDraft ? "Enviar la sugerencia de IA" : "Mejorar redacción con IA y enviar"}
                   onClick={correctedDraft ? () => sendMessage(correctedDraft, "corrected") : correctAndSend}
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
+                  aria-busy={sending || correctingAndSending}
                 >
-                  <span aria-hidden="true">{correctedDraft ? "✨" : "🚀"}</span>
-                  <span>{correctedDraft ? "Enviar versión IA" : "Mejorar y enviar"}</span>
+                  <span aria-hidden="true">{sending || correctingAndSending ? <span className="buttonSpinner" /> : (correctedDraft ? "✨" : "🚀")}</span>
+                  <span>{correctingAndSending ? "Mejorando y enviando..." : sending ? "Enviando..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
                 </button>
                 <button
                   className={correctedDraft ? "secondary useCorrectedBtn" : "secondary"}
@@ -2326,10 +2320,11 @@ function App() {
                     setCorrectedDraft("");
                     setTimeout(() => draftInputRef.current?.focus(), 0);
                   } : correctDraft}
-                  disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline)}
+                  disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline) || correcting}
+                  aria-busy={correcting}
                 >
-                  <span aria-hidden="true">{correctedDraft ? "✏️" : "✨"}</span>
-                  <span>{correctedDraft ? "Usar y editar" : "Ver sugerencia"}</span>
+                  <span aria-hidden="true">{correcting ? <span className="buttonSpinner" /> : (correctedDraft ? "✏️" : "✨")}</span>
+                  <span>{correcting ? "Mejorando..." : (correctedDraft ? "Usar y editar" : "Ver sugerencia")}</span>
                 </button>
                 <button
                   className="secondary plainSendBtn"
@@ -2338,7 +2333,7 @@ function App() {
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
                 >
                   <span aria-hidden="true">📤</span>
-                  <span>{correctedDraft ? "Enviar original (sin IA)" : "Enviar original"}</span>
+                  <span>Enviar original</span>
                 </button>
               </div>
 
