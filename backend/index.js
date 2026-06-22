@@ -320,7 +320,7 @@ const MessageSchema = new mongoose.Schema({
   sentText: String,
   timestamp: Number
 }, { timestamps: true });
-MessageSchema.index({ provider: 1, accountId: 1: 1, timestamp: -1 });
+MessageSchema.index({ provider: 1, accountId: 1, conversationId: 1, timestamp: -1 });
 MessageSchema.index(
   { provider: 1, accountId: 1, providerMessageId: 1 },
   { unique: true }
@@ -342,7 +342,7 @@ const ChatSchema = new mongoose.Schema({
   lastSyncedAt: Date
 }, { timestamps: true });
 ChatSchema.index({ provider: 1, accountId: 1, timestamp: -1 });
-ChatSchema.index({ provider: 1, accountId: 1: 1 }, { unique: true });
+ChatSchema.index({ provider: 1, accountId: 1, conversationId: 1 }, { unique: true });
 
 const Chat = mongoose.model('Chat', ChatSchema);
 
@@ -358,7 +358,7 @@ const SyncStateSchema = new mongoose.Schema({
   lastFinishedAt: Date,
   lastError: String
 }, { timestamps: true });
-SyncStateSchema.index({ provider: 1, accountId: 1: 1, kind: 1 }, { unique: true });
+SyncStateSchema.index({ provider: 1, accountId: 1, conversationId: 1, kind: 1 }, { unique: true });
 const SyncState = mongoose.model('SyncState', SyncStateSchema);
 
 const StatusArchiveSchema = new mongoose.Schema({
@@ -601,7 +601,7 @@ function setSyncState(task, patch) {
   return next;
 }
 
-function getSyncStateSnapshot(provider, accountId, kind) {
+function getSyncStateSnapshot(provider, accountId, kind, conversationId = '__all__') {
   const taskKey = `${kind}:${provider}:${accountId}:${conversationId || '__all__'}`;
   const local = syncStateMemory.get(taskKey);
   if (!local) {
@@ -618,7 +618,7 @@ function getSyncStateSnapshot(provider, accountId, kind) {
       lastError: null
     };
   }
-  return { provider, accountId: conversationId || "__all__", kind, ...local };
+  return { ...local, provider, accountId, conversationId: conversationId || "__all__", kind };
 }
 
 function resolveProviderAdapter(provider, accountId = 'default') {
@@ -1151,7 +1151,7 @@ async function upsertChat(chatData, index, context = {}) {
     const now = new Date();
 
     const saved = await Chat.findOneAndUpdate(
-      { provider, accountId },
+      { provider, accountId, conversationId },
       {
         $set: {
           id: chatId,
@@ -2066,7 +2066,7 @@ app.get(['/api/chats', '/api/chats/:channelCode'], async (req, res) => {
         provider,
         accountId,
         cache: { level: 'l1', staleWhileRevalidate: true },
-        syncState: getSyncStateSnapshot(provider, accountId, '__all__', 'chats')
+        syncState: getSyncStateSnapshot(provider, accountId, 'chats', '__all__')
       });
     }
 
@@ -2085,7 +2085,7 @@ app.get(['/api/chats', '/api/chats/:channelCode'], async (req, res) => {
       provider,
       accountId,
       cache: { level: 'mongo', staleWhileRevalidate: true },
-      syncState: getSyncStateSnapshot(provider, accountId, '__all__', 'chats')
+      syncState: getSyncStateSnapshot(provider, accountId, 'chats', '__all__')
     });
   } catch (error) {
     console.error('❌ Fetch chats error:', error.message);
@@ -2122,7 +2122,7 @@ app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/:channelCod
         accountId,
         conversationId: chatId,
         cache: { level: 'l1', staleWhileRevalidate: true },
-        syncState: getSyncStateSnapshot(provider, accountId, chatId, 'messages')
+        syncState: getSyncStateSnapshot(provider, accountId, 'messages', chatId)
       });
     }
 
@@ -2154,7 +2154,7 @@ app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/:channelCod
       accountId,
       conversationId: chatId,
       cache: { level: 'mongo', staleWhileRevalidate: true },
-      syncState: getSyncStateSnapshot(provider, accountId, chatId, 'messages')
+      syncState: getSyncStateSnapshot(provider, accountId, 'messages', chatId)
     });
   } catch (error) {
     console.error('❌ Fetch messages error details:', error);
@@ -2457,7 +2457,7 @@ app.get(['/api/sync/state', '/api/sync/state/:channelCode'], async (req, res) =>
     const kind = req.query.kind === 'messages' ? 'messages' : 'chats';
     const conversationId = String(req.query.conversationId || (kind === 'messages' ? '' : '__all__')).trim();
     const safeConversationId = conversationId || '__all__';
-    const local = getSyncStateSnapshot(provider, accountId, safeConversationId, kind);
+    const local = getSyncStateSnapshot(provider, accountId, kind, safeConversationId);
     const persisted = await SyncState.findOne({
       provider,
       accountId,
