@@ -461,7 +461,7 @@ button, textarea, input, select {
   border-radius: 12px;
   padding: 12px 16px;
   color: var(--text-primary);
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .searchWrap input:focus-visible {
@@ -971,7 +971,7 @@ button, textarea, input, select {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.25s ease;
 }
 
 .replyTargetLabel {
@@ -1017,7 +1017,7 @@ button, textarea, input, select {
   color: var(--text-primary);
   font-size: 16px;
   resize: none;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
   min-height: 60px;
   max-height: 180px;
   overflow-y: hidden;
@@ -1221,7 +1221,7 @@ button:disabled {
   border: 1px solid var(--accent-primary);
   border-radius: 16px;
   padding: 16px;
-  animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: slideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 210, 255, 0.2);
 }
@@ -2010,7 +2010,7 @@ select {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   font-size: 14px;
-  animation: slideInToast 0.3s ease-out forwards;
+  animation: slideInToast 0.25s ease-out forwards;
   max-width: 320px;
   word-wrap: break-word;
 }
