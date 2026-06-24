@@ -1950,7 +1950,7 @@ button.fullWidth {
   .composerActions button {
     min-width: 48px;
     min-height: 48px;
-    flex: 1 1 calc(50% - 4px);
+    flex: 1 1 100%;
   }
 
   .composerActions button.primary {

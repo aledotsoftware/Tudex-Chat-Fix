@@ -2328,7 +2328,7 @@ function App() {
                     setCorrectedDraft("");
                     setTimeout(() => draftInputRef.current?.focus(), 0);
                   } : correctDraft}
-                  disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline) || correcting}
+                  disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline)}
                   aria-busy={correcting}
                 >
                   <span aria-hidden="true">{correcting ? <span className="buttonSpinner" /> : (correctedDraft ? "✏️" : "✨")}</span>
