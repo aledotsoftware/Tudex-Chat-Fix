@@ -110,18 +110,18 @@ const syncStateMemory = new Map();
 const aiMetadataCache = new Map(); // Temporary store for linking AI corrections sent via API to their message_create event
 
 let syncWorkerRunning = false;
-const AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
-const AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
-const AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS');
-const CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS');
-const MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS');
+let AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
+let AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
+let AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS');
+let CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS');
+let MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS');
 const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
-const STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
+let STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
 let aiErrorLogState = {
   signature: '',
   count: 0,
@@ -145,18 +145,18 @@ function validateStartupConfig() {
   const provider = String(process.env.AI_PROVIDER || 'lmstudio').trim().toLowerCase();
 
   // Validate AI config values that aren't inherently checked by safeUrl/safeNumber correctly
-  if (!process.env.MODEL_NAME || process.env.MODEL_NAME.trim() === '') {
-    console.warn('⚠️ WARNING: MODEL_NAME is not set or empty. Falling back to "llama-3.1-8b-instruct".');
-    process.env.MODEL_NAME = 'llama-3.1-8b-instruct';
-  } else {
-    process.env.MODEL_NAME = process.env.MODEL_NAME.trim();
-  }
-
   if (provider !== 'lmstudio' && provider !== 'cloudflare') {
     console.warn(`⚠️ WARNING: Unsupported AI_PROVIDER "${process.env.AI_PROVIDER}". Falling back to "lmstudio".`);
     process.env.AI_PROVIDER = 'lmstudio';
   } else {
     process.env.AI_PROVIDER = provider;
+  }
+
+  if (!process.env.MODEL_NAME || process.env.MODEL_NAME.trim() === '') {
+    console.warn('⚠️ WARNING: MODEL_NAME is not set or empty. Falling back to "llama-3.1-8b-instruct".');
+    process.env.MODEL_NAME = 'llama-3.1-8b-instruct';
+  } else {
+    process.env.MODEL_NAME = process.env.MODEL_NAME.trim();
   }
 
   if (provider === 'cloudflare') {
@@ -188,17 +188,32 @@ function validateStartupConfig() {
   }
 
   // Validate operational limits
-  process.env.STATUS_POLL_INTERVAL_MS = String(safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS'));
-  process.env.AI_TIMEOUT_MS = String(safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS'));
-  process.env.AI_TEMPERATURE = String(safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'));
-  process.env.AI_MAX_TOKENS = String(safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'));
+  STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
+  process.env.STATUS_POLL_INTERVAL_MS = String(STATUS_POLL_INTERVAL_MS);
+  let AI_TIMEOUT_MS = safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS');
+  process.env.AI_TIMEOUT_MS = String(AI_TIMEOUT_MS);
+
+  let AI_TEMPERATURE = safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE');
+  process.env.AI_TEMPERATURE = String(AI_TEMPERATURE);
+
+  let AI_MAX_TOKENS = safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS');
+  process.env.AI_MAX_TOKENS = String(AI_MAX_TOKENS);
 
   // Cache & Fetch limits
-  process.env.AVATAR_TTL_MS = String(safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS'));
-  process.env.AVATAR_FETCH_LIMIT = String(safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT'));
-  process.env.AVATAR_FETCH_TIMEOUT_MS = String(safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS'));
-  process.env.CHATS_CACHE_TTL_MS = String(safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS'));
-  process.env.MESSAGES_CACHE_TTL_MS = String(safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS'));
+  AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
+  process.env.AVATAR_TTL_MS = String(AVATAR_TTL_MS);
+
+  AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
+  process.env.AVATAR_FETCH_LIMIT = String(AVATAR_FETCH_LIMIT);
+
+  AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS');
+  process.env.AVATAR_FETCH_TIMEOUT_MS = String(AVATAR_FETCH_TIMEOUT_MS);
+
+  CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS');
+  process.env.CHATS_CACHE_TTL_MS = String(CHATS_CACHE_TTL_MS);
+
+  MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS');
+  process.env.MESSAGES_CACHE_TTL_MS = String(MESSAGES_CACHE_TTL_MS);
 }
 
 // Invoke validation on startup
@@ -618,7 +633,7 @@ function getSyncStateSnapshot(provider, accountId, kind, conversationId = '__all
       lastError: null
     };
   }
-  return { ...local, provider, accountId, conversationId: conversationId || "__all__", kind };
+  return { ...local, provider, accountId, conversationId: conversationId || '__all__', kind };
 }
 
 function resolveProviderAdapter(provider, accountId = 'default') {
@@ -1195,6 +1210,7 @@ async function upsertMessage(messageData, chatId, extraData = {}, context = {}) 
       {
         provider: payload.provider,
         accountId: payload.accountId,
+        conversationId: payload.conversationId,
         providerMessageId: payload.providerMessageId
       },
       { $set: updateData },
@@ -1667,10 +1683,14 @@ async function handleMessageRevoke(after, before, context = {}) {
   console.log(`🗑️ Message revoked: ${msgId}`);
 
   try {
+    const msgCtx = adapter.extractMessageContext(before || after, { provider, accountId });
+    const conversationId = msgCtx.chatId;
+
     const updated = await Message.findOneAndUpdate(
       {
         provider,
         accountId,
+        conversationId,
         providerMessageId: msgId
       },
       { $set: { isRevoked: true } },
