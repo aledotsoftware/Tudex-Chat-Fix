@@ -210,6 +210,12 @@ button, textarea, input, select {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+.authInput::placeholder,
+.searchWrap input::placeholder,
+.composer textarea::placeholder {
+  opacity: 0.8;
+}
+
 .authInput::placeholder {
   color: var(--text-muted);
 }
@@ -1821,6 +1827,8 @@ button.fullWidth {
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 70%;
+  flex: 1;
+  min-width: 0;
 }
 
 .resourceList time {

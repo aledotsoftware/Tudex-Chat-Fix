@@ -1531,6 +1531,12 @@ function App() {
           <div className="bg-blob blob-1"></div>
           <div className="bg-blob blob-2"></div>
         </div>
+        {isOffline && (
+          <div className="offlineBanner" role="alert" aria-live="assertive">
+            <span aria-hidden="true" >⚠️</span>
+            <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea.</span>
+          </div>
+        )}
         <main className="authScreen">
         <section className="authCard" aria-labelledby="apiKeyHeading">
           <h1 id="apiKeyHeading">ChatFix API</h1>
@@ -1558,6 +1564,7 @@ function App() {
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="none"
+                disabled={isOffline}
               />
               <button
                 type="button"
@@ -1572,7 +1579,7 @@ function App() {
               type="submit"
               className="primary fullWidth"
               aria-label="Ingresar al panel de control"
-              disabled={authChecking || !inputApiKey}
+              disabled={authChecking || !inputApiKey || isOffline}
               aria-busy={authChecking}
             >
               {authChecking ? (
@@ -1613,6 +1620,12 @@ function App() {
           <div className="bg-blob blob-1"></div>
           <div className="bg-blob blob-2"></div>
         </div>
+        {isOffline && (
+          <div className="offlineBanner" role="alert" aria-live="assertive">
+            <span aria-hidden="true" >⚠️</span>
+            <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea.</span>
+          </div>
+        )}
         <main className="authScreen">
         <section className="authCard" aria-live="polite" aria-labelledby="waAuthHeading">
           <h1 id="waAuthHeading">ChatFix</h1>
@@ -1805,7 +1818,7 @@ function App() {
           <span className={`dot ${dotClass}`} aria-hidden="true" title={backendStatus.latencyMs !== null ? `Latencia: ${backendStatus.latencyMs}ms` : ""} />
           <span className="sr-only">Estado: {connectionLabel}. Proveedor: {backendStatus.providerStatus}.</span>
           <span aria-hidden="true">
-            {connectionLabel} · Provider: {backendStatus.providerStatus} {backendStatus.latencyMs !== null ? `(${backendStatus.latencyMs}ms)` : ""}
+            {connectionLabel} · {backendStatus.providerStatus} {backendStatus.latencyMs !== null ? `(${backendStatus.latencyMs}ms)` : ""}
           </span>
           {totalUnread > 0 ? <strong className="pendingCounter" aria-label={`${totalUnread} mensajes pendientes`}>{totalUnread} pendientes</strong> : null}
         </div>
