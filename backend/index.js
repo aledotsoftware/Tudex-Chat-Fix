@@ -2250,7 +2250,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
 
     // Update local cache first
     await Chat.findOneAndUpdate(
-      { provider, accountId },
+      { provider, accountId, conversationId: chatId },
       { $set: { unreadCount: 0 } },
       { new: true }
     );
