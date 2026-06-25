@@ -1,30 +1,30 @@
 :root {
   --font-main: 'Inter', sans-serif;
   --font-heading: 'Outfit', sans-serif;
-  
+
   /* Modern Dark Palette */
   --bg-deep: #05080a;
   --bg-glass: rgba(17, 25, 31, 0.7);
   --bg-darker: #0d1418;
   --bg-card: #1f2c33;
   --bg-sidebar: rgba(13, 20, 24, 0.85);
-  
+
   /* Accent Colors */
   --accent-primary: #00d2ff;
   --accent-secondary: #9d50bb;
   --accent-gradient: linear-gradient(135deg, #00d2ff 0%, #3a7bd5 100%);
   --accent-glow: rgba(0, 210, 255, 0.3);
-  
+
   /* States */
   --success: #00e676;
   --error: #ff5252;
   --warning: #ffca28;
-  
+
   /* Text */
   --text-primary: #ffffff;
   --text-secondary: #e2e8f0;
   --text-muted: #cbd5e1;
-  
+
   /* Borders */
   --border-light: rgba(255, 255, 255, 0.18);
   --border-focus: #00d2ff;
@@ -971,13 +971,7 @@ button, textarea, input, select {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
   animation: slideIn 0.25s ease;
-}
-
-.replyTargetContent {
-  flex: 1;
-  min-width: 0;
 }
 
 .replyTargetLabel {
@@ -1990,14 +1984,6 @@ select {
     min-width: 48px;
   }
   .authInput {
-    min-height: 48px;
-  }
-  input[type="text"],
-  input[type="password"],
-  input[type="number"],
-  input[type="email"],
-  textarea,
-  select {
     min-height: 48px;
   }
 }

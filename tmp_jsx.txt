@@ -55,11 +55,11 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   let [resource, config] = args;
   const key = localStorage.getItem("chatfix_api_key");
-  
+
   if (key) {
     config = config || {};
     let headers = config.headers || {};
-    
+
     if (headers instanceof Headers) {
       headers.set("X-API-Key", key);
     } else if (Array.isArray(headers)) {
@@ -70,7 +70,7 @@ window.fetch = async (...args) => {
     config.headers = headers;
     args[1] = config;
   }
-  
+
   const response = await originalFetch(...args);
   if (response.status === 401) {
     console.warn("Auth failure for:", resource);
@@ -2214,7 +2214,7 @@ function App() {
 
               {replyTarget ? (
                 <div className="replyTarget">
-                  <div className="replyTargetContent">
+                  <div>
                     <p className="replyTargetLabel">
                       Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
                     </p>
