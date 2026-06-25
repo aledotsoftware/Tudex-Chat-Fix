@@ -2187,6 +2187,7 @@ app.get(['/api/chats/:chatId/messages', '/api/chats/:chatId/messages/:channelCod
 
 app.get(['/api/chats/:chatId/resources', '/api/chats/:chatId/resources/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=0, stale-while-revalidate=5');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { chatId } = req.params;
     const { provider, accountId } = parseProviderContext(req);
@@ -2400,6 +2401,7 @@ app.get(['/api/status', '/api/status/:channelCode'], async (req, res) => {
 
 app.get(['/api/status-archive', '/api/status-archive/:channelCode'], async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'public, max-age=0, stale-while-revalidate=5');
     if (req.params.channelCode) req.query.provider = req.params.channelCode;
     const { provider, accountId } = parseProviderContext(req);
     const limit = parsePositiveInt(req.query.limit, 100, 500);
