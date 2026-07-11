@@ -591,6 +591,11 @@ button, textarea, input, select {
 .chatMeta {
   font-size: 12px;
   color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebarFooter {
