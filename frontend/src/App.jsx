@@ -2299,7 +2299,7 @@ function App() {
                   placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
-                  disabled={sending || correctingAndSending || isOffline}
+                  disabled={sending || correctingAndSending}
                 />
               </div>
 
