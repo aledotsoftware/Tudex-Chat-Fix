@@ -551,7 +551,7 @@ function chatsCacheKey(provider, accountId) {
   return `${provider}:${accountId}:chats`;
 }
 
-function messagesCacheKey(provider, accountId, limit) {
+function messagesCacheKey(provider, accountId, conversationId, limit) {
   return `${provider}:${accountId}:${conversationId}:limit:${limit}`;
 }
 
@@ -559,7 +559,7 @@ function invalidateChatsCache(provider, accountId) {
   l1ChatsCache.delete(chatsCacheKey(provider, accountId));
 }
 
-function invalidateMessagesCache(provider, accountId) {
+function invalidateMessagesCache(provider, accountId, conversationId) {
   const prefix = `${provider}:${accountId}:${conversationId}:limit:`;
   for (const key of l1MessagesCache.keys()) {
     if (key.startsWith(prefix)) {
