@@ -2299,7 +2299,7 @@ function App() {
                   placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
-                  disabled={sending || correctingAndSending}
+                  disabled={sending || correctingAndSending || isOffline}
                 />
               </div>
 
@@ -2462,7 +2462,7 @@ function App() {
             </select>
 
             <label htmlFor="aiEndpoint">Endpoint activo</label>
-            <input id="aiEndpoint" value={aiConfig.aiBaseUrl} spellCheck="false" autoComplete="off" autoCorrect="off" autoCapitalize="none" readOnly />
+            <input id="aiEndpoint" value={aiConfig.aiBaseUrl} spellCheck="false" autoComplete="off" autoCorrect="off" autoCapitalize="none" readOnly disabled={isOffline} />
 
             {aiConfig.provider === "lmstudio" ? (
               <>
@@ -2474,6 +2474,7 @@ function App() {
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="none"
+                  disabled={isOffline}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, lmStudioBaseUrl: e.target.value }))
                   }
@@ -2489,6 +2490,7 @@ function App() {
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="none"
+                  disabled={isOffline}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))
                   }
@@ -2504,6 +2506,7 @@ function App() {
                     autoComplete="off"
                     autoCorrect="off"
                     autoCapitalize="none"
+                    disabled={isOffline}
                     onChange={(e) =>
                       setAiConfig((prev) => ({ ...prev, cloudflareApiToken: e.target.value }))
                     }
@@ -2513,6 +2516,7 @@ function App() {
                     className="passwordToggleBtn" aria-pressed={showCloudflareToken}
                     onClick={() => setShowCloudflareToken(!showCloudflareToken)}
                     aria-label={showCloudflareToken ? "Ocultar Cloudflare Token" : "Mostrar Cloudflare Token"}
+                    disabled={isOffline}
                   >
                     <span aria-hidden="true">{showCloudflareToken ? "🙈" : "👁️"}</span>
                   </button>
@@ -2526,6 +2530,7 @@ function App() {
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="none"
+                  disabled={isOffline}
                   onChange={(e) =>
                     setAiConfig((prev) => ({ ...prev, cloudflareBaseUrl: e.target.value }))
                   }
@@ -2538,6 +2543,7 @@ function App() {
             <select
               id="aiModel"
               value={aiConfig.modelName}
+              disabled={isOffline}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             >
               <option value="">Seleccionar modelo...</option>
@@ -2555,6 +2561,7 @@ function App() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
+              disabled={isOffline}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, modelName: e.target.value }))}
             />
 
@@ -2570,6 +2577,7 @@ function App() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
+              disabled={isOffline}
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, temperature: Number(e.target.value) }))
               }
@@ -2586,6 +2594,7 @@ function App() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
+              disabled={isOffline}
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, timeoutMs: Number(e.target.value) }))
               }
@@ -2603,6 +2612,7 @@ function App() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="none"
+              disabled={isOffline}
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, maxTokens: Number(e.target.value) }))
               }
@@ -2613,6 +2623,7 @@ function App() {
               id="aiSystemPrompt"
               rows={4}
               value={aiConfig.systemPrompt}
+              disabled={isOffline}
               onChange={(e) => setAiConfig((prev) => ({ ...prev, systemPrompt: e.target.value }))}
             />
 
@@ -2621,6 +2632,7 @@ function App() {
               id="aiUserPrompt"
               rows={5}
               value={aiConfig.userPromptTemplate}
+              disabled={isOffline}
               onChange={(e) =>
                 setAiConfig((prev) => ({ ...prev, userPromptTemplate: e.target.value }))
               }
@@ -2631,7 +2643,7 @@ function App() {
                 className="secondary"
                 aria-label="Probar conexión con IA"
                 onClick={checkAiHealth}
-                disabled={checkingAiHealth}
+                disabled={checkingAiHealth || isOffline}
                 aria-busy={checkingAiHealth}
               >
                 {checkingAiHealth ? <><span className="buttonSpinner" aria-hidden="true" /><span>Probando...</span></> : "Probar conexión"}
@@ -2640,7 +2652,7 @@ function App() {
                 className="primary"
                 aria-label="Guardar configuración de IA"
                 onClick={saveAiConfig}
-                disabled={savingAiConfig}
+                disabled={savingAiConfig || isOffline}
                 aria-busy={savingAiConfig}
               >
                 {savingAiConfig ? <><span className="buttonSpinner" aria-hidden="true" /><span>Guardando...</span></> : "Guardar"}
