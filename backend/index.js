@@ -1470,6 +1470,7 @@ async function syncChatMessages(chatId, limit = 50, context = {}) {
           filter: {
             provider: payload.provider,
             accountId: payload.accountId,
+            conversationId: payload.conversationId,
             providerMessageId: payload.providerMessageId
           },
           update: { $set: updateData },
