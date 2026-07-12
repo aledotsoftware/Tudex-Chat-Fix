@@ -554,6 +554,7 @@ button, textarea, input, select {
   align-items: center;
   margin-bottom: 4px;
   gap: 10px;
+  min-width: 0;
 }
 
 .chatName {
@@ -562,6 +563,8 @@ button, textarea, input, select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .chatTopMeta {
@@ -692,6 +695,7 @@ button, textarea, input, select {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .chatHeader h3 {
@@ -701,6 +705,8 @@ button, textarea, input, select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .chatHeader p {
@@ -709,6 +715,8 @@ button, textarea, input, select {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .mobileBackBtn {
@@ -1006,6 +1014,8 @@ button, textarea, input, select {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 500px;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Composer Styling */
@@ -1822,6 +1832,7 @@ button.fullWidth {
   align-items: center;
   padding: 12px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  min-width: 0;
 }
 
 .resourceList a {
