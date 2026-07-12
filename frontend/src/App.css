@@ -1965,6 +1965,15 @@ button.fullWidth {
   }
 }
 
+@media (max-width: 920px) {
+  /* Asegurar tamaño touch seguro general en componentes interactivos secundarios que puedan haber quedado por fuera */
+  .chatHeaderActions button,
+  .headerActions button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
+
 @keyframes slideUpMobile {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -2023,6 +2032,7 @@ select {
   textarea,
   select {
     min-height: 48px;
+  min-width: 48px;
   }
 }
 
