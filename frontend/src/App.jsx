@@ -1770,7 +1770,6 @@ function App() {
               </span>
             )}
           </h2>
-          {viewMode === "chats" && syncingChats && <div className="syncProgressBar" aria-hidden="true"></div>}
           <div className="headerActions">
             <button
               className={`secondary ${viewMode === "statuses" ? "activeToggle" : ""}`}
@@ -1812,6 +1811,7 @@ function App() {
               {loadingChats ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Actualizando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Actualizar</span></>}
             </button>
           </div>
+          {viewMode === "chats" && syncingChats && <div className="syncProgressBar" aria-hidden="true"></div>}
         </header>
 
         <div className="statusBar" role="status" aria-live="polite" aria-atomic="true">
@@ -2049,7 +2049,6 @@ function App() {
                 </div>
               </div>
               <div className="chatHeaderActions">
-                {syncingChat && <div className="syncProgressBar" aria-hidden="true"></div>}
                 <button
                   className="secondary"
                   aria-label="Ver recursos del contacto"
@@ -2068,6 +2067,7 @@ function App() {
                   {loadingMessages[selectedChatId] ? <><span className="buttonSpinner" aria-hidden="true" /><span className="hideOnMobile">Recargando...</span></> : <><span aria-hidden="true">🔄</span> <span className="hideOnMobile">Recargar</span></>}
                 </button>
               </div>
+              {syncingChat && <div className="syncProgressBar" aria-hidden="true"></div>}
             </header>
 
             <div
@@ -2328,10 +2328,10 @@ function App() {
                   aria-label={correctedDraft ? "Enviar la sugerencia de IA" : "Mejorar redacción con IA y enviar"}
                   onClick={correctedDraft ? () => sendMessage(correctedDraft, "corrected") : correctAndSend}
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
-                  aria-busy={sending || correctingAndSending}
+                  aria-busy={correctingAndSending || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))}
                 >
-                  <span aria-hidden="true">{sending || correctingAndSending ? <span className="buttonSpinner" /> : (correctedDraft ? "✨" : "🚀")}</span>
-                  <span>{correctingAndSending ? "Mejorando y enviando..." : sending ? "Enviando..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
+                  <span aria-hidden="true">{correctingAndSending || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? <span className="buttonSpinner" /> : (correctedDraft ? "✨" : "🚀")}</span>
+                  <span>{correctingAndSending ? "Mejorando y enviando..." : (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviando..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
                 </button>
                 <button
                   className={correctedDraft ? "secondary useCorrectedBtn" : "secondary"}
@@ -2352,9 +2352,10 @@ function App() {
                   aria-label={correctedDraft ? "Enviar el texto original, descartando la sugerencia" : "Enviar mensaje original sin revisar"}
                   onClick={() => sendMessage(draft, "original")}
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
+                  aria-busy={sending && sendingType === "original"}
                 >
-                  <span aria-hidden="true">📤</span>
-                  <span>Enviar original</span>
+                  <span aria-hidden="true">{(sending && sendingType === "original") ? <span className="buttonSpinner" /> : "📤"}</span>
+                  <span>{(sending && sendingType === "original") ? "Enviando..." : "Enviar original"}</span>
                 </button>
               </div>
 
