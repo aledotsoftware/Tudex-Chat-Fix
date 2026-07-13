@@ -1685,7 +1685,7 @@ async function handleMessageRevoke(after, before, context = {}) {
 
   try {
     const msgCtx = adapter.extractMessageContext(before || after, { provider, accountId });
-    const conversationId = msgCtx.chatId;
+    const conversationId = adapter.getChatIdFromMessage(before || after, { provider, accountId });
 
     const updated = await Message.findOneAndUpdate(
       {
