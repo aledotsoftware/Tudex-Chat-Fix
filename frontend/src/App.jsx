@@ -2331,7 +2331,7 @@ function App() {
                   aria-busy={correctingAndSending || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))}
                 >
                   <span aria-hidden="true">{correctingAndSending || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? <span className="buttonSpinner" /> : (correctedDraft ? "✨" : "🚀")}</span>
-                  <span>{correctingAndSending ? "Mejorando y enviando..." : (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviando..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
+                  <span>{correctingAndSending ? "Mejorando y enviando..." : (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviando versión IA..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
                 </button>
                 <button
                   className={correctedDraft ? "secondary useCorrectedBtn" : "secondary"}
