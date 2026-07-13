@@ -141,3 +141,4 @@ curl -X POST http://localhost:3005/api/send \
     "mediaUrl": "https://piks.eldesmarque.com/bin/2023/12/12/whatsapp_canales_001.jpg"
   }'
 ```
+Placeholder commit
