@@ -88,12 +88,14 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async fetchMessages({ provider, accountId, conversationId, limit = 80 }) {
+    if (!conversationId) return [];
     const chat = await this.client.getChatById(conversationId);
     if (!chat) return [];
     return chat.fetchMessages({ limit });
   }
 
   async markRead({ provider, accountId, conversationId }) {
+    if (!conversationId) return;
     const chat = await this.client.getChatById(conversationId);
     if (chat) {
       await chat.sendSeen();
@@ -101,6 +103,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async getMessageById(messageId, { provider, accountId, conversationId } = {}) {
+    if (!messageId) return null;
     return this.client.getMessageById(messageId);
   }
 
@@ -192,7 +195,7 @@ class WhatsAppAdapter extends BaseAdapter {
 
   extractMessageContext(message, { provider, accountId } = {}) {
     return {
-      providerMessageId: message?.id?._serialized || message?.id || null,
+      providerMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || null,
       body: message?.body || '',
       timestamp: message?.timestamp || Math.floor(Date.now() / 1000),
       fromMe: Boolean(message?.fromMe),
@@ -204,7 +207,7 @@ class WhatsAppAdapter extends BaseAdapter {
 
   extractChatContext(chat, { provider, accountId } = {}) {
     return {
-      chatId: chat?.id?._serialized || chat?.id || null,
+      chatId: chat?.id?._serialized || (typeof chat?.id === 'string' ? chat.id : null) || null,
       name: chat?.name || null,
       unreadCount: chat?.unreadCount || 0,
       timestamp: chat?.timestamp || Math.floor(Date.now() / 1000),
@@ -214,7 +217,7 @@ class WhatsAppAdapter extends BaseAdapter {
 
   extractStatusDescriptor(message, { provider, accountId } = {}) {
     return {
-      providerStatusMessageId: message?.id?._serialized || message?.id || null,
+      providerStatusMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || null,
       statusOwnerId: message?.author || message?.from || null,
       description: message?.caption || message?.body || '',
       caption: message?.caption || '',
