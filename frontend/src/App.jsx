@@ -1104,21 +1104,37 @@ function App() {
 
   async function correctDraft() {
     if (!draft.trim()) return;
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+      setCorrecting(false);
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setCorrecting(true);
+
     try {
       const res = await fetch(`${API_URL}/api/correct`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: draft })
+        body: JSON.stringify({ text: draft }),
+        signal: controller.signal
       });
       if (!res.ok) throw new Error("No se pudo corregir el mensaje.");
       const data = await res.json();
       setCorrectedDraft(data.corrected || "");
       showNotice("Sugerencia de IA lista para revisar.", "success");
     } catch (error) {
-      showNotice(error.message, "error");
+      if (error.name !== "AbortError") {
+        showNotice(error.message, "error");
+      }
     } finally {
-      setCorrecting(false);
+      if (abortControllerRef.current === controller) {
+        setCorrecting(false);
+        abortControllerRef.current = null;
+      }
     }
   }
 
@@ -1132,6 +1148,7 @@ function App() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
+      setCorrecting(false);
     }
 
     setCorrectingAndSending(true);
@@ -1198,6 +1215,7 @@ function App() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
+      setCorrecting(false);
     }
     const savedDraft = draft;
     const savedCorrected = correctedDraft;
@@ -2262,6 +2280,7 @@ function App() {
                     if (abortControllerRef.current) {
                       abortControllerRef.current.abort();
                       abortControllerRef.current = null;
+                      setCorrecting(false);
                     }
 
                     if (val.trim().length > 5) {
@@ -2324,7 +2343,7 @@ function App() {
 
               <div className="composerActions">
                 <button
-                  className={correctedDraft ? "primary sendCorrectedBtn" : "primary"}
+                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "primary sendCorrectedBtn" : "primary"}
                   aria-label={correctedDraft ? "Enviar la sugerencia de IA" : "Mejorar redacción con IA y enviar"}
                   onClick={correctedDraft ? () => sendMessage(correctedDraft, "corrected") : correctAndSend}
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
@@ -2334,7 +2353,7 @@ function App() {
                   <span>{correctingAndSending ? "Mejorando y enviando..." : (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviando versión IA..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
                 </button>
                 <button
-                  className={correctedDraft ? "secondary useCorrectedBtn" : "secondary"}
+                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "secondary useCorrectedBtn" : "secondary"}
                   aria-label={correctedDraft ? "Usar sugerencia en el cuadro principal para editar" : "Previsualizar corrección de IA sin enviar"}
                   onClick={correctedDraft ? () => {
                     setDraft(correctedDraft);
