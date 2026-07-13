@@ -105,7 +105,7 @@ button, textarea, input, select {
   position: relative;
 }
 
-.apiKeyError {
+.notice.error.apiKeyError {
   margin-bottom: 15px;
   display: flex;
   align-items: center;

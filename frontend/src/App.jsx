@@ -519,7 +519,7 @@ function App() {
     setDeferredPrompt(null);
   };
 
-  const handleLogout = () => {
+  const performLogout = () => {
     localStorage.removeItem("chatfix_api_key");
     setApiAuthenticated(false);
     setSessionStatus("connecting");
@@ -530,9 +530,15 @@ function App() {
     clearCache().catch(() => {});
   };
 
+  const handleUserLogout = () => {
+    if (window.confirm("¿Estás seguro de que deseas cerrar sesión? Esto borrará el caché local.")) {
+      performLogout();
+    }
+  };
+
   useEffect(() => {
     const handleAuthError = () => {
-      handleLogout();
+      performLogout();
       setAuthError("La sesión expiró o la API Key es inválida.");
     };
     const handleOnline = () => setIsOffline(false);
@@ -1645,7 +1651,7 @@ function App() {
           </div>
         )}
         <main className="authScreen">
-        <section className="authCard" aria-live="polite" aria-labelledby="waAuthHeading">
+        <section className="authCard" aria-labelledby="waAuthHeading">
           <h1 id="waAuthHeading">ChatFix</h1>
           <h2>{authScreenLabel}</h2>
 
@@ -1653,7 +1659,7 @@ function App() {
             <>
               {qr ? (
                 <>
-                  <div className="instructionList" role="alert" aria-live="assertive">
+                  <div className="instructionList">
                     <p className="instructionListTitle"><span aria-hidden="true" className="instructionListIcon">📱</span>Para usar el proveedor (ej. WhatsApp) en ChatFix:</p>
                     <ol>
                       <li>Abre la aplicación en tu teléfono</li>
@@ -1682,7 +1688,7 @@ function App() {
                 <button
                   className="secondary fullWidth"
                   aria-label="Cancelar y salir"
-                  onClick={handleLogout}
+                  onClick={performLogout}
                 >
                   Cancelar y salir
                 </button>
@@ -1694,6 +1700,7 @@ function App() {
             <div className="loadingSpinnerContainer" role="status" aria-busy="true" aria-live="polite">
               <div className="largeSpinner" aria-hidden="true"></div>
               <p className="helperText connectingStatus">Sincronizando mensajes y contactos...</p>
+              <p className="helperText mt-2" style={{ textAlign: "center", maxWidth: "80%" }}>Esto puede tomar unos segundos. Por favor, no cierres la ventana.</p>
             </div>
           )}
 
@@ -1727,7 +1734,7 @@ function App() {
               <button
                 className="secondary fullWidth mt-2"
                 aria-label="Cerrar sesión y volver al inicio"
-                onClick={handleLogout}
+                onClick={performLogout}
               >
                 <span aria-hidden="true">🚪</span> Cerrar sesión
               </button>
@@ -1948,7 +1955,7 @@ function App() {
           )}
           <span>Ctrl+K buscar</span>
           <span>Alt+<span aria-hidden="true">↑↓</span> navegar</span>
-          <button className="logoutBtn" onClick={handleLogout} aria-label="Cerrar sesión">Cerrar sesión</button>
+          <button className="logoutBtn" onClick={handleUserLogout} aria-label="Cerrar sesión">Cerrar sesión</button>
         </footer>
       </aside>
 
