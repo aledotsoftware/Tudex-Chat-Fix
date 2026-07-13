@@ -190,14 +190,21 @@ function validateStartupConfig() {
   // Validate operational limits
   STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
   process.env.STATUS_POLL_INTERVAL_MS = String(STATUS_POLL_INTERVAL_MS);
+
   let AI_TIMEOUT_MS = safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS');
   process.env.AI_TIMEOUT_MS = String(AI_TIMEOUT_MS);
+  if (typeof DEFAULT_AI_CONFIG !== 'undefined') DEFAULT_AI_CONFIG.timeoutMs = AI_TIMEOUT_MS;
+  if (typeof aiConfig !== 'undefined') aiConfig.timeoutMs = AI_TIMEOUT_MS;
 
   let AI_TEMPERATURE = safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE');
   process.env.AI_TEMPERATURE = String(AI_TEMPERATURE);
+  if (typeof DEFAULT_AI_CONFIG !== 'undefined') DEFAULT_AI_CONFIG.temperature = AI_TEMPERATURE;
+  if (typeof aiConfig !== 'undefined') aiConfig.temperature = AI_TEMPERATURE;
 
   let AI_MAX_TOKENS = safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS');
   process.env.AI_MAX_TOKENS = String(AI_MAX_TOKENS);
+  if (typeof DEFAULT_AI_CONFIG !== 'undefined') DEFAULT_AI_CONFIG.maxTokens = AI_MAX_TOKENS;
+  if (typeof aiConfig !== 'undefined') aiConfig.maxTokens = AI_MAX_TOKENS;
 
   // Cache & Fetch limits
   AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
@@ -216,8 +223,6 @@ function validateStartupConfig() {
   process.env.MESSAGES_CACHE_TTL_MS = String(MESSAGES_CACHE_TTL_MS);
 }
 
-// Invoke validation on startup
-validateStartupConfig();
 
 const authenticateApiKey = (req, res, next) => {
   if (!API_KEY) return next();
@@ -412,7 +417,7 @@ const AiSettingsSchema = new mongoose.Schema({
 const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 
-const DEFAULT_AI_CONFIG = {
+let DEFAULT_AI_CONFIG = {
   provider: String(process.env.AI_PROVIDER || '').trim().toLowerCase() === 'cloudflare' ? 'cloudflare' : 'lmstudio',
   lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL')
     .replace(/\/+$/, '')
@@ -430,6 +435,9 @@ const DEFAULT_AI_CONFIG = {
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };
+
+// Invoke validation on startup after config is defined
+validateStartupConfig();
 
 async function loadAiConfig() {
   try {

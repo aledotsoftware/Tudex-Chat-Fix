@@ -88,9 +88,18 @@ En Docker Compose ya se inyectan:
 - `AI_SYSTEM_PROMPT` Define el rol y comportamiento esperado de la IA.
 - `AI_USER_PROMPT_TEMPLATE` Formato en el que se envía el mensaje original a la IA.
 - `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción. Se puede configurar como un string vacío (o omitir por completo) para **deshabilitar la autenticación**, lo que registrará un warning de seguridad.
-- `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas.
-- `STATUS_POLL_INTERVAL_MS`, `AI_TIMEOUT_MS`, `AI_TEMPERATURE`, `AI_MAX_TOKENS` y demás parámetros operativos y de límites de tiempos cuentan con validación estricta utilizando la utilidad `safeNumber`, la cual evalúa y acota los límites seguros al inicio, registrando advertencias y realizando clamping automático si los valores exceden los rangos permitidos. Se asignan en el proceso principal al inicio.
-- Variables de caché (`CHATS_CACHE_TTL_MS`, `MESSAGES_CACHE_TTL_MS`, `AVATAR_TTL_MS`, `AVATAR_FETCH_LIMIT`, `AVATAR_FETCH_TIMEOUT_MS`) para controlar los tiempos de expiración y límites de la caché local del backend. Todas estas variables están protegidas mediante validación estricta con `safeNumber` y se limitan (clamp) automáticamente a rangos seguros en el arranque del sistema, emitiendo alertas si se proveen valores fuera de límites. También se asignan al entorno.
+- `LM_STUDIO_URL` y configuraciones de IA son estrictamente validadas para garantizar que sean URLs válidas (http/https). Si son inválidas, fallan a un default (`LM_STUDIO_URL` a `http://localhost:1234`, `CLOUDFLARE_AI_BASE_URL` a vacío) y emiten warnings.
+- `STATUS_POLL_INTERVAL_MS`, `AI_TIMEOUT_MS`, `AI_TEMPERATURE`, `AI_MAX_TOKENS` y demás parámetros operativos y de límites de tiempos cuentan con validación estricta utilizando la utilidad `safeNumber`. Si exceden sus rangos permitidos, se registrará una advertencia y el valor se ajustará automáticamente (clamp) a los límites:
+  - `STATUS_POLL_INTERVAL_MS`: min=1000, max=86400000, default=60000
+  - `AI_TIMEOUT_MS`: min=1000, max=60000, default=15000
+  - `AI_TEMPERATURE`: min=0, max=2, default=0.7
+  - `AI_MAX_TOKENS`: min=1, max=8192, default=180
+- Variables de caché (`CHATS_CACHE_TTL_MS`, `MESSAGES_CACHE_TTL_MS`, `AVATAR_TTL_MS`, `AVATAR_FETCH_LIMIT`, `AVATAR_FETCH_TIMEOUT_MS`) para controlar los tiempos de expiración y límites de la caché local del backend. Todas estas variables están protegidas mediante validación estricta con `safeNumber` y se limitan (clamp) automáticamente a rangos seguros en el arranque del sistema:
+  - `AVATAR_TTL_MS`: min=1000, max=86400000, default=600000
+  - `AVATAR_FETCH_LIMIT`: min=1, max=200, default=40
+  - `AVATAR_FETCH_TIMEOUT_MS`: min=1000, max=30000, default=7000
+  - `CHATS_CACHE_TTL_MS`: min=0, max=3600000, default=5000
+  - `MESSAGES_CACHE_TTL_MS`: min=0, max=3600000, default=5000
 - `DEFAULT_ACCOUNT_ID` para especificar el ID de cuenta de proveedor predeterminado (por defecto es `default`).
 
 
