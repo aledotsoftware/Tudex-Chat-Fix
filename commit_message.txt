@@ -1,0 +1,4 @@
+fix(pwa): correctly reset reply target context when switching chats
+
+The `replyTarget` object leaked between chats if navigated directly through the list or cache hydration. By explicitly setting `setReplyTarget(null)` when the `selectedChatId` changes in `App.jsx`, this contextual leak is completely mitigated.
+Verified caching implementations, frontend tests, and offline validations.
