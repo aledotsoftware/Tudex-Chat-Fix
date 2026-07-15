@@ -480,7 +480,7 @@ function normalizeAccountId(value) {
   return normalized || DEFAULT_ACCOUNT_ID;
 }
 
-function buildConversationKey(provider, accountId) {
+function buildConversationKey(provider, accountId, conversationId) {
   return `${provider}:${accountId}:${conversationId}`;
 }
 
@@ -1145,7 +1145,7 @@ async function serializeMessage(message, chatId, context = {}) {
     accountId,
     conversationId,
     providerMessageId,
-    conversationKey: buildConversationKey(provider, accountId),
+    conversationKey: buildConversationKey(provider, accountId, conversationId),
     chatId,
     body: msgContext.body,
     timestamp: msgContext.timestamp,
@@ -1181,7 +1181,7 @@ async function upsertChat(chatData, index, context = {}) {
           provider,
           accountId,
           conversationId,
-          conversationKey: buildConversationKey(provider, accountId),
+          conversationKey: buildConversationKey(provider, accountId, conversationId),
           name: chatContext.name,
           unreadCount: chatContext.unreadCount,
           timestamp: chatContext.timestamp,
