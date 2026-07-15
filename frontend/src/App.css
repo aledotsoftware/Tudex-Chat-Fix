@@ -1968,7 +1968,8 @@ button.fullWidth {
 @media (max-width: 920px) {
   /* Asegurar tamaño touch seguro general en componentes interactivos secundarios que puedan haber quedado por fuera */
   .chatHeaderActions button,
-  .headerActions button {
+  .headerActions button,
+  .installAppBtn {
     min-height: 48px;
     min-width: 48px;
   }
