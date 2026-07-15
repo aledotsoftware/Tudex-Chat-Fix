@@ -181,6 +181,23 @@ function validateStartupConfig() {
     process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
   }
 
+  if (typeof DEFAULT_AI_CONFIG !== 'undefined') {
+    DEFAULT_AI_CONFIG.provider = process.env.AI_PROVIDER;
+    DEFAULT_AI_CONFIG.modelName = process.env.MODEL_NAME;
+    DEFAULT_AI_CONFIG.cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+    DEFAULT_AI_CONFIG.cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN || '';
+    DEFAULT_AI_CONFIG.cloudflareBaseUrl = (process.env.CLOUDFLARE_AI_BASE_URL || '').replace(/\/+$/, '');
+    DEFAULT_AI_CONFIG.lmStudioBaseUrl = (process.env.LM_STUDIO_URL || '').replace(/\/+$/, '').replace(/\/v1\/chat\/completions$/, '');
+  }
+  if (typeof aiConfig !== 'undefined') {
+    aiConfig.provider = process.env.AI_PROVIDER;
+    aiConfig.modelName = process.env.MODEL_NAME;
+    aiConfig.cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+    aiConfig.cloudflareApiToken = process.env.CLOUDFLARE_API_TOKEN || '';
+    aiConfig.cloudflareBaseUrl = (process.env.CLOUDFLARE_AI_BASE_URL || '').replace(/\/+$/, '');
+    aiConfig.lmStudioBaseUrl = (process.env.LM_STUDIO_URL || '').replace(/\/+$/, '').replace(/\/v1\/chat\/completions$/, '');
+  }
+
   if (API_KEY.length > 0 && API_KEY.length < 8) {
     console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
   } else if (API_KEY.length === 0) {
