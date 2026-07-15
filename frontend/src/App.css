@@ -284,6 +284,11 @@ button, textarea, input, select {
   margin: 24px 0;
 }
 
+.syncDisclaimer {
+  text-align: center;
+  max-width: 80%;
+}
+
 .largeSpinner {
   width: 40px;
   height: 40px;
@@ -1661,12 +1666,12 @@ button.fullWidth {
 }
 .notice.error {
   background: rgba(255, 82, 82, 0.2);
-  color: #ffbaba;
+  color: #ff5252;
   border-left-color: var(--error);
 }
 .notice.warning {
   background: rgba(255, 202, 40, 0.2);
-  color: var(--warning);
+  color: #ffca28;
   border-left-color: var(--warning);
 }
 .notice.info {
