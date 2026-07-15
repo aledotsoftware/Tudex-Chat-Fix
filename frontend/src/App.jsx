@@ -602,6 +602,7 @@ function App() {
       setIsMobileLayout(event.matches);
       if (!event.matches && !selectedChatIdRef.current && chatsRef.current?.length > 0) {
         setSelectedChatId(chatsRef.current[0].id);
+        setReplyTarget(null);
         selectedChatIdRef.current = chatsRef.current[0].id;
       }
     };
@@ -967,6 +968,7 @@ function App() {
         if (shouldAutoSelectCache && sortedCached.length > 0) {
           selectedChatIdRef.current = nextCachedId;
           setSelectedChatId(nextCachedId);
+          setReplyTarget(null);
         }
       }
 
@@ -1000,6 +1002,7 @@ function App() {
         if (selectedChatIdRef.current) {
           selectedChatIdRef.current = "";
           setSelectedChatId("");
+          setReplyTarget(null);
         }
         await clearCache();
         await setCachedChats(DEFAULT_PROVIDER, DEFAULT_ACCOUNT_ID, []);
@@ -1013,9 +1016,11 @@ function App() {
       if (shouldAutoSelect && safeChats.length > 0) {
         selectedChatIdRef.current = nextChatId; // Update ref immediately to avoid jumpy behavior
         setSelectedChatId(nextChatId);
+        setReplyTarget(null);
       } else if (!exists && selectedChatIdRef.current) {
         selectedChatIdRef.current = "";
         setSelectedChatId("");
+        setReplyTarget(null);
         setMessages([]);
       }
 
