@@ -280,12 +280,12 @@ function App() {
 
   const connectionLabel = useMemo(() => {
     if (isOffline) return "Sin conexión a Internet";
-    if (!socketConnected) return "Desconectado del servidor (WebSocket)";
+    if (!socketConnected) return "Servidor principal inaccesible";
     if (sessionStatus === "authenticated") return "Conectado al proveedor";
     if (sessionStatus === "qr") return "Requiere vinculación (QR)";
     if (sessionStatus === "auth_failure") return "Sesión rechazada/inválida";
     if (sessionStatus === "disconnected") return "Proveedor desconectado";
-    return "Sincronizando con proveedor...";
+    return "Autenticando servicio...";
   }, [isOffline, sessionStatus, socketConnected]);
 
   const dotClass = useMemo(() => {
@@ -297,11 +297,11 @@ function App() {
   }, [isOffline, sessionStatus, socketConnected]);
 
   const authScreenLabel = useMemo(() => {
-    if (!socketConnected) return "Conectando al servidor...";
+    if (!socketConnected) return "Conectando al servidor principal...";
     if (sessionStatus === "qr") return "Vincular proveedor";
     if (sessionStatus === "auth_failure") return "No se pudo iniciar sesión. Por favor, asegúrate de que el dispositivo siga vinculado.";
     if (sessionStatus === "disconnected") return "El proveedor se ha desconectado. Intenta reconectar.";
-    return "Iniciando sesión con el proveedor...";
+    return "Autenticando servicio con el proveedor...";
   }, [sessionStatus, socketConnected]);
 
 
@@ -1693,7 +1693,7 @@ function App() {
                 <button
                   className="secondary fullWidth"
                   aria-label="Cancelar y salir"
-                  onClick={performLogout}
+                  onClick={handleUserLogout}
                 >
                   Cancelar y salir
                 </button>
@@ -1705,7 +1705,7 @@ function App() {
             <div className="loadingSpinnerContainer" role="status" aria-busy="true" aria-live="polite">
               <div className="largeSpinner" aria-hidden="true"></div>
               <p className="helperText connectingStatus">Sincronizando mensajes y contactos...</p>
-              <p className="helperText mt-2" style={{ textAlign: "center", maxWidth: "80%" }}>Esto puede tomar unos segundos. Por favor, no cierres la ventana.</p>
+              <p className="helperText mt-2 syncDisclaimer">Esto puede tomar unos segundos. Por favor, no cierres la ventana.</p>
             </div>
           )}
 
@@ -1739,7 +1739,7 @@ function App() {
               <button
                 className="secondary fullWidth mt-2"
                 aria-label="Cerrar sesión y volver al inicio"
-                onClick={performLogout}
+                onClick={handleUserLogout}
               >
                 <span aria-hidden="true">🚪</span> Cerrar sesión
               </button>
@@ -1773,13 +1773,13 @@ function App() {
       {!isOffline && !socketConnected && (
         <div className="warningBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true" >⚡</span>
-          <span><strong>Desconectado del servidor.</strong> Reconectando automáticamente en segundo plano...</span>
+          <span><strong>Servidor principal inaccesible.</strong> Intentando reconectar automáticamente...</span>
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
         <div className="warningBanner" role="alert" aria-live="assertive">
           <span aria-hidden="true" >📱</span>
-          <span><strong>Proveedor desconectado.</strong> Revisá la conexión a Internet del teléfono vinculado.</span>
+          <span><strong>Proveedor desconectado.</strong> Revisa la conexión a Internet de tu teléfono vinculado y asegúrate de que tenga batería.</span>
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "connecting" && (
