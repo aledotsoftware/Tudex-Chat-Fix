@@ -1973,7 +1973,10 @@ function App() {
                 <button
                   className="secondary mobileBackBtn"
                   aria-label="Volver a la lista"
-                  onClick={() => setViewMode("chats")}
+                  onClick={() => {
+                    setViewMode("chats");
+                    setSelectedChatId("");
+                  }}
                 >
                   <span aria-hidden="true">←</span>
                 </button>
