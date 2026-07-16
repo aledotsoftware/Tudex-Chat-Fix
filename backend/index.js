@@ -159,26 +159,29 @@ function validateStartupConfig() {
     process.env.MODEL_NAME = process.env.MODEL_NAME.trim();
   }
 
-  if (provider === 'cloudflare') {
-    if (process.env.CLOUDFLARE_ACCOUNT_ID) process.env.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID.trim();
-    if (process.env.CLOUDFLARE_API_TOKEN) process.env.CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN.trim();
+  if (process.env.CLOUDFLARE_ACCOUNT_ID) process.env.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID.trim();
+  if (process.env.CLOUDFLARE_API_TOKEN) process.env.CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN.trim();
 
-    const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID !== '');
-    const hasBaseUrl = Boolean(process.env.CLOUDFLARE_AI_BASE_URL && process.env.CLOUDFLARE_AI_BASE_URL.trim() !== '');
+  const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID !== '');
+  const hasBaseUrl = Boolean(process.env.CLOUDFLARE_AI_BASE_URL && process.env.CLOUDFLARE_AI_BASE_URL.trim() !== '');
+
+  if (hasBaseUrl) {
+    process.env.CLOUDFLARE_AI_BASE_URL = safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL');
+  }
+
+  process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
+
+  if (provider === 'cloudflare') {
     if (!hasAccountId && !hasBaseUrl) {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but both CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_AI_BASE_URL are missing or empty.');
     }
     if (!process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_API_TOKEN === '') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "cloudflare" but CLOUDFLARE_API_TOKEN is missing or empty.');
     }
-    if (hasBaseUrl) {
-      process.env.CLOUDFLARE_AI_BASE_URL = safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL');
-    }
   } else {
-    if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL.trim() === '') {
+    if (!process.env.LM_STUDIO_URL || process.env.LM_STUDIO_URL === 'http://localhost:1234') {
       console.warn('⚠️ WARNING: AI_PROVIDER is set to "lmstudio" but LM_STUDIO_URL is missing or empty. Falling back to default.');
     }
-    process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
   }
 
   if (typeof DEFAULT_AI_CONFIG !== 'undefined') {
@@ -201,7 +204,7 @@ function validateStartupConfig() {
   if (API_KEY.length > 0 && API_KEY.length < 8) {
     console.warn('⚠️ WARNING: API_KEY is too short. This is insecure for production environments. Minimum length is 8 characters.');
   } else if (API_KEY.length === 0) {
-    console.warn('⚠️ WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
+    console.warn('⚠️ SEVERE SECURITY WARNING: API_KEY is missing or empty. Authentication is DISABLED. This is highly insecure for production environments.');
   }
 
   // Validate operational limits
