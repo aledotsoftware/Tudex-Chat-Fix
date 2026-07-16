@@ -157,6 +157,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async downloadMedia(message, { provider, accountId } = {}) {
+    if (!message) return null;
     if (typeof message.downloadMedia === 'function') {
       return message.downloadMedia();
     }
@@ -164,6 +165,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async getQuotedMessage(message, { provider, accountId } = {}) {
+    if (!message) return null;
     if (typeof message.getQuotedMessage === 'function') {
       return message.getQuotedMessage();
     }
@@ -171,6 +173,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async getChatByMessage(message, { provider, accountId } = {}) {
+    if (!message) return null;
     if (typeof message.getChat === 'function') {
       return message.getChat();
     }
@@ -178,6 +181,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   isStatusMessage(message, { provider, accountId } = {}) {
+    if (!message) return false;
     return message.from === 'status@broadcast' || message.type === 'status_v3' || message.isStatus === true;
   }
 
@@ -190,6 +194,7 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   getChatIdFromMessage(message, { provider, accountId } = {}) {
+    if (!message) return null;
     return message.fromMe ? message.to : message.from;
   }
 
@@ -252,12 +257,17 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   async sendMessage({ provider, accountId, conversationId, chatId, text, replyToMessageId, mediaUrl, mediaBase64, mediaName = 'image.jpg', mediaMimeType = 'image/jpeg' }) {
-    const isChannelUrl = chatId.includes('whatsapp.com/channel/');
-    const looksLikeInviteCode = !chatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(chatId);
+    let targetChatId = chatId || conversationId;
+    if (!targetChatId || (!text && !mediaUrl && !mediaBase64)) {
+      throw new Error('Missing parameters (chatId + text/media)');
+    }
+
+    const isChannelUrl = targetChatId.includes('whatsapp.com/channel/');
+    const looksLikeInviteCode = !targetChatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(targetChatId);
 
     if (isChannelUrl || looksLikeInviteCode) {
-      const parts = chatId.split('/channel/');
-      const code = (parts.length > 1 ? parts[1] : chatId).split('?')[0].trim();
+      const parts = targetChatId.split('/channel/');
+      const code = (parts.length > 1 ? parts[1] : targetChatId).split('?')[0].trim();
 
       try {
         console.log(`🔍 Resolving channel for invite code: ${code}...`);
@@ -281,8 +291,8 @@ class WhatsAppAdapter extends BaseAdapter {
         }
 
         if (channelData && channelData.id) {
-          chatId = channelData.id;
-          console.log(`✅ Channel resolved: ${channelData.name || 'Newsletter'} → ${chatId}`);
+          targetChatId = channelData.id;
+          console.log(`✅ Channel resolved: ${channelData.name || 'Newsletter'} → ${targetChatId}`);
         } else {
           console.warn('⚠️ Channel metadata returned empty for:', code);
           throw new Error(`Channel not found: Could not resolve invite code: ${code}`);
@@ -293,11 +303,7 @@ class WhatsAppAdapter extends BaseAdapter {
       }
     }
 
-    if (!chatId || (!text && !mediaUrl && !mediaBase64)) {
-      throw new Error('Missing parameters (chatId + text/media)');
-    }
-
-    const isNewsletter = chatId.includes('@newsletter');
+    const isNewsletter = targetChatId.includes('@newsletter');
     const sendOptions = {};
     if (replyToMessageId && !isNewsletter) {
       sendOptions.quotedMessageId = replyToMessageId;
@@ -379,7 +385,7 @@ class WhatsAppAdapter extends BaseAdapter {
         } catch (err) {
           return { error: err.message || String(err) };
         }
-      }, chatId, text, mediaData);
+      }, targetChatId, text, mediaData);
 
       if (sendResult && sendResult.error) {
         throw new Error(`Failed to send to channel: ${sendResult.error}`);
@@ -398,13 +404,13 @@ class WhatsAppAdapter extends BaseAdapter {
         if (!media) {
           throw new Error('Failed to process media content');
         }
-        await this.client.sendMessage(chatId, media, { ...sendOptions, caption: text || undefined });
+        await this.client.sendMessage(targetChatId, media, { ...sendOptions, caption: text || undefined });
       } else {
-        await this.client.sendMessage(chatId, text, sendOptions);
+        await this.client.sendMessage(targetChatId, text, sendOptions);
       }
     }
 
-    return { success: true, chatId, isNewsletter };
+    return { success: true, chatId: targetChatId, isNewsletter };
   }
 }
 
