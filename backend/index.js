@@ -110,18 +110,18 @@ const syncStateMemory = new Map();
 const aiMetadataCache = new Map(); // Temporary store for linking AI corrections sent via API to their message_create event
 
 let syncWorkerRunning = false;
-let AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 10 * 60 * 1000, 1000, 86400000, 'AVATAR_TTL_MS');
-let AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, 'AVATAR_FETCH_LIMIT');
-let AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, 'AVATAR_FETCH_TIMEOUT_MS');
-let CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, 'CHATS_CACHE_TTL_MS');
-let MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, 'MESSAGES_CACHE_TTL_MS');
+let AVATAR_TTL_MS = 600000;
+let AVATAR_FETCH_LIMIT = 40;
+let AVATAR_FETCH_TIMEOUT_MS = 7000;
+let CHATS_CACHE_TTL_MS = 5000;
+let MESSAGES_CACHE_TTL_MS = 5000;
 const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
-let STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, 'STATUS_POLL_INTERVAL_MS');
+let STATUS_POLL_INTERVAL_MS = 60000;
 let aiErrorLogState = {
   signature: '',
   count: 0,
@@ -439,19 +439,16 @@ const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 let DEFAULT_AI_CONFIG = {
   provider: String(process.env.AI_PROVIDER || '').trim().toLowerCase() === 'cloudflare' ? 'cloudflare' : 'lmstudio',
-  lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL')
-    .replace(/\/+$/, '')
-    .replace(/\/v1\/chat\/completions$/, ''),
+  lmStudioBaseUrl: 'http://localhost:1234',
   cloudflareAccountId: (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim(),
   cloudflareApiToken: (process.env.CLOUDFLARE_API_TOKEN || '').trim(),
-  cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL')
-    .replace(/\/+$/, ''),
+  cloudflareBaseUrl: '',
   modelName: (process.env.MODEL_NAME || '').trim() || 'llama-3.1-8b-instruct',
-  temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, 'AI_TEMPERATURE'),
-  maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, 'AI_MAX_TOKENS'),
+  temperature: 0.7,
+  maxTokens: 180,
   systemPrompt: (process.env.AI_SYSTEM_PROMPT || '').trim() || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.',
   userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || '').trim() || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}',
-  timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, 'AI_TIMEOUT_MS')
+  timeoutMs: 15000
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };

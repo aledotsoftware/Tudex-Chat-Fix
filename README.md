@@ -89,7 +89,7 @@ En Docker Compose ya se inyectan:
 - `AI_USER_PROMPT_TEMPLATE` Formato en el que se envía el mensaje original a la IA.
 - `API_KEY` para autenticar la API. Debe tener al menos 8 caracteres para considerarse segura en entornos de producción. Se puede configurar como un string vacío (o omitir por completo) para **deshabilitar la autenticación**, lo que registrará un **severo warning de seguridad**.
 - `LM_STUDIO_URL` y `CLOUDFLARE_AI_BASE_URL` son estrictamente validadas de forma proactiva para garantizar que sean URLs válidas (http/https) independientemente del proveedor activo. Si son inválidas, fallan a un default (`LM_STUDIO_URL` a `http://localhost:1234`, `CLOUDFLARE_AI_BASE_URL` a vacío) y emiten warnings únicos sin duplicados.
-- `STATUS_POLL_INTERVAL_MS`, `AI_TIMEOUT_MS`, `AI_TEMPERATURE`, `AI_MAX_TOKENS` y demás parámetros operativos y de límites de tiempos cuentan con validación estricta utilizando la utilidad `safeNumber`. Si exceden sus rangos permitidos, se registrará una advertencia (evitando duplicados al iniciar) y el valor se ajustará automáticamente (clamp) a los límites:
+- `STATUS_POLL_INTERVAL_MS`, `AI_TIMEOUT_MS`, `AI_TEMPERATURE`, `AI_MAX_TOKENS` y demás parámetros operativos y de límites de tiempos cuentan con validación estricta utilizando la utilidad `safeNumber`. Si exceden sus rangos permitidos, se registrará una advertencia (evitando duplicados al iniciar) y el valor se ajustará automáticamente (clamp) a los límites. Configured values are proactively validated and clamped to safe boundaries at server startup.
   - `STATUS_POLL_INTERVAL_MS`: min=1000, max=86400000, default=60000
   - `AI_TIMEOUT_MS`: min=1000, max=60000, default=15000
   - `AI_TEMPERATURE`: min=0, max=2, default=0.7
