@@ -50,7 +50,7 @@ button, textarea, input, select {
 }
 
 :focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
 }
 
@@ -221,7 +221,7 @@ button, textarea, input, select {
 }
 
 .authInput:focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 4px var(--accent-glow);
@@ -478,7 +478,7 @@ button, textarea, input, select {
 .searchWrap input:focus-visible {
   background: rgba(255, 255, 255, 0.08);
   border-color: var(--accent-primary);
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   box-shadow: 0 0 15px var(--accent-glow);
 }
@@ -509,7 +509,7 @@ button, textarea, input, select {
 }
 
 .chatItem:focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
 }
 
@@ -1066,7 +1066,7 @@ button, textarea, input, select {
   color: var(--text-primary);
   background: rgba(0, 0, 0, 0.2);
   border-color: var(--warning);
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   box-shadow: none;
 }
@@ -1084,7 +1084,7 @@ button, textarea, input, select {
 }
 
 .composer textarea:focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   background: rgba(255, 255, 255, 0.07);
   border-color: var(--accent-primary);
@@ -1192,7 +1192,7 @@ button.primary {
 }
 
 button:focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
 }
 
@@ -1253,7 +1253,7 @@ button:disabled {
 .modalCard select:focus-visible,
 .modalCard textarea:focus-visible {
   border-color: var(--border-focus);
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   box-shadow: 0 0 0 4px var(--accent-glow);
 }
@@ -1675,12 +1675,12 @@ button.fullWidth {
 }
 .notice.error {
   background: rgba(255, 82, 82, 0.2);
-  color: #ff5252;
+  color: #ff8a8a;
   border-left-color: var(--error);
 }
 .notice.warning {
   background: rgba(255, 202, 40, 0.2);
-  color: #ffca28;
+  color: #ffe066;
   border-left-color: var(--warning);
 }
 .notice.info {
@@ -1701,7 +1701,7 @@ button.fullWidth {
 }
 
 .passwordToggleBtn:focus-visible {
-  outline: 3px solid var(--border-focus);
+  outline: 4px solid var(--border-focus);
   outline-offset: 2px;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -2245,4 +2245,11 @@ select {
     min-height: 48px;
     min-width: 48px;
   }
+}
+
+.syncDisclaimer {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 8px;
 }

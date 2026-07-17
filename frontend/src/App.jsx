@@ -1561,7 +1561,7 @@ function App() {
           <div className="bg-blob blob-2"></div>
         </div>
         {isOffline && (
-          <div className="offlineBanner" role="alert" aria-live="assertive">
+          <div className="offlineBanner" role="status" aria-live="polite">
             <span aria-hidden="true" >⚠️</span>
             <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea.</span>
           </div>
@@ -1650,7 +1650,7 @@ function App() {
           <div className="bg-blob blob-2"></div>
         </div>
         {isOffline && (
-          <div className="offlineBanner" role="alert" aria-live="assertive">
+          <div className="offlineBanner" role="status" aria-live="polite">
             <span aria-hidden="true" >⚠️</span>
             <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea.</span>
           </div>
@@ -1758,26 +1758,26 @@ function App() {
         <div className="bg-blob blob-2"></div>
       </div>
       {pwaUpdateAvailable && (
-        <div className="updateBanner" role="alert" aria-live="assertive">
+        <div className="updateBanner" role="status" aria-live="polite">
           <span aria-hidden="true">🎁</span> Hay una nueva versión de ChatFix disponible.
           <button className="primary" onClick={() => pwaUpdateAvailable(true)}>Actualizar ahora</button>
           <button className="secondary" onClick={() => setPwaUpdateAvailable(null)}>Ignorar</button>
         </div>
       )}
       {isOffline && (
-        <div className="offlineBanner" role="alert" aria-live="assertive">
+        <div className="offlineBanner" role="status" aria-live="polite">
           <span aria-hidden="true" >⚠️</span>
           <span><strong>Sin conexión a Internet.</strong> La aplicación está en modo fuera de línea. Mostrando caché.</span>
         </div>
       )}
       {!isOffline && !socketConnected && (
-        <div className="warningBanner" role="alert" aria-live="assertive">
+        <div className="warningBanner" role="status" aria-live="polite">
           <span aria-hidden="true" >⚡</span>
           <span><strong>Servidor principal inaccesible.</strong> Intentando reconectar automáticamente...</span>
         </div>
       )}
       {!isOffline && socketConnected && sessionStatus === "disconnected" && (
-        <div className="warningBanner" role="alert" aria-live="assertive">
+        <div className="warningBanner" role="status" aria-live="polite">
           <span aria-hidden="true" >📱</span>
           <span><strong>Proveedor desconectado.</strong> Revisa la conexión a Internet de tu teléfono vinculado y asegúrate de que tenga batería.</span>
         </div>
