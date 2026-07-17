@@ -570,6 +570,8 @@ button, textarea, input, select {
   white-space: nowrap;
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
 }
 
 .chatTopMeta {
@@ -1105,16 +1107,28 @@ button, textarea, input, select {
   min-width: 140px;
 }
 
-.plainSendBtn {
-  background: transparent !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: var(--text-muted) !important;
+.composerActions button.plainSendBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
 }
 @media (hover: hover) {
-  .plainSendBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text-primary) !important;
+  .composerActions button.plainSendBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+  }
 }
+
+.composerActions button.useCorrectedBtn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--text-primary);
+}
+@media (hover: hover) {
+  .composerActions button.useCorrectedBtn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+  }
 }
 
 .jumpToLatest {
@@ -1265,15 +1279,12 @@ button:disabled {
 
 
 
-.sendCorrectedBtn {
+.composerActions button.sendCorrectedBtn {
   background: linear-gradient(135deg, var(--accent-primary) 0%, #3a7bd5 100%);
   color: var(--background);
   box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
-}
-
-.useCorrectedBtn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+  border: none;
 }
 
 .correctedHeader {
@@ -1999,7 +2010,8 @@ button.fullWidth {
     flex: 1 1 100%;
   }
 
-  .composerActions button.primary {
+  .composerActions button.primary,
+  .composerActions button.sendCorrectedBtn {
     flex: 1 1 100%;
     order: -1;
   }

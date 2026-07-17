@@ -1255,7 +1255,7 @@ function App() {
       });
       if (!ok) {
         setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
-        setDraft(savedDraft);
+        setDraft(prev => prev ? savedDraft + '\n' + prev : savedDraft);
         setCorrectedDraft(savedCorrected);
         setReplyTarget(savedReplyTarget);
         setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
@@ -1265,7 +1265,7 @@ function App() {
       await fetchMessages(selectedChatId, { withLoader: false, background: true });
     } catch (error) {
       setMessages(prev => prev.filter(m => m._uiId !== optimisticMsg._uiId));
-      setDraft(savedDraft);
+      setDraft(prev => prev ? savedDraft + '\n' + prev : savedDraft);
       setCorrectedDraft(savedCorrected);
       setReplyTarget(savedReplyTarget);
       setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
@@ -1384,7 +1384,7 @@ function App() {
             return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
           });
         }
-        setDraft(savedDraft);
+        setDraft(prev => prev ? savedDraft + '\n' + prev : savedDraft);
         setCorrectedDraft(savedCorrected);
         setReplyTarget(savedReplyTarget);
         setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
@@ -1407,7 +1407,7 @@ function App() {
             return { ...prev, [optimisticMsg.chatId]: current.filter(m => m._uiId !== optimisticMsg._uiId) };
           });
         }
-        setDraft(savedDraft);
+        setDraft(prev => prev ? savedDraft + '\n' + prev : savedDraft);
         setCorrectedDraft(savedCorrected);
         setReplyTarget(savedReplyTarget);
         setDraftsByChat(prev => ({ ...prev, [selectedChatId]: savedDraft }));
@@ -2333,7 +2333,6 @@ function App() {
                   placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
                   rows={3}
                   aria-label="Mensaje"
-                  disabled={sending || correctingAndSending}
                 />
               </div>
 
