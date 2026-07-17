@@ -2227,3 +2227,12 @@ select {
 .aiHealthAlert span[aria-hidden="true"] {
   font-size: 18px;
 }
+
+@media (max-width: 920px) {
+  .offlineBanner button,
+  .warningBanner button,
+  .infoBanner button {
+    min-height: 48px;
+    min-width: 48px;
+  }
+}
