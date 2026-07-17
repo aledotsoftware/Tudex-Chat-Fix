@@ -1266,8 +1266,9 @@ button:disabled {
 
 
 .sendCorrectedBtn {
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #3a7bd5 100%);
   color: var(--background);
+  box-shadow: 0 4px 12px rgba(0, 210, 255, 0.3);
 }
 
 .useCorrectedBtn {
