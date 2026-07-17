@@ -2043,6 +2043,7 @@ function App() {
                   className="secondary mobileBackBtn"
                   aria-label="Volver a lista de chats"
                   onClick={() => {
+                    setViewMode("chats");
                     setSelectedChatId("");
                     setReplyTarget(null);
                   }}
@@ -2377,8 +2378,8 @@ function App() {
                   disabled={!draft.trim() || sending || correctingAndSending || (!correctedDraft && isOffline)}
                   aria-busy={correcting}
                 >
-                  <span aria-hidden="true">{correcting ? <span className="buttonSpinner" /> : ((correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "✏️" : "✨")}</span>
-                  <span>{correcting ? "Mejorando..." : ((correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "Usar y editar" : "Ver sugerencia")}</span>
+                  <span aria-hidden="true">{correcting ? <span className="buttonSpinner" /> : (correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "✏️" : "✨")}</span>
+                  <span>{correcting ? "Mejorando..." : (correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Usar y editar" : "Ver sugerencia")}</span>
                 </button>
                 <button
                   className="secondary plainSendBtn"
