@@ -362,7 +362,7 @@ const MessageSchema = new mongoose.Schema({
 }, { timestamps: true });
 MessageSchema.index({ provider: 1, accountId: 1, conversationId: 1, timestamp: -1 });
 MessageSchema.index(
-  { provider: 1, accountId: 1, providerMessageId: 1 },
+  { provider: 1, accountId: 1, conversationId: 1, providerMessageId: 1 },
   { unique: true }
 );
 
