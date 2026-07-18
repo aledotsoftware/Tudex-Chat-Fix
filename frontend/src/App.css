@@ -399,11 +399,22 @@ button, textarea, input, select {
   100% { transform: scaleX(0); transform-origin: right; }
 }
 
+.sidebarTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .sidebarHeader h2 {
   font-family: var(--font-heading);
   font-weight: 600;
   font-size: 24px;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .headerActions {
@@ -703,6 +714,13 @@ button, textarea, input, select {
   flex: 1;
 }
 
+.chatTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .chatHeader h3 {
   font-family: var(--font-heading);
   font-size: 17px;
@@ -968,6 +986,9 @@ button, textarea, input, select {
   text-transform: uppercase;
   color: var(--accent-secondary);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .queuedReplyOriginal {
@@ -1009,6 +1030,9 @@ button, textarea, input, select {
   text-transform: uppercase;
   color: var(--accent-primary);
   margin-bottom: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .replyTargetText {
@@ -1309,10 +1333,25 @@ button:disabled {
   letter-spacing: 0.05em;
 }
 
+.composerHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+  margin-left: 4px;
+}
+
+.composerShortcutsHint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+  font-weight: 600;
+}
+
 .originalDraftLabel {
   font-weight: 700;
   color: var(--text-secondary);
-  margin: 0 0 8px 4px;
+  margin: 0;
   display: flex;
   align-items: center;
   gap: 6px;
