@@ -1791,15 +1791,15 @@ function App() {
       <main className={`waApp ${selectedChatId || viewMode === "statuses" ? "chatOpen" : ""}`}>
         <aside className="sidebar">
         <header className="sidebarHeader">
-          <h2>
-            {viewMode === "statuses" ? "Estados" : "Chats"}
+          <div className="sidebarTitleRow">
+            <h2>{viewMode === "statuses" ? "Estados" : "Chats"}</h2>
             {viewMode === "chats" && syncingChats && (
               <span className="syncingBadge" title="Sincronizando chats..." aria-live="polite">
                 <span className="syncIndicator" aria-hidden="true">🔄</span>
-                Sincronizando...
+                <span className="hideOnMobile">Sincronizando...</span>
               </span>
             )}
-          </h2>
+          </div>
           <div className="headerActions">
             <button
               className={`secondary ${viewMode === "statuses" ? "activeToggle" : ""}`}
@@ -2068,15 +2068,15 @@ function App() {
                   )}
                 </div>
                 <div className="chatHeaderInfo">
-                  <h3>
-                    {selectedChat?.name || "Seleccioná un chat"}
+                  <div className="chatTitleRow">
+                    <h3>{selectedChat?.name || "Seleccioná un chat"}</h3>
                     {syncingChat && (
                       <span className="syncingBadge" title="Sincronizando mensajes..." aria-live="polite">
                         <span className="syncIndicator" aria-hidden="true">🔄</span>
-                        Sincronizando...
+                        <span className="hideOnMobile">Sincronizando...</span>
                       </span>
                     )}
-                  </h3>
+                  </div>
                   <p>
                     {selectedChat?.id || "Sin chat seleccionado"}
                     {selectedChat?.isGroup ? " · Grupo" : ""}
@@ -2223,7 +2223,7 @@ function App() {
                   </div>
                   {replyQueue.map((item) => (
                     <article key={item.localId} className="queuedReplyCard">
-                      <p className="queuedReplyLabel">Respuesta sugerida</p>
+                      <p className="queuedReplyLabel"><span aria-hidden="true">💡</span> Respuesta sugerida</p>
                       <p className="queuedReplyOriginal">{item.original}</p>
                       <textarea
                         value={item.text}
@@ -2264,7 +2264,7 @@ function App() {
                 <div className="replyTarget">
                   <div className="replyTargetContent">
                     <p className="replyTargetLabel">
-                      Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
+                      <span aria-hidden="true">↩️</span> Respondiendo a {replyTarget.fromMe ? "tu mensaje" : "mensaje recibido"}
                     </p>
                     <p className="replyTargetText">{replyTarget.text}</p>
                   </div>
@@ -2279,11 +2279,18 @@ function App() {
               ) : null}
 
               {/* Removed redundant syncingChat badge here to prevent layout shift; it's already in the header */}
-              {correctedDraft ? (
-                <p className="originalDraftLabel">
-                  <span aria-hidden="true">📝</span> Tu borrador original
+              <div className="composerHeader">
+                <p className="composerShortcutsHint">
+                  {correctedDraft
+                    ? "Editar texto descarta la versión sugerida | Enter: Enviar sugerencia | Ctrl+Enter: Enviar original"
+                    : "Enter: Mejorar y enviar | Ctrl+Enter: Enviar original"}
                 </p>
-              ) : null}
+                {correctedDraft ? (
+                  <p className="originalDraftLabel">
+                    <span aria-hidden="true">📝</span> Tu borrador original
+                  </p>
+                ) : null}
+              </div>
               <div className={`composerInputWrapper ${correctedDraft ? "hasCorrection" : ""} ${correcting || correctingAndSending ? "isCorrecting" : ""}`}>
                 <textarea
                   ref={draftInputRef}
@@ -2332,7 +2339,7 @@ function App() {
                     }
                   }}
                   onKeyDown={handleDraftKeyDown}
-                  placeholder={correctedDraft ? "Borrador (Editar descarta IA | Enter: Enviar IA | Ctrl+Enter: Enviar original)" : "Mensaje... (Enter: Mejorar y enviar | Ctrl+Enter: Enviar original)"}
+                  placeholder="Escribe un mensaje..."
                   rows={3}
                   aria-label="Mensaje"
                 />
