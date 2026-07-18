@@ -110,18 +110,18 @@ const syncStateMemory = new Map();
 const aiMetadataCache = new Map(); // Temporary store for linking AI corrections sent via API to their message_create event
 
 let syncWorkerRunning = false;
-let AVATAR_TTL_MS = 600000;
-let AVATAR_FETCH_LIMIT = 40;
-let AVATAR_FETCH_TIMEOUT_MS = 7000;
-let CHATS_CACHE_TTL_MS = 5000;
-let MESSAGES_CACHE_TTL_MS = 5000;
+let AVATAR_TTL_MS = safeNumber(process.env.AVATAR_TTL_MS, 600000, 1000, 86400000, null);
+let AVATAR_FETCH_LIMIT = safeNumber(process.env.AVATAR_FETCH_LIMIT, 40, 1, 200, null);
+let AVATAR_FETCH_TIMEOUT_MS = safeNumber(process.env.AVATAR_FETCH_TIMEOUT_MS, 7000, 1000, 30000, null);
+let CHATS_CACHE_TTL_MS = safeNumber(process.env.CHATS_CACHE_TTL_MS, 5000, 0, 3600000, null);
+let MESSAGES_CACHE_TTL_MS = safeNumber(process.env.MESSAGES_CACHE_TTL_MS, 5000, 0, 3600000, null);
 const DEFAULT_PROVIDER = 'whatsapp';
 const DEFAULT_ACCOUNT_ID = process.env.DEFAULT_ACCOUNT_ID || 'default';
 const STATUS_ARCHIVE_DIR = path.join(__dirname, 'status-archive');
 const STATUS_ARCHIVE_PUBLIC_BASE = '/status-archive';
 const MEDIA_ARCHIVE_DIR = path.join(__dirname, 'media-archive');
 const MEDIA_ARCHIVE_PUBLIC_BASE = '/media-archive';
-let STATUS_POLL_INTERVAL_MS = 60000;
+let STATUS_POLL_INTERVAL_MS = safeNumber(process.env.STATUS_POLL_INTERVAL_MS, 60000, 1000, 86400000, null);
 let aiErrorLogState = {
   signature: '',
   count: 0,
