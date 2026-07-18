@@ -262,6 +262,10 @@ class WhatsAppAdapter extends BaseAdapter {
       throw new Error('Missing parameters (chatId + text/media)');
     }
 
+    if (typeof targetChatId !== 'string') {
+      throw new Error('Invalid parameter: chatId must be a string');
+    }
+
     const isChannelUrl = targetChatId.includes('whatsapp.com/channel/');
     const looksLikeInviteCode = !targetChatId.includes('@') && /^[A-Za-z0-9_-]{10,}$/.test(targetChatId);
 
