@@ -1976,6 +1976,7 @@ function App() {
                   onClick={() => {
                     setViewMode("chats");
                     setSelectedChatId("");
+                    setReplyTarget(null);
                   }}
                 >
                   <span aria-hidden="true">←</span>
