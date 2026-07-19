@@ -1729,7 +1729,7 @@ button.fullWidth {
 
 .passwordInputWrapper .authInput,
 .passwordInputWrapper input {
-  padding-right: 40px;
+  padding-right: 60px;
 }
 
 .passwordToggleBtn:focus-visible {
