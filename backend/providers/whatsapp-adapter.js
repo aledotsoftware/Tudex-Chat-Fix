@@ -186,21 +186,24 @@ class WhatsAppAdapter extends BaseAdapter {
   }
 
   hasMedia(message, { provider, accountId } = {}) {
+    if (!message) return false;
     return Boolean(message?.hasMedia);
   }
 
   hasQuotedMsg(message, { provider, accountId } = {}) {
+    if (!message) return false;
     return Boolean(message?.hasQuotedMsg);
   }
 
   getChatIdFromMessage(message, { provider, accountId } = {}) {
     if (!message) return null;
+    if (typeof message === 'string') return message;
     return message.fromMe ? message.to : message.from;
   }
 
   extractMessageContext(message, { provider, accountId } = {}) {
     return {
-      providerMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || null,
+      providerMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || (typeof message === 'string' ? message : null),
       body: message?.body || '',
       timestamp: message?.timestamp || Math.floor(Date.now() / 1000),
       fromMe: Boolean(message?.fromMe),
@@ -212,7 +215,7 @@ class WhatsAppAdapter extends BaseAdapter {
 
   extractChatContext(chat, { provider, accountId } = {}) {
     return {
-      chatId: chat?.id?._serialized || (typeof chat?.id === 'string' ? chat.id : null) || null,
+      chatId: chat?.id?._serialized || (typeof chat?.id === 'string' ? chat.id : null) || (typeof chat === 'string' ? chat : null),
       name: chat?.name || null,
       unreadCount: chat?.unreadCount || 0,
       timestamp: chat?.timestamp || Math.floor(Date.now() / 1000),
@@ -222,7 +225,7 @@ class WhatsAppAdapter extends BaseAdapter {
 
   extractStatusDescriptor(message, { provider, accountId } = {}) {
     return {
-      providerStatusMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || null,
+      providerStatusMessageId: message?.id?._serialized || (typeof message?.id === 'string' ? message.id : null) || (typeof message === 'string' ? message : null),
       statusOwnerId: message?.author || message?.from || null,
       description: message?.caption || message?.body || '',
       caption: message?.caption || '',
