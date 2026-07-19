@@ -1203,7 +1203,7 @@ function App() {
         body: JSON.stringify({
           provider: DEFAULT_PROVIDER,
           accountId: DEFAULT_ACCOUNT_ID,
-          chatId,
+          conversationId: chatId,
           text,
           originalText: payload?.originalText || text,
           replyToMessageId: payload?.replyToMessageId || ""
@@ -1238,6 +1238,9 @@ function App() {
 
     const optimisticMsg = {
       _uiId: `optimistic-${Date.now()}`,
+      provider: DEFAULT_PROVIDER,
+      accountId: DEFAULT_ACCOUNT_ID,
+      conversationId: selectedChatId,
       chatId: selectedChatId,
       body: textToSend,
       fromMe: true,
@@ -1352,6 +1355,9 @@ function App() {
 
     const optimisticMsg = {
       _uiId: `optimistic-${Date.now()}-${Math.random()}`,
+      provider: DEFAULT_PROVIDER,
+      accountId: DEFAULT_ACCOUNT_ID,
+      conversationId: item.chatId || selectedChatId,
       chatId: item.chatId || selectedChatId,
       body: item.text,
       fromMe: true,
