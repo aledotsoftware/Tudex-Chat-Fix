@@ -142,6 +142,12 @@ describe('WhatsAppAdapter', () => {
       assert.strictEqual(desc.mediaType, 'image');
       assert.strictEqual(desc.timestamp, 1600000000);
     });
+
+    test('should extract status descriptor fields correctly from string', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const desc = adapter.extractStatusDescriptor('status123');
+      assert.strictEqual(desc.providerStatusMessageId, 'status123');
+    });
   });
 
   describe('extractMessageContext', () => {
@@ -165,6 +171,12 @@ describe('WhatsAppAdapter', () => {
       assert.strictEqual(ctx.to, '456@c.us');
       assert.deepStrictEqual(ctx.mentionedIds, ['789@c.us']);
     });
+
+    test('should extract message context correctly from string', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const ctx = adapter.extractMessageContext('msg123');
+      assert.strictEqual(ctx.providerMessageId, 'msg123');
+    });
   });
 
   describe('extractChatContext', () => {
@@ -183,6 +195,12 @@ describe('WhatsAppAdapter', () => {
       assert.strictEqual(ctx.unreadCount, 5);
       assert.strictEqual(ctx.timestamp, 1600000000);
       assert.strictEqual(ctx.isGroup, false);
+    });
+
+    test('should extract chat context correctly from string', () => {
+      const adapter = new WhatsAppAdapter({ client: mockClient });
+      const ctx = adapter.extractChatContext('chat123');
+      assert.strictEqual(ctx.chatId, 'chat123');
     });
   });
 
