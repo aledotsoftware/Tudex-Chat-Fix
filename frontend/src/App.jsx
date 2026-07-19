@@ -1700,9 +1700,9 @@ function App() {
                 <button
                   className="secondary fullWidth"
                   aria-label="Cancelar y salir"
-                  onClick={handleUserLogout}
+                  onClick={performLogout}
                 >
-                  Cancelar y salir
+                  <span aria-hidden="true">❌</span> Cancelar y salir
                 </button>
               </div>
             </>
@@ -1740,13 +1740,14 @@ function App() {
                 className="primary fullWidth"
                 aria-label="Recargar aplicación para intentar reconexión"
                 onClick={() => window.location.reload()}
+                disabled={isOffline}
               >
                 <span aria-hidden="true">🔄</span> Recargar página
               </button>
               <button
                 className="secondary fullWidth mt-2"
                 aria-label="Cerrar sesión y volver al inicio"
-                onClick={handleUserLogout}
+                onClick={performLogout}
               >
                 <span aria-hidden="true">🚪</span> Cerrar sesión
               </button>
