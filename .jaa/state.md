@@ -102,3 +102,7 @@ Conversational UX flow verified
 
 - **ChatFix-Provider-Bridge (Iteración Bridge de Proveedor)**: Se reforzó el adapter `WhatsAppAdapter` implementando manejo de fallbacks a strings puros en todos los métodos extract (`extractMessageContext`, `extractChatContext`, `extractStatusDescriptor`) para asegurar flexibilidad con futuros canales de mensajería (multi-canal). Se agregaron guardas de validación (`early exits`) en utilidades como `hasMedia`, `hasQuotedMsg` y `getChatIdFromMessage` (`if (!message) return false/null;`) evitando `TypeError`s inesperados. Se verificó que `ProviderRegistry`, y los flujos asíncronos (`send`, `read`, `listChats`) mantienen el contrato `provider + accountId + conversationId` sin modificaciones problemáticas. Se ejecutaron y pasaron todos los tests.
 - **ChatFix-Architectural-Coordination (Frontend API Payloads)**: Updated frontend `postSendMessage` API payload and `optimisticMsg` initializations to explicitly include the canonical identifiers (`provider`, `accountId`, and `conversationId`), resolving inconsistencies and adhering directly to the system's centralized multi-channel paradigm. Tests verified and passed.
+
+- **ChatFix-AI-Ops**: Se corrigió el backend para que `CLOUDFLARE_AI_BASE_URL` sea validada con `safeUrl` incondicionalmente al iniciar, antes de ser procesada por `hasBaseUrl`.
+
+- **ChatFix-AI-Ops**: Se corrigió el backend para que `CLOUDFLARE_AI_BASE_URL` sea validada con `safeUrl` incondicionalmente al iniciar, antes de ser procesada por `hasBaseUrl`.
