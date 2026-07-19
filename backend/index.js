@@ -162,12 +162,10 @@ function validateStartupConfig() {
   if (process.env.CLOUDFLARE_ACCOUNT_ID) process.env.CLOUDFLARE_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID.trim();
   if (process.env.CLOUDFLARE_API_TOKEN) process.env.CLOUDFLARE_API_TOKEN = process.env.CLOUDFLARE_API_TOKEN.trim();
 
+  process.env.CLOUDFLARE_AI_BASE_URL = safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL');
+
   const hasAccountId = Boolean(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_ACCOUNT_ID !== '');
   const hasBaseUrl = Boolean(process.env.CLOUDFLARE_AI_BASE_URL && process.env.CLOUDFLARE_AI_BASE_URL.trim() !== '');
-
-  if (hasBaseUrl) {
-    process.env.CLOUDFLARE_AI_BASE_URL = safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', 'CLOUDFLARE_AI_BASE_URL');
-  }
 
   process.env.LM_STUDIO_URL = safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', 'LM_STUDIO_URL');
 
@@ -439,16 +437,16 @@ const AiSettings = mongoose.model('AiSettings', AiSettingsSchema);
 
 let DEFAULT_AI_CONFIG = {
   provider: String(process.env.AI_PROVIDER || '').trim().toLowerCase() === 'cloudflare' ? 'cloudflare' : 'lmstudio',
-  lmStudioBaseUrl: 'http://localhost:1234',
+  lmStudioBaseUrl: safeUrl(process.env.LM_STUDIO_URL, 'http://localhost:1234', null).replace(/\/+$/, '').replace(/\/v1\/chat\/completions$/, ''),
   cloudflareAccountId: (process.env.CLOUDFLARE_ACCOUNT_ID || '').trim(),
   cloudflareApiToken: (process.env.CLOUDFLARE_API_TOKEN || '').trim(),
-  cloudflareBaseUrl: '',
+  cloudflareBaseUrl: safeUrl(process.env.CLOUDFLARE_AI_BASE_URL, '', null).replace(/\/+$/, ''),
   modelName: (process.env.MODEL_NAME || '').trim() || 'llama-3.1-8b-instruct',
-  temperature: 0.7,
-  maxTokens: 180,
+  temperature: safeNumber(process.env.AI_TEMPERATURE, 0.7, 0, 2, null),
+  maxTokens: safeNumber(process.env.AI_MAX_TOKENS, 180, 1, 8192, null),
   systemPrompt: (process.env.AI_SYSTEM_PROMPT || '').trim() || 'Eres un corrector experto de mensajes de WhatsApp en español. Corrige ortografía, gramática y claridad manteniendo el tono y la intención original. No incluyas razonamiento interno ni etiquetas como <think>.',
   userPromptTemplate: (process.env.AI_USER_PROMPT_TEMPLATE || '').trim() || 'Corregí este texto y devolvé solo la versión final corregida, sin explicación:\n\n{{text}}',
-  timeoutMs: 15000
+  timeoutMs: safeNumber(process.env.AI_TIMEOUT_MS, 15000, 1000, 60000, null)
 };
 
 let aiConfig = { ...DEFAULT_AI_CONFIG };
