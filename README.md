@@ -81,7 +81,7 @@ En Docker Compose ya se inyectan:
 - `AI_PROVIDER=lmstudio` (o `cloudflare` usando `CLOUDFLARE_ACCOUNT_ID` y `CLOUDFLARE_API_TOKEN`, o alternativamente con `CLOUDFLARE_AI_BASE_URL` y `CLOUDFLARE_API_TOKEN`)
 - `MODEL_NAME=llama-3.1-8b-instruct`
 - `CHROME_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`
-- `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas (Mínimo de 1000ms).
+- `STATUS_POLL_INTERVAL_MS=60000` para controlar cada cuánto se revisan estados y se archivan imágenes nuevas.
 - `AI_TEMPERATURE=0.7` Configuración avanzada de la temperatura del modelo IA.
 - `AI_MAX_TOKENS=180` Configuración del máximo de tokens para la generación de la IA.
 - `AI_TIMEOUT_MS=15000` Configuración de timeout para la IA en milisegundos.
