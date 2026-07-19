@@ -1710,7 +1710,7 @@ function App() {
           )}
 
           {!socketConnected && (
-             <div className="loadingSpinnerContainer" role="alert" aria-busy="true" aria-live="assertive">
+             <div className="loadingSpinnerContainer" role="status" aria-busy="true" aria-live="polite">
                 <div className="largeSpinner warningSpinner" aria-hidden="true"></div>
                 <p className="helperText errorText reconnectingAlert"><span aria-hidden="true">⚡</span> Reconectando con el servidor...</p>
              </div>

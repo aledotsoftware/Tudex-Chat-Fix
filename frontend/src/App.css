@@ -111,8 +111,8 @@ button, textarea, input, select {
   align-items: center;
   gap: 8px;
   text-align: left;
-  background: var(--error);
-  color: #000;
+  background: rgba(255, 82, 82, 0.2);
+  color: #ff8a8a;
   padding: 12px;
   border-radius: 8px;
   font-size: 14px;
@@ -449,7 +449,7 @@ button, textarea, input, select {
 
 .dot.ok { background: var(--success); color: var(--success); animation: heartbeat 2s infinite ease-in-out; }
 .dot.warning { background: var(--warning); color: var(--warning); }
-.dot.bad { background: var(--error); color: var(--error); }
+.dot.bad { background: rgba(255, 82, 82, 0.2); color: var(--error); }
 
 @keyframes heartbeat {
   0% { transform: scale(1); }
@@ -1402,7 +1402,6 @@ button.fullWidth {
 }
 
 button.small {
-  min-height: 48px;
   padding: 6px 12px;
   font-size: 13px;
   border-radius: 8px;
@@ -1605,8 +1604,6 @@ button.fullWidth {
   .headerActions button {
     flex: 1;
     padding: 8px 12px;
-    min-height: 48px;
-    min-width: 48px;
   }
 
   .waApp {
@@ -1666,13 +1663,9 @@ button.fullWidth {
 
   .mobileBackBtn {
     display: inline-flex !important;
-    min-height: 48px;
-    min-width: 48px;
   }
 
   .chatHeaderActions .secondary {
-    min-height: 48px;
-    min-width: 48px;
     justify-content: center;
     padding: 8px 12px;
     font-size: 13px;
@@ -1760,8 +1753,6 @@ button.fullWidth {
   justify-content: center;
   font-size: 16px;
   padding: 8px;
-  min-width: 48px;
-  min-height: 48px;
 }
 
 @media (hover: hover) {
@@ -1918,7 +1909,6 @@ button.fullWidth {
   z-index: 1000;
 }
 .updateBanner button {
-  min-height: 48px;
   padding: 6px 16px;
 
   font-size: 14px;
@@ -1996,36 +1986,15 @@ button.fullWidth {
   }
 
   .modalOverlay {
-    padding: 0;
-  }
-
-  button {
-    min-height: 48px;
-    min-width: 48px;
-  }
-
-  button.replyBtn {
-    min-height: 48px;
-    min-width: 48px;
-  }
-
-  .logoutBtn,
-  .iconButton,
-  .passwordToggleBtn {
-    min-height: 48px;
-    min-width: 48px;
-    padding: 10px;
-  }
+  align-items: flex-end;
+  padding: 0;
 }
 
-@media (max-width: 920px) {
-  /* Asegurar tamaño touch seguro general en componentes interactivos secundarios que puedan haber quedado por fuera */
-  .chatHeaderActions button,
-  .headerActions button,
-  .installAppBtn {
-    min-height: 48px;
-    min-width: 48px;
-  }
+.logoutBtn,
+.iconButton,
+.passwordToggleBtn {
+  padding: 10px;
+}
 }
 
 @keyframes slideUpMobile {
@@ -2041,8 +2010,6 @@ button.fullWidth {
   }
 
   .composerActions button {
-    min-width: 48px;
-    min-height: 48px;
     flex: 1 1 100%;
   }
 
@@ -2069,26 +2036,6 @@ input[type="email"],
 textarea,
 select {
   font-size: 16px;
-}
-
-/* Asegurar targets tactiles adicionales */
-@media (max-width: 920px) {
-  .logoutBtn {
-    min-height: 48px;
-    min-width: 48px;
-  }
-  .authInput {
-    min-height: 48px;
-  }
-  input[type="text"],
-  input[type="password"],
-  input[type="number"],
-  input[type="email"],
-  textarea,
-  select {
-    min-height: 48px;
-  min-width: 48px;
-  }
 }
 
 /* Toasts */
@@ -2231,8 +2178,8 @@ select {
 .notice.error.session-rejected {
   text-align: left;
   margin-bottom: 16px;
-  background: var(--error);
-  color: #000;
+  background: rgba(255, 82, 82, 0.2);
+  color: #ff8a8a;
   padding: 16px;
   border-radius: 8px;
   border-left: none;
@@ -2274,21 +2221,32 @@ select {
 }
 
 .aiHealthAlert span[aria-hidden="true"] {
-  font-size: 18px;
-}
-
-@media (max-width: 920px) {
-  .offlineBanner button,
-  .warningBanner button,
-  .infoBanner button {
-    min-height: 48px;
-    min-width: 48px;
-  }
+  font-size: 16px;
 }
 
 .syncDisclaimer {
   font-size: 13px;
   color: var(--text-muted);
-  font-style: italic;
-  margin-top: 8px;
+}
+
+/* Global Touch Targets */
+button,
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+textarea,
+select,
+.authInput,
+.mobileBackBtn,
+.iconButton,
+.passwordToggleBtn,
+.logoutBtn,
+.installAppBtn,
+.chatHeaderActions button,
+.headerActions button,
+.composerActions button,
+.replyBtn {
+  min-height: 48px;
+  min-width: 48px;
 }
