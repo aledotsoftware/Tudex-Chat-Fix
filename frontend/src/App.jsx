@@ -1120,6 +1120,7 @@ function App() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setCorrecting(false);
+      setCorrectingAndSending(false);
     }
 
     const controller = new AbortController();
@@ -1160,14 +1161,19 @@ function App() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setCorrecting(false);
+      setCorrectingAndSending(false);
     }
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setCorrectingAndSending(true);
+
     try {
       const res = await fetch(`${API_URL}/api/correct`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: draft })
+        body: JSON.stringify({ text: draft }),
+        signal: controller.signal
       });
       if (!res.ok) throw new Error("No se pudo corregir el mensaje.");
       const data = await res.json();
@@ -1176,14 +1182,21 @@ function App() {
 
       setCorrectedDraft(corrected);
 
-      // Stop correcting spinner before triggering sending to allow the UI
-      // to transition cleanly to the "Enviando versión IA..." state.
-      setCorrectingAndSending(false);
+      if (abortControllerRef.current === controller) {
+        setCorrectingAndSending(false);
+        abortControllerRef.current = null;
+      }
 
       await sendMessage(corrected, "correctedAndSending");
     } catch (error) {
-      showNotice(error.message, "error");
-      setCorrectingAndSending(false);
+      if (error.name !== "AbortError") {
+        showNotice(error.message, "error");
+      }
+    } finally {
+      if (abortControllerRef.current === controller) {
+        setCorrectingAndSending(false);
+        abortControllerRef.current = null;
+      }
     }
   }
 
@@ -1228,6 +1241,7 @@ function App() {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
       setCorrecting(false);
+      setCorrectingAndSending(false);
     }
     const savedDraft = draft;
     const savedCorrected = correctedDraft;
@@ -2312,6 +2326,7 @@ function App() {
                       abortControllerRef.current.abort();
                       abortControllerRef.current = null;
                       setCorrecting(false);
+                      setCorrectingAndSending(false);
                     }
 
                     if (val.trim().length > 5) {
