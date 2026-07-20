@@ -2290,7 +2290,7 @@ app.post(['/api/chats/:chatId/read', '/api/chats/:chatId/read/:channelCode'], as
       });
     }
 
-    res.json({ success: true, provider, accountId });
+    res.json({ success: true, provider, accountId, conversationId: chatId });
   } catch (error) {
     console.error('❌ Mark read error:', error.message);
     res.status(500).json({ error: 'Failed to mark chat as read' });
@@ -2314,7 +2314,7 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
     }
 
     let chatId = String(
-      req.query.chatId || req.body?.chatId || ''
+      req.query.chatId || req.body?.chatId || req.query.conversationId || req.body?.conversationId || ''
     ).trim();
 
     const text = sanitizeTextInput(req.body?.text);
@@ -2360,6 +2360,7 @@ app.post(['/api/send', '/api/send/:channelCode'], async (req, res) => {
     res.json({
       success: true,
       chatId: sendResult.chatId,
+      conversationId: sendResult.chatId,
       provider,
       accountId,
       isNewsletter: sendResult.isNewsletter,
