@@ -1299,14 +1299,20 @@ function App() {
       event.preventDefault();
       // Remove correcting from condition to allow Enter to abort background suggestions
       if (!sending && !correctingAndSending && (draft.trim() || correctedDraft)) {
-        if (event.ctrlKey || event.metaKey) {
-          // Force send original
-          sendMessage(draft, "original");
-        } else {
-          if (correctedDraft) {
+        if (correctedDraft) {
+          if (event.ctrlKey || event.metaKey) {
+            // Force send original
+            sendMessage(draft, "original");
+          } else {
             sendMessage(correctedDraft, "corrected");
+          }
+        } else {
+          if (event.ctrlKey || event.metaKey) {
+            // Force AI correct and send
+            if (draft.trim()) correctAndSend();
           } else if (draft.trim()) {
-            correctAndSend();
+            // Send original
+            sendMessage(draft, "original");
           }
         }
       }
@@ -2304,7 +2310,7 @@ function App() {
                 <p className="composerShortcutsHint">
                   {correctedDraft
                     ? "Editar texto descarta la versión sugerida | Enter: Enviar sugerencia | Ctrl+Enter: Enviar original"
-                    : "Enter: Mejorar y enviar | Ctrl+Enter: Enviar original"}
+                    : "Enter: Enviar | Ctrl+Enter: Mejorar y enviar"}
                 </p>
                 {correctedDraft ? (
                   <p className="originalDraftLabel">
@@ -2388,7 +2394,17 @@ function App() {
 
               <div className="composerActions">
                 <button
-                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "primary sendCorrectedBtn" : "primary"}
+                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "secondary plainSendBtn" : "primary"}
+                  aria-label={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "Enviar el texto original, descartando la sugerencia" : "Enviar mensaje"}
+                  onClick={() => sendMessage(draft, "original")}
+                  disabled={!draft.trim() || sending || correctingAndSending || isOffline}
+                  aria-busy={sending && sendingType === "original"}
+                >
+                  <span aria-hidden="true">{(sending && sendingType === "original") ? <span className="buttonSpinner" /> : "📤"}</span>
+                  <span>{(sending && sendingType === "original") ? "Enviando..." : (correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviar original" : "Enviar")}</span>
+                </button>
+                <button
+                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "primary sendCorrectedBtn" : "secondary aiActionBtn"}
                   aria-label={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "Enviar la sugerencia de IA" : "Mejorar redacción con IA y enviar"}
                   onClick={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? () => sendMessage(correctedDraft || draft, "corrected") : correctAndSend}
                   disabled={!draft.trim() || sending || correctingAndSending || isOffline}
@@ -2398,7 +2414,7 @@ function App() {
                   <span>{correctingAndSending ? "Mejorando y enviando..." : (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Enviando versión IA..." : (correctedDraft ? "Enviar versión IA" : "Mejorar y enviar")}</span>
                 </button>
                 <button
-                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "secondary useCorrectedBtn" : "secondary"}
+                  className={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "secondary useCorrectedBtn" : "secondary aiActionBtn"}
                   aria-label={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "Usar sugerencia en el cuadro principal para editar" : "Previsualizar corrección de IA sin enviar"}
                   onClick={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? () => {
                     setDraft(correctedDraft || draft);
@@ -2410,16 +2426,6 @@ function App() {
                 >
                   <span aria-hidden="true">{correcting ? <span className="buttonSpinner" /> : (correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "✏️" : "✨")}</span>
                   <span>{correcting ? "Mejorando..." : (correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending")) ? "Usar y editar" : "Ver sugerencia")}</span>
-                </button>
-                <button
-                  className="secondary plainSendBtn"
-                  aria-label={(correctedDraft || (sending && (sendingType === "corrected" || sendingType === "correctedAndSending"))) ? "Enviar el texto original, descartando la sugerencia" : "Enviar mensaje original sin revisar"}
-                  onClick={() => sendMessage(draft, "original")}
-                  disabled={!draft.trim() || sending || correctingAndSending || isOffline}
-                  aria-busy={sending && sendingType === "original"}
-                >
-                  <span aria-hidden="true">{(sending && sendingType === "original") ? <span className="buttonSpinner" /> : "📤"}</span>
-                  <span>{(sending && sendingType === "original") ? "Enviando..." : "Enviar original"}</span>
                 </button>
               </div>
 
