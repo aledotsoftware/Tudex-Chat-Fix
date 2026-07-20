@@ -2250,3 +2250,15 @@ select,
   min-height: 48px;
   min-width: 48px;
 }
+
+.composerActions button.aiActionBtn {
+  background: rgba(0, 210, 255, 0.05);
+  border: 1px solid rgba(0, 210, 255, 0.2);
+  color: var(--accent-primary);
+}
+@media (hover: hover) {
+  .composerActions button.aiActionBtn:hover:not(:disabled) {
+    background: rgba(0, 210, 255, 0.1);
+    border: 1px solid rgba(0, 210, 255, 0.4);
+  }
+}
